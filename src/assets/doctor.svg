@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-labelledby="title desc">
+  <title id="title">Doctor placeholder</title>
+  <desc id="desc">Simple illustration of a doctor figure</desc>
+  <rect width="200" height="200" rx="16" fill="#e6f7fb"/>
+  <circle cx="100" cy="64" r="28" fill="#bfe9f4"/>
+  <rect x="56" y="96" width="88" height="72" rx="12" fill="#a7e1ef"/>
+  <path d="M100 96v72" stroke="#0ea5b7" stroke-width="6"/>
+  <path d="M76 132h48" stroke="#0ea5b7" stroke-width="6"/>
+</svg>

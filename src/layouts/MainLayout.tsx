@@ -1,13 +1,13 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Box, AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
-import { MedicalServices as MedicalIcon } from '@mui/icons-material';
+import aanyaLogo from '../assets/aanya_logo.png';
 import { Link as RouterLink } from 'react-router-dom';
 import Footer from '../components/Layout/Footer';
 
 const MainLayout: React.FC = () => {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+  <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Skip to content link for accessibility */}
       <Box
         component="a"
@@ -36,35 +36,30 @@ const MainLayout: React.FC = () => {
       </Box>
 
       {/* Header */}
-      <AppBar position="static" elevation={0} sx={{ backgroundColor: 'background.paper', color: 'text.primary', width: '100%' }}>
+      <AppBar position="sticky" elevation={1} sx={{ backgroundColor: 'background.paper', color: 'text.primary', width: '100%', zIndex: (theme) => theme.zIndex.appBar }}>
         <Container maxWidth="lg">
           <Toolbar>
             <Box display="flex" alignItems="center" gap={2} sx={{ flexGrow: 1 }}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <MedicalIcon color="primary" />
-                <Typography variant="h6" fontWeight={700} color="primary.main">
-                  AANYA
-                </Typography>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Box component="img" src={aanyaLogo} alt="Aanya logo" sx={{ height: 44, width: 44, borderRadius: 2 }} onError={(e: any) => { e.target.style.display = 'none'; }} />
+                <Box>
+                  <Typography variant="h6" fontWeight={700} color="primary.main">
+                    AANYA
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                    Health Center
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-                Health Center
-              </Typography>
             </Box>
 
-            <Box display="flex" gap={2}>
-              <Button
-                component={RouterLink}
-                to="/home"
-                color="inherit"
-                sx={{ textTransform: 'none' }}
-              >
-                Home
-              </Button>
+            <Box display="flex" gap={2} alignItems="center" sx={{ ml: 'auto' }}>
+              <Button component={RouterLink} to="/home" color="inherit" sx={{ textTransform: 'none', px: 2 }}>Home</Button>
               <Button
                 component={RouterLink}
                 to="/about"
                 color="inherit"
-                sx={{ textTransform: 'none' }}
+                sx={{ textTransform: 'none', px: 2 }}
               >
                 About
               </Button>
@@ -72,26 +67,12 @@ const MainLayout: React.FC = () => {
                 component={RouterLink}
                 to="/contact"
                 color="inherit"
-                sx={{ textTransform: 'none' }}
+                sx={{ textTransform: 'none', px: 2 }}
               >
                 Contact
               </Button>
-              <Button
-                component={RouterLink}
-                to="/login"
-                variant="outlined"
-                sx={{ textTransform: 'none' }}
-              >
-                Login
-              </Button>
-              <Button
-                component={RouterLink}
-                to="/signup"
-                variant="contained"
-                sx={{ textTransform: 'none' }}
-              >
-                Sign Up
-              </Button>
+              <Button component={RouterLink} to="/login" variant="outlined" sx={{ textTransform: 'none', borderColor: '#0891b2', color: '#0891b2', px: 2 }}>Login</Button>
+              <Button component={RouterLink} to="/signup" variant="contained" sx={{ textTransform: 'none', background: 'linear-gradient(135deg,#0891b2 0%,#06b6d4 100%)', px: 2 }}>Sign Up</Button>
             </Box>
           </Toolbar>
         </Container>

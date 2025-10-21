@@ -46,7 +46,7 @@ const PatientDashboard: React.FC = () => {
       id: '1',
       appointment_date: '2024-12-22',
       appointment_time: '10:00',
-      doctor: { full_name: 'Dr. Sarah Wilson', specialization: 'General Medicine' },
+      doctor: { full_name: 'Dr. Milinda Abeykoon.', specialization: 'General Medicine' },
       status: 'scheduled',
       reason: 'Regular checkup',
     },
@@ -54,7 +54,7 @@ const PatientDashboard: React.FC = () => {
       id: '2',
       appointment_date: '2024-12-25',
       appointment_time: '14:30',
-      doctor: { full_name: 'Dr. Sarah Wilson', specialization: 'General Medicine' },
+      doctor: { full_name: 'Dr. Milinda Abeykoon.', specialization: 'General Medicine' },
       status: 'scheduled',
       reason: 'Follow-up consultation',
     },
@@ -64,7 +64,7 @@ const PatientDashboard: React.FC = () => {
     {
       id: '1',
       issued_date: '2024-12-15',
-      doctor: { full_name: 'Dr. Sarah Wilson' },
+      doctor: { full_name: 'Dr. Milinda Abeykoon.' },
       medicines: [
         { medicine_name: 'Metformin', dosage: '500mg', frequency: 'Twice daily' },
         { medicine_name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily' },
@@ -74,7 +74,7 @@ const PatientDashboard: React.FC = () => {
     {
       id: '2',
       issued_date: '2024-12-10',
-      doctor: { full_name: 'Dr. Sarah Wilson' },
+      doctor: { full_name: 'Dr. Milinda Abeykoon.' },
       medicines: [
         { medicine_name: 'Aspirin', dosage: '81mg', frequency: 'Once daily' },
       ],
@@ -103,8 +103,8 @@ const PatientDashboard: React.FC = () => {
     // Mock doctor for booking
     const mockDoctor: User = {
       id: '1',
-      email: 'dr.sarah@aanya.com',
-      full_name: 'Dr. Sarah Wilson',
+      email: 'dr.milinda@aanya.com',
+      full_name: 'Dr. Milinda Abeykoon.',
       role: 'doctor',
       phone: '+1234567891',
       created_at: '2024-01-01T00:00:00Z'

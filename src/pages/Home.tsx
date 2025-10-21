@@ -639,7 +639,7 @@ const Home: React.FC = () => {
                   }}>
                     <LocationIcon sx={{ fontSize: 28, color: '#0891b2' }} />
                   </Box>
-                  <Typography fontSize="1.125rem" fontWeight={500}>123 Health Street, Kegalle, Sri Lanka</Typography>
+                  <Typography fontSize="1.125rem" fontWeight={500}>Uhumiya, Kurunegala, Sri Lanka</Typography>
                 </Box>
                 <Box 
                   display="flex" 

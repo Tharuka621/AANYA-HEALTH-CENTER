@@ -40,31 +40,48 @@ const LabDashboard: React.FC = () => {
   const pendingTests = [
     {
       id: '1',
-      patient: 'John Doe',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Nimal Perera',
+      doctor: 'Dr. Milinda Abeykoon',
       test_name: 'Complete Blood Count',
       requested_date: '2024-12-15',
       status: 'requested',
     },
     {
       id: '2',
-      patient: 'Alice Smith',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Kamani Silva',
+      doctor: 'Dr. Milinda Abeykoon',
       test_name: 'Lipid Profile',
       requested_date: '2024-12-14',
+      status: 'requested',
+    },
+    {
+      id: '3',
+      patient: 'Sunil Fernando',
+      doctor: 'Dr. Milinda Abeykoon',
+      test_name: 'Thyroid Function Test',
+      requested_date: '2024-12-13',
       status: 'requested',
     },
   ];
 
   const completedTests = [
     {
-      id: '3',
-      patient: 'Bob Johnson',
-      doctor: 'Dr. Sarah Wilson',
+      id: '4',
+      patient: 'Madhavi Jayawardena',
+      doctor: 'Dr. Milinda Abeykoon',
       test_name: 'Blood Sugar Test',
       completed_date: '2024-12-16',
       status: 'completed',
       report_url: '/reports/blood-sugar-001.pdf',
+    },
+    {
+      id: '5',
+      patient: 'Pradeep Kumara',
+      doctor: 'Dr. Milinda Abeykoon',
+      test_name: 'Urine Analysis',
+      completed_date: '2024-12-15',
+      status: 'completed',
+      report_url: '/reports/urine-001.pdf',
     },
   ];
 
@@ -115,7 +132,7 @@ const LabDashboard: React.FC = () => {
         {/* Welcome Section */}
         <Box mb={4}>
           <Typography variant="h4" fontWeight={700} gutterBottom>
-            Welcome, {user?.full_name}!
+              Welcome, Dilini Rajapaksha!
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Manage lab test requests and upload results.

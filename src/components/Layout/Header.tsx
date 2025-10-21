@@ -105,7 +105,17 @@ const Header: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
               <Typography variant="body2" fontWeight={600}>
-                {user?.full_name}
+                {user?.role === 'doctor' 
+                  ? 'Dr. Milinda Abeykoon' 
+                  : user?.role === 'patient'
+                  ? 'Nimal Perera'
+                  : user?.role === 'receptionist'
+                  ? 'Sanduni Perera'
+                  : user?.role === 'pharmacist'
+                  ? 'Kasun Wijesinghe'
+                  : user?.role === 'lab'
+                  ? 'Dilini Rajapaksha'
+                  : user?.full_name}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {user?.role ? formatRole(user.role) : ''}
@@ -118,7 +128,15 @@ const Header: React.FC = () => {
               aria-label="account menu"
             >
               <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                {user?.full_name?.charAt(0) || <PersonIcon />}
+                {user?.role === 'doctor' 
+                  ? 'MA'
+                  : user?.role === 'patient'
+                  ? 'NP'
+                  : user?.role === 'receptionist'
+                  ? 'SP'
+                  : user?.role === 'pharmacist'
+                  ? 'KW'
+                  : user?.full_name?.charAt(0) || <PersonIcon />}
               </Avatar>
             </IconButton>
           </Box>

@@ -74,8 +74,8 @@ const Footer: React.FC = () => {
             <Box display="flex" alignItems="center" gap={1} mb={1}>
               <PhoneIcon fontSize="small" />
               <Typography variant="body2">
-                <Link href="tel:+1234567890" color="inherit" underline="hover">
-                  +1 (234) 567-890
+                <Link href="tel:+94712345678" color="inherit" underline="hover">
+                  +94 71 234 5678
                 </Link>
               </Typography>
             </Box>
@@ -90,7 +90,7 @@ const Footer: React.FC = () => {
             <Box display="flex" alignItems="center" gap={1}>
               <LocationIcon fontSize="small" />
               <Typography variant="body2">
-                123 Health Street, Medical City, MC 12345
+                Uhumiya, Kurunegala, Sri Lanka
               </Typography>
             </Box>
           </Grid>

@@ -33,36 +33,36 @@ const mockUsers: (User & { password: string })[] = [
     id: '4',
     email: 'receptionist@aanya.com',
     password: 'reception123',
-    full_name: 'Emma Davis',
+    full_name: 'Tharushi Perera',
     role: 'receptionist',
-    phone: '+1234567893',
+    phone: '+94 77 234 5678',
     created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: '5',
     email: 'pharmacist@aanya.com',
     password: 'pharma123',
-    full_name: 'David Miller',
+    full_name: 'Dinesh Fernando',
     role: 'pharmacist',
-    phone: '+1234567894',
+    phone: '+94 75 678 9012',
     created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: '6',
     email: 'labtech@aanya.com',
     password: 'lab123',
-    full_name: 'Lisa Brown',
+    full_name: 'Chamara Silva',
     role: 'lab',
-    phone: '+1234567895',
+    phone: '+94 76 890 1234',
     created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: '7',
     email: 'patient@aanya.com',
     password: 'patient123',
-    full_name: 'John Doe',
+    full_name: 'Kasun Bandara',
     role: 'patient',
-    phone: '+1234567896',
+    phone: '+94771234570',
     created_at: '2024-01-01T00:00:00Z'
   }
 ];

@@ -11,6 +11,7 @@ import {
   InputAdornment,
   CircularProgress,
   Divider,
+  IconButton,
 } from '@mui/material';
 import {
   Email as EmailIcon,
@@ -116,10 +117,10 @@ const Login: React.FC = () => {
     <Container component="main" maxWidth="sm">
       <Box
         sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
           py: 4,
         }}
       >
@@ -127,15 +128,21 @@ const Login: React.FC = () => {
           elevation={3}
           sx={{
             p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             borderRadius: 2,
           }}
         >
           {/* Header */}
           <Box textAlign="center" mb={4}>
-            <Typography component="h1" variant="h4" fontWeight={700} color="primary.main" gutterBottom>
+            <Typography
+              component="h1"
+              variant="h4"
+              fontWeight={700}
+              color="primary.main"
+              gutterBottom
+            >
               Welcome Back
             </Typography>
             <Typography variant="body1" color="text.secondary">
@@ -145,19 +152,19 @@ const Login: React.FC = () => {
 
           {/* Error Alert */}
           {login.error && (
-            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-              {login.error.message || 'Login failed. Please try again.'}
+            <Alert severity="error" sx={{ width: "100%", mb: 2 }}>
+              {login.error.message || "Login failed. Please try again."}
             </Alert>
           )}
 
           {/* Login Form */}
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
             <TextField
               fullWidth
               label="Email Address"
               type="email"
               value={formData.email}
-              onChange={handleInputChange('email')}
+              onChange={handleInputChange("email")}
               error={!!errors.email}
               helperText={errors.email}
               margin="normal"
@@ -176,9 +183,9 @@ const Login: React.FC = () => {
             <TextField
               fullWidth
               label="Password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               value={formData.password}
-              onChange={handleInputChange('password')}
+              onChange={handleInputChange("password")}
               error={!!errors.password}
               helperText={errors.password}
               margin="normal"
@@ -191,14 +198,16 @@ const Login: React.FC = () => {
                 ),
                 endAdornment: (
                   <InputAdornment position="end">
-                    <Button
+                    <IconButton
                       onClick={togglePasswordVisibility}
                       edge="end"
                       size="small"
-                      sx={{ minWidth: 'auto', p: 0.5 }}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </Button>
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}
@@ -231,7 +240,7 @@ const Login: React.FC = () => {
                   Signing In...
                 </Box>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </Button>
 
@@ -243,7 +252,7 @@ const Login: React.FC = () => {
 
             <Box textAlign="center">
               <Typography variant="body2" color="text.secondary">
-                Don't have an account?{' '}
+                Don't have an account?{" "}
                 <Link
                   component={RouterLink}
                   to="/signup"
@@ -265,9 +274,9 @@ const Login: React.FC = () => {
           sx={{
             p: 3,
             mt: 3,
-            backgroundColor: 'background.default',
+            backgroundColor: "background.default",
             border: 1,
-            borderColor: 'divider',
+            borderColor: "divider",
           }}
         >
           <Typography variant="h6" gutterBottom color="primary.main">
@@ -287,7 +296,8 @@ const Login: React.FC = () => {
               <strong>Patient:</strong> patient@aanya.com / patient123
             </Typography>
             <Typography component="li" variant="body2" gutterBottom>
-              <strong>Receptionist:</strong> receptionist@aanya.com / reception123
+              <strong>Receptionist:</strong> receptionist@aanya.com /
+              reception123
             </Typography>
             <Typography component="li" variant="body2" gutterBottom>
               <strong>Pharmacist:</strong> pharmacist@aanya.com / pharma123

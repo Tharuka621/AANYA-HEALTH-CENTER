@@ -28,6 +28,8 @@ import {
   CardContent,
   Alert,
 } from '@mui/material';
+import type { ChipProps } from '@mui/material/Chip';
+
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -56,7 +58,7 @@ const VitalSigns: React.FC = () => {
   const vitalSigns = [
     {
       id: '1',
-      patient: 'John Doe',
+      patient: 'Nimal Perera',
       date: '2024-12-20',
       time: '10:00 AM',
       blood_pressure: '120/80',
@@ -68,7 +70,7 @@ const VitalSigns: React.FC = () => {
     },
     {
       id: '2',
-      patient: 'Alice Smith',
+      patient: 'Kamani Silva',
       date: '2024-12-20',
       time: '11:30 AM',
       blood_pressure: '130/85',
@@ -80,7 +82,7 @@ const VitalSigns: React.FC = () => {
     },
     {
       id: '3',
-      patient: 'Bob Johnson',
+      patient: 'Sunil Fernando',
       date: '2024-12-19',
       time: '2:00 PM',
       blood_pressure: '140/90',
@@ -92,7 +94,7 @@ const VitalSigns: React.FC = () => {
     },
     {
       id: '4',
-      patient: 'Emma Wilson',
+      patient: 'Sanduni Wickramasinghe',
       date: '2024-12-19',
       time: '3:30 PM',
       blood_pressure: '110/70',
@@ -103,20 +105,24 @@ const VitalSigns: React.FC = () => {
       notes: 'Excellent readings',
     },
   ];
+  type ChipColor = ChipProps['color'];
+ const getBloodPressureStatus = (bp: string): { status: string; color: ChipColor } => {
+  const [systolic, diastolic] = bp.split('/').map(Number);
 
-  const getBloodPressureStatus = (bp: string) => {
-    const [systolic, diastolic] = bp.split('/').map(Number);
-    if (systolic < 120 && diastolic < 80) return { status: 'Normal', color: 'success' };
-    if (systolic < 130 && diastolic < 80) return { status: 'Elevated', color: 'warning' };
-    if (systolic < 140 && diastolic < 90) return { status: 'High Stage 1', color: 'warning' };
-    return { status: 'High Stage 2', color: 'error' };
-  };
+  if (systolic < 120 && diastolic < 80) return { status: 'Normal', color: 'success' };
+  if (systolic < 130 && diastolic < 80) return { status: 'Elevated', color: 'warning' };
+  if (systolic < 140 && diastolic < 90) return { status: 'High Stage 1', color: 'warning' };
 
-  const getHeartRateStatus = (hr: number) => {
-    if (hr < 60) return { status: 'Low', color: 'warning' };
-    if (hr > 100) return { status: 'High', color: 'error' };
-    return { status: 'Normal', color: 'success' };
-  };
+  return { status: 'High Stage 2', color: 'error' };
+};
+
+const getHeartRateStatus = (hr: number): { status: string; color: ChipColor } => {
+  if (hr < 60) return { status: 'Low', color: 'warning' };
+  if (hr > 100) return { status: 'High', color: 'error' };
+
+  return { status: 'Normal', color: 'success' };
+};
+
 
   const handleAddVital = () => {
     setEditingVital(null);

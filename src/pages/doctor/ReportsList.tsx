@@ -48,12 +48,12 @@ const ReportsList: React.FC = () => {
   const reports = [
     {
       id: '1',
-      title: 'Patient John Doe - Medical Summary',
+      title: 'Patient Nimal Perera - Medical Summary',
       type: 'Patient Report',
-      description: 'Comprehensive medical summary for John Doe',
+      description: 'Comprehensive medical summary for Nimal Perera',
       status: 'published',
       created_date: '2024-12-15',
-      patient: 'John Doe',
+      patient: 'Nimal Perera',
     },
     {
       id: '2',

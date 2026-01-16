@@ -23,13 +23,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Person as PersonIcon,
 } from '@mui/icons-material';
 import { UserRole } from '../../types';
 
@@ -47,7 +45,7 @@ const UserManagement: React.FC = () => {
   const users = [
     {
       id: '1',
-      name: 'Dr. Sarah Wilson',
+      name: 'Dr. Milinda Abeykoon',
       email: 'doctor@aanya.com',
       role: 'doctor',
       status: 'active',
@@ -55,7 +53,7 @@ const UserManagement: React.FC = () => {
     },
     {
       id: '2',
-      name: 'Emma Davis',
+      name: 'Tharushi Perera',
       email: 'receptionist@aanya.com',
       role: 'receptionist',
       status: 'active',
@@ -63,7 +61,7 @@ const UserManagement: React.FC = () => {
     },
     {
       id: '3',
-      name: 'David Miller',
+      name: 'Dinesh Fernando',
       email: 'pharmacist@aanya.com',
       role: 'pharmacist',
       status: 'active',
@@ -71,7 +69,7 @@ const UserManagement: React.FC = () => {
     },
     {
       id: '4',
-      name: 'Lisa Brown',
+      name: 'Chamara Silva',
       email: 'labtech@aanya.com',
       role: 'lab',
       status: 'active',
@@ -79,7 +77,7 @@ const UserManagement: React.FC = () => {
     },
     {
       id: '5',
-      name: 'John Doe',
+      name: 'Kasun Bandara',
       email: 'patient@aanya.com',
       role: 'patient',
       status: 'active',

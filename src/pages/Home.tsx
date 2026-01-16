@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Container,
@@ -9,7 +9,6 @@ import {
   CardContent,
   Paper,
   Stack,
-  useTheme,
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
@@ -33,7 +32,7 @@ import doctorImage from '../assets/doctor.png';
 // logo intentionally provided in layout; not used directly here
 
 const Home: React.FC = () => {
-  const theme = useTheme();
+  // theme not used
 
   const features = [
     {
@@ -673,48 +672,7 @@ const Home: React.FC = () => {
               </Stack>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 5,
-                  borderRadius: 4,
-                  background: 'linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(220,38,38,0.05) 100%)',
-                  border: '2px solid rgba(239,68,68,0.3)',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                }}
-              >
-                <Typography variant="h4" fontWeight={800} gutterBottom sx={{ color: 'white', mb: 3 }}>
-                  24/7 Emergency Services
-                </Typography>
-                <Typography variant="body1" sx={{ mb: 4, color: '#cbd5e1', lineHeight: 1.8, fontSize: '1.125rem' }}>
-                  For medical emergencies, call our emergency hotline immediately:
-                </Typography>
-                <Box
-                  sx={{
-                    p: 5,
-                    borderRadius: 3,
-                    background: 'linear-gradient(135deg, rgba(239,68,68,0.3) 0%, rgba(220,38,38,0.2) 100%)',
-                    border: '3px solid rgba(239,68,68,0.5)',
-                    textAlign: 'center',
-                    mb: 4,
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'scale(1.05)',
-                      boxShadow: '0 10px 40px rgba(239,68,68,0.4)',
-                    },
-                  }}
-                >
-                  <Typography variant="h2" fontWeight={900} sx={{ color: '#fca5a5' }}>
-                    1990
-                  </Typography>
-                </Box>
-                <Typography variant="body1" sx={{ color: '#cbd5e1', lineHeight: 1.8, fontSize: '1.125rem' }}>
-                  Our emergency department is staffed around the clock to provide immediate care for urgent medical situations.
-                </Typography>
-              </Paper>
+              {/* Emergency section removed as per request */}
             </Grid>
           </Grid>
         </Container>

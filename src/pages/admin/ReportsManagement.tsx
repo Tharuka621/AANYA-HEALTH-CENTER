@@ -22,10 +22,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid,
   Card,
   CardContent,
-  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,6 +32,10 @@ import {
   Assessment as ReportIcon,
   Download as DownloadIcon,
   Visibility as ViewIcon,
+  PeopleAlt as PeopleIcon,
+  Science as ScienceIcon,
+  Medication as MedicationIcon,
+  Inventory2 as InventoryIcon,
 } from '@mui/icons-material';
 
 const ReportsManagement: React.FC = () => {
@@ -45,6 +47,12 @@ const ReportsManagement: React.FC = () => {
     description: '',
     status: 'draft',
   });
+
+  // Quick access sample reports state
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [quickViewType, setQuickViewType] = useState<
+    'patientVisits' | 'labTests' | 'prescriptions' | 'inventory' | null
+  >(null);
 
   // Mock reports data
   const reports = [
@@ -143,6 +151,67 @@ const ReportsManagement: React.FC = () => {
   const draftReports = reports.filter(r => r.status === 'draft').length;
   const reviewReports = reports.filter(r => r.status === 'review').length;
 
+  // Sample datasets for quick access reports
+  const patientVisitsData = [
+    { date: '2025-01-03', patient: 'Kasun Bandara', doctor: 'Dr. Milinda Abeykoon', reason: 'Follow-up', status: 'Completed' },
+    { date: '2025-01-04', patient: 'Nimal Perera', doctor: 'Dr. Milinda Abeykoon', reason: 'Fever', status: 'Completed' },
+    { date: '2025-01-05', patient: 'Ishara Silva', doctor: 'Dr. Milinda Abeykoon', reason: 'Headache', status: 'No Show' },
+  ];
+
+  const labTestsData = [
+    { date: '2025-01-02', patient: 'Amaya Fernando', test: 'FBC', result: 'Normal', lab: 'Central Lab' },
+    { date: '2025-01-04', patient: 'Sunil Jayasuriya', test: 'Lipid Profile', result: 'High LDL', lab: 'Central Lab' },
+    { date: '2025-01-05', patient: 'Madhavi Perera', test: 'Blood Sugar (FBS)', result: 'Elevated', lab: 'Central Lab' },
+  ];
+
+  const prescriptionsData = [
+    { date: '2025-01-03', patient: 'Kasun Bandara', medicine: 'Paracetamol 500mg', qty: 10, prescribedBy: 'Dr. Milinda Abeykoon' },
+    { date: '2025-01-03', patient: 'Nimal Perera', medicine: 'Amoxicillin 250mg', qty: 15, prescribedBy: 'Dr. Milinda Abeykoon' },
+    { date: '2025-01-04', patient: 'Ishara Silva', medicine: 'Cetirizine 10mg', qty: 7, prescribedBy: 'Dr. Milinda Abeykoon' },
+  ];
+
+  const inventoryData = [
+    { item: 'Paracetamol 500mg', category: 'Tablet', inStock: 125, minRequired: 50, status: 'OK' },
+    { item: 'Amoxicillin 250mg', category: 'Capsule', inStock: 30, minRequired: 60, status: 'Low' },
+    { item: 'Syringes 5ml', category: 'Supply', inStock: 400, minRequired: 200, status: 'OK' },
+  ];
+
+  const handleOpenQuickView = (
+    type: 'patientVisits' | 'labTests' | 'prescriptions' | 'inventory'
+  ) => {
+    setQuickViewType(type);
+    setQuickViewOpen(true);
+  };
+
+  const handleCloseQuickView = () => {
+    setQuickViewOpen(false);
+    setQuickViewType(null);
+  };
+
+  const toCSV = (rows: any[], headers?: string[]) => {
+    if (!rows.length) return '';
+    const cols = headers || Object.keys(rows[0]);
+    const escape = (v: any) => {
+      const s = v == null ? '' : String(v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const head = cols.join(',');
+    const body = rows.map(r => cols.map(c => escape(r[c as keyof typeof r])).join(',')).join('\n');
+    return head + '\n' + body;
+  };
+
+  const downloadCSV = (filename: string, csv: string) => {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 3 }}>
@@ -159,9 +228,82 @@ const ReportsManagement: React.FC = () => {
           </Button>
         </Box>
 
+        {/* Quick Access Reports */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
+            Quick Access Reports
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3 }}>
+            <Box>
+              <Card sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                    <Typography variant="subtitle1" fontWeight={700}>Patient Visit Report</Typography>
+                    <PeopleIcon />
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9, mb: 2 }}>
+                    Daily/weekly/monthly visit summary
+                  </Typography>
+                  <Button variant="contained" color="inherit" size="small" onClick={() => handleOpenQuickView('patientVisits')}>
+                    View Report
+                  </Button>
+                </CardContent>
+              </Card>
+            </Box>
+            <Box>
+              <Card sx={{ bgcolor: 'success.main', color: 'success.contrastText' }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                    <Typography variant="subtitle1" fontWeight={700}>Lab Test Report</Typography>
+                    <ScienceIcon />
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9, mb: 2 }}>
+                    Performed tests and outcomes
+                  </Typography>
+                  <Button variant="contained" color="inherit" size="small" onClick={() => handleOpenQuickView('labTests')}>
+                    View Report
+                  </Button>
+                </CardContent>
+              </Card>
+            </Box>
+            <Box>
+              <Card sx={{ bgcolor: 'warning.main', color: 'warning.contrastText' }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                    <Typography variant="subtitle1" fontWeight={700}>Prescription Report</Typography>
+                    <MedicationIcon />
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9, mb: 2 }}>
+                    Medicine issuance/usage
+                  </Typography>
+                  <Button variant="contained" color="inherit" size="small" onClick={() => handleOpenQuickView('prescriptions')}>
+                    View Report
+                  </Button>
+                </CardContent>
+              </Card>
+            </Box>
+            <Box>
+              <Card sx={{ bgcolor: 'info.main', color: 'info.contrastText' }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                    <Typography variant="subtitle1" fontWeight={700}>Inventory Report</Typography>
+                    <InventoryIcon />
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9, mb: 2 }}>
+                    Stock levels and alerts
+                  </Typography>
+                  <Button variant="contained" color="inherit" size="small" onClick={() => handleOpenQuickView('inventory')}>
+                    View Report
+                  </Button>
+                </CardContent>
+              </Card>
+            </Box>
+          </Box>
+        </Box>
+
         {/* Summary Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3, mb: 4 }}>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2}>
@@ -177,8 +319,8 @@ const ReportsManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2}>
@@ -194,8 +336,8 @@ const ReportsManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2}>
@@ -211,8 +353,8 @@ const ReportsManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2}>
@@ -228,8 +370,8 @@ const ReportsManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         <TableContainer component={Paper} elevation={0}>
           <Table>
@@ -314,6 +456,136 @@ const ReportsManagement: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Quick View Dialog */}
+        <Dialog open={quickViewOpen} onClose={handleCloseQuickView} maxWidth="md" fullWidth>
+          <DialogTitle>
+            {quickViewType === 'patientVisits' && 'Patient Visit Report'}
+            {quickViewType === 'labTests' && 'Lab Test Report'}
+            {quickViewType === 'prescriptions' && 'Prescription Report'}
+            {quickViewType === 'inventory' && 'Inventory Report'}
+          </DialogTitle>
+          <DialogContent>
+            {quickViewType === 'patientVisits' && (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Patient</TableCell>
+                    <TableCell>Doctor</TableCell>
+                    <TableCell>Reason</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {patientVisitsData.map((r, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{new Date(r.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{r.patient}</TableCell>
+                      <TableCell>{r.doctor}</TableCell>
+                      <TableCell>{r.reason}</TableCell>
+                      <TableCell>
+                        <Chip size="small" color={r.status === 'Completed' ? 'success' : r.status === 'No Show' ? 'warning' : 'default'} label={r.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {quickViewType === 'labTests' && (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Patient</TableCell>
+                    <TableCell>Test</TableCell>
+                    <TableCell>Result</TableCell>
+                    <TableCell>Lab</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {labTestsData.map((r, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{new Date(r.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{r.patient}</TableCell>
+                      <TableCell>{r.test}</TableCell>
+                      <TableCell>{r.result}</TableCell>
+                      <TableCell>{r.lab}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {quickViewType === 'prescriptions' && (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Patient</TableCell>
+                    <TableCell>Medicine</TableCell>
+                    <TableCell>Qty</TableCell>
+                    <TableCell>Prescribed By</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {prescriptionsData.map((r, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{new Date(r.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{r.patient}</TableCell>
+                      <TableCell>{r.medicine}</TableCell>
+                      <TableCell>{r.qty}</TableCell>
+                      <TableCell>{r.prescribedBy}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {quickViewType === 'inventory' && (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Item</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell align="right">In Stock</TableCell>
+                    <TableCell align="right">Min Required</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {inventoryData.map((r, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{r.item}</TableCell>
+                      <TableCell>{r.category}</TableCell>
+                      <TableCell align="right">{r.inStock}</TableCell>
+                      <TableCell align="right">{r.minRequired}</TableCell>
+                      <TableCell>
+                        <Chip size="small" color={r.status === 'OK' ? 'success' : r.status === 'Low' ? 'warning' : 'default'} label={r.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </DialogContent>
+          <DialogActions>
+            {quickViewType && (
+              <Button
+                startIcon={<DownloadIcon />}
+                onClick={() => {
+                  let csv = '';
+                  if (quickViewType === 'patientVisits') csv = toCSV(patientVisitsData);
+                  if (quickViewType === 'labTests') csv = toCSV(labTestsData);
+                  if (quickViewType === 'prescriptions') csv = toCSV(prescriptionsData);
+                  if (quickViewType === 'inventory') csv = toCSV(inventoryData);
+                  downloadCSV(`${quickViewType}-sample.csv`, csv);
+                }}
+              >
+                Download CSV
+              </Button>
+            )}
+            <Button onClick={handleCloseQuickView} variant="contained">Close</Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Add/Edit Report Dialog */}
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>

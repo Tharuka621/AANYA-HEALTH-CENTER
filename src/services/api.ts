@@ -65,9 +65,9 @@ let mockUsers: User[] = [
   {
     id: '7',
     email: 'patient@aanya.com',
-    full_name: 'John Doe',
+    full_name: 'Kasun Bandara',
     role: 'patient',
-    phone: '+1234567896',
+    phone: '+94771234570',
     created_at: '2024-01-01T00:00:00Z'
   }
 ];
@@ -76,14 +76,14 @@ let mockPatients: Patient[] = [
   {
     id: '1',
     patient_id: 'P001',
-    full_name: 'John Doe',
-    email: 'john.doe@email.com',
-    phone: '+1234567896',
+    full_name: 'Kasun Bandara',
+    email: 'kasun.bandara@email.com',
+    phone: '+94771234570',
     date_of_birth: '1990-05-15',
     gender: 'male',
-    address: '123 Main St, City, State',
-    emergency_contact: 'Jane Doe',
-    emergency_phone: '+1234567897',
+    address: 'No. 123, Main Street, Colombo 07',
+    emergency_contact: 'Nimal Bandara',
+    emergency_phone: '+94771234571',
     medical_history: 'Diabetes Type 2',
     allergies: 'Penicillin',
     blood_group: 'O+',

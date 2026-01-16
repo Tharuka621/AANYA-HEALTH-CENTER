@@ -36,9 +36,9 @@ const PatientList: React.FC = () => {
   const patients = [
     {
       id: '1',
-      name: 'John Doe',
-      email: 'john.doe@email.com',
-      phone: '+1234567890',
+      name: 'Nimal Perera',
+      email: 'nimal.perera@email.com',
+      phone: '+94771234567',
       age: 35,
       gender: 'Male',
       lastVisit: '2024-12-15',
@@ -48,9 +48,9 @@ const PatientList: React.FC = () => {
     },
     {
       id: '2',
-      name: 'Alice Smith',
-      email: 'alice.smith@email.com',
-      phone: '+1234567891',
+      name: 'Kamani Silva',
+      email: 'kamani.silva@email.com',
+      phone: '+94771234568',
       age: 28,
       gender: 'Female',
       lastVisit: '2024-12-10',
@@ -60,9 +60,9 @@ const PatientList: React.FC = () => {
     },
     {
       id: '3',
-      name: 'Bob Johnson',
-      email: 'bob.johnson@email.com',
-      phone: '+1234567892',
+      name: 'Sunil Fernando',
+      email: 'sunil.fernando@email.com',
+      phone: '+94771234569',
       age: 42,
       gender: 'Male',
       lastVisit: '2024-12-08',
@@ -72,9 +72,9 @@ const PatientList: React.FC = () => {
     },
     {
       id: '4',
-      name: 'Emma Wilson',
-      email: 'emma.wilson@email.com',
-      phone: '+1234567893',
+      name: 'Sanduni Wickramasinghe',
+      email: 'sanduni.wickramasinghe@email.com',
+      phone: '+94771234570',
       age: 31,
       gender: 'Female',
       lastVisit: '2024-11-20',
@@ -137,7 +137,7 @@ const PatientList: React.FC = () => {
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={2}>
                       <Avatar sx={{ width: 32, height: 32 }}>
-                        {patient.name.split(' ').map(n => n[0]).join('')}
+                        {patient.name.split(' ').map((n: string) => n[0]).join('')}
                       </Avatar>
                       <Typography variant="body2" fontWeight={600}>
                         {patient.name}
@@ -218,7 +218,7 @@ const PatientList: React.FC = () => {
               <Box sx={{ pt: 2 }}>
                 <Box display="flex" alignItems="center" gap={2} mb={3}>
                   <Avatar sx={{ width: 48, height: 48 }}>
-                    {selectedPatient.name.split(' ').map(n => n[0]).join('')}
+                    {selectedPatient.name.split(' ').map((n: string) => n[0]).join('')}
                   </Avatar>
                   <Box>
                     <Typography variant="h6" fontWeight={600}>

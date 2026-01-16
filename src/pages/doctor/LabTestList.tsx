@@ -50,17 +50,17 @@ const LabTestList: React.FC = () => {
   const labTests = [
     {
       id: '1',
-      patient: 'John Doe',
+      patient: 'Nimal Perera',
       test_name: 'Complete Blood Count',
       test_type: 'Blood Test',
       requested_date: '2024-12-15',
       status: 'completed',
       notes: 'Routine checkup',
-      result_url: '/reports/cbc_john_doe.pdf',
+      result_url: '/reports/cbc_nimal_perera.pdf',
     },
     {
       id: '2',
-      patient: 'Alice Smith',
+      patient: 'Kamani Silva',
       test_name: 'Lipid Profile',
       test_type: 'Blood Test',
       requested_date: '2024-12-16',
@@ -70,7 +70,7 @@ const LabTestList: React.FC = () => {
     },
     {
       id: '3',
-      patient: 'Bob Johnson',
+      patient: 'Sunil Fernando',
       test_name: 'Urine Analysis',
       test_type: 'Urine Test',
       requested_date: '2024-12-17',
@@ -80,7 +80,7 @@ const LabTestList: React.FC = () => {
     },
     {
       id: '4',
-      patient: 'Emma Wilson',
+      patient: 'Sanduni Wickramasinghe',
       test_name: 'Thyroid Function Test',
       test_type: 'Blood Test',
       requested_date: '2024-12-18',

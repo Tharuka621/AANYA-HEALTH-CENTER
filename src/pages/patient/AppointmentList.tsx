@@ -50,7 +50,7 @@ const AppointmentList: React.FC = () => {
       time: '10:00 AM',
       reason: 'Regular checkup',
       status: 'scheduled',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       notes: 'Annual physical examination',
     },
     {
@@ -59,7 +59,7 @@ const AppointmentList: React.FC = () => {
       time: '11:30 AM',
       reason: 'Blood pressure follow-up',
       status: 'completed',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       notes: 'BP medication adjustment',
     },
     {
@@ -68,7 +68,7 @@ const AppointmentList: React.FC = () => {
       time: '2:00 PM',
       reason: 'Diabetes consultation',
       status: 'scheduled',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       notes: 'Diabetes management review',
     },
     {
@@ -77,7 +77,7 @@ const AppointmentList: React.FC = () => {
       time: '3:30 PM',
       reason: 'Follow-up visit',
       status: 'cancelled',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       notes: 'Patient cancelled due to emergency',
     },
   ];

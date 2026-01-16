@@ -23,7 +23,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid,
   Card,
   CardContent,
 } from '@mui/material';
@@ -51,7 +50,7 @@ const BillingManagement: React.FC = () => {
   const bills = [
     {
       id: '1',
-      patient: 'John Doe',
+      patient: 'Kasun Bandara',
       service_type: 'Consultation',
       amount: 50.00,
       status: 'paid',
@@ -60,7 +59,7 @@ const BillingManagement: React.FC = () => {
     },
     {
       id: '2',
-      patient: 'Alice Smith',
+      patient: 'Nimal Perera',
       service_type: 'Lab Test',
       amount: 25.00,
       status: 'pending',
@@ -69,7 +68,7 @@ const BillingManagement: React.FC = () => {
     },
     {
       id: '3',
-      patient: 'Bob Johnson',
+      patient: 'Ishara Silva',
       service_type: 'Prescription',
       amount: 15.00,
       status: 'paid',
@@ -78,7 +77,7 @@ const BillingManagement: React.FC = () => {
     },
     {
       id: '4',
-      patient: 'Emma Wilson',
+      patient: 'Amaya Fernando',
       service_type: 'Consultation',
       amount: 50.00,
       status: 'overdue',
@@ -162,8 +161,8 @@ const BillingManagement: React.FC = () => {
         </Box>
 
         {/* Summary Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3, mb: 4 }}>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2}>
@@ -179,8 +178,8 @@ const BillingManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2}>
@@ -196,8 +195,8 @@ const BillingManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2}>
@@ -213,8 +212,8 @@ const BillingManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2}>
@@ -230,8 +229,8 @@ const BillingManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         <TableContainer component={Paper} elevation={0}>
           <Table>

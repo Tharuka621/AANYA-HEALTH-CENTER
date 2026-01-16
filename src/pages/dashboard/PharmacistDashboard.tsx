@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   List,
@@ -14,6 +13,22 @@ import {
   Chip,
   Divider,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormLabel,
+  FormControl,
 } from '@mui/material';
 import {
   LocalPharmacy as PharmacyIcon,
@@ -22,31 +37,59 @@ import {
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+
+interface Prescription {
+  id: string;
+  patient: string;
+  doctor: string;
+  medicines: Array<{ name: string; qty: number; price: number }>;
+  issued_date: string;
+  status: 'active' | 'dispensed';
+}
 
 const PharmacistDashboard: React.FC = () => {
   const { user } = useAuth();
 
   // Mock data
-  const pendingPrescriptions = [
+  const [pendingPrescriptions, setPendingPrescriptions] = useState<Prescription[]>([
     {
       id: '1',
-      patient: 'John Doe',
-      doctor: 'Dr. Sarah Wilson',
-      medicines: ['Metformin 500mg', 'Lisinopril 10mg'],
+      patient: 'Kasun Bandara',
+      doctor: 'Dr. Milinda Abeykoon',
+      medicines: [
+        { name: 'Metformin 500mg', qty: 30, price: 2.5 },
+        { name: 'Lisinopril 10mg', qty: 30, price: 1.8 },
+      ],
       issued_date: '2024-12-15',
       status: 'active',
     },
     {
       id: '2',
-      patient: 'Alice Smith',
-      doctor: 'Dr. Sarah Wilson',
-      medicines: ['Aspirin 81mg'],
+      patient: 'Nimal Perera',
+      doctor: 'Dr. Milinda Abeykoon',
+      medicines: [{ name: 'Aspirin 81mg', qty: 30, price: 0.5 }],
       issued_date: '2024-12-14',
       status: 'active',
     },
-  ];
+    {
+      id: '3',
+      patient: 'Amaya Fernando',
+      doctor: 'Dr. Milinda Abeykoon',
+      medicines: [
+        { name: 'Atorvastatin 20mg', qty: 30, price: 3.0 },
+        { name: 'Vitamin D3', qty: 30, price: 1.2 },
+      ],
+      issued_date: '2024-12-16',
+      status: 'active',
+    },
+  ]);
+
+  const [billOpen, setBillOpen] = useState(false);
+  const [activePrescription, setActivePrescription] = useState<Prescription | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState('cash');
 
   const lowStockMedicines = [
     {
@@ -79,8 +122,38 @@ const PharmacistDashboard: React.FC = () => {
   };
 
   const handleDispense = (prescriptionId: string) => {
-    console.log('Dispense prescription:', prescriptionId);
-    // In a real app, this would call the API to dispense
+    const prescription = pendingPrescriptions.find((p) => p.id === prescriptionId);
+    if (prescription) {
+      setActivePrescription(prescription);
+      setBillOpen(true);
+    }
+  };
+
+  const handleCompleteBilling = () => {
+    if (activePrescription) {
+      setPendingPrescriptions((prev) =>
+        prev.map((p) =>
+          p.id === activePrescription.id ? { ...p, status: 'dispensed' } : p
+        )
+      );
+      setBillOpen(false);
+      setActivePrescription(null);
+      setPaymentMethod('cash');
+    }
+  };
+
+  const handleCloseBill = () => {
+    setBillOpen(false);
+    setActivePrescription(null);
+    setPaymentMethod('cash');
+  };
+
+  const calculateTotal = (): number => {
+    if (!activePrescription) return 0;
+    return activePrescription.medicines.reduce(
+      (sum, med) => sum + med.qty * med.price,
+      0
+    );
   };
 
   const handleReorder = (medicineId: string) => {
@@ -113,82 +186,96 @@ const PharmacistDashboard: React.FC = () => {
           </Alert>
         )}
 
-        <Grid container spacing={3}>
-          {/* Statistics Cards */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" fontWeight={700} color="primary.main">
-                      156
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Medicines
-                    </Typography>
-                  </Box>
-                  <PharmacyIcon color="primary" sx={{ fontSize: 40 }} />
+        {/* Statistics Cards */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(4, 1fr)',
+            },
+            gap: 3,
+            mb: 3,
+          }}
+        >
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h4" fontWeight={700} color="primary.main">
+                    156
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Medicines
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+                <PharmacyIcon color="primary" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" fontWeight={700} color="warning.main">
-                      {pendingPrescriptions.length}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Pending Prescriptions
-                    </Typography>
-                  </Box>
-                  <ScheduleIcon color="warning" sx={{ fontSize: 40 }} />
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h4" fontWeight={700} color="warning.main">
+                    {pendingPrescriptions.filter((p) => p.status === 'active').length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Pending Prescriptions
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+                <ScheduleIcon color="warning" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" fontWeight={700} color="error.main">
-                      {lowStockMedicines.length}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Low Stock Items
-                    </Typography>
-                  </Box>
-                  <WarningIcon color="error" sx={{ fontSize: 40 }} />
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h4" fontWeight={700} color="error.main">
+                    {lowStockMedicines.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Low Stock Items
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+                <WarningIcon color="error" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" fontWeight={700} color="success.main">
-                      45
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Dispensed Today
-                    </Typography>
-                  </Box>
-                  <CheckCircleIcon color="success" sx={{ fontSize: 40 }} />
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h4" fontWeight={700} color="success.main">
+                    {pendingPrescriptions.filter((p) => p.status === 'dispensed').length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Dispensed Today
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+                <CheckCircleIcon color="success" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
 
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(2, 1fr)',
+            },
+            gap: 3,
+          }}
+        >
           {/* Pending Prescriptions */}
-          <Grid item xs={12} md={6}>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
@@ -223,10 +310,10 @@ const PharmacistDashboard: React.FC = () => {
                             secondary={
                               <Box>
                                 <Typography variant="body2" color="text.secondary">
-                                  Dr. {prescription.doctor}
+                                  {prescription.doctor}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
-                                  {prescription.medicines.join(', ')}
+                                  {prescription.medicines.map((m) => m.name).join(', ')}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                   Issued: {new Date(prescription.issued_date).toLocaleDateString()}
@@ -254,10 +341,10 @@ const PharmacistDashboard: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Low Stock Medicines */}
-          <Grid item xs={12} md={6}>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
@@ -316,9 +403,123 @@ const PharmacistDashboard: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Box>
+
+      {/* Billing Dialog */}
+      <Dialog open={billOpen} onClose={handleCloseBill} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box display="flex" alignItems="center">
+            <ReceiptIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography variant="h6">Generate Bill</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {activePrescription && (
+            <>
+              <Box mb={2}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Patient
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {activePrescription.patient}
+                </Typography>
+              </Box>
+              <Box mb={2}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Doctor
+                </Typography>
+                <Typography variant="body1">
+                  {activePrescription.doctor}
+                </Typography>
+              </Box>
+              <Box mb={2}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Medicines
+                </Typography>
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Medicine</TableCell>
+                        <TableCell align="center">Qty</TableCell>
+                        <TableCell align="right">Price</TableCell>
+                        <TableCell align="right">Total</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {activePrescription.medicines.map((med, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>{med.name}</TableCell>
+                          <TableCell align="center">{med.qty}</TableCell>
+                          <TableCell align="right">
+                            Rs. {med.price.toFixed(2)}
+                          </TableCell>
+                          <TableCell align="right">
+                            Rs. {(med.qty * med.price).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow>
+                        <TableCell colSpan={3} align="right">
+                          <Typography variant="subtitle1" fontWeight={700}>
+                            Grand Total:
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="h6" color="primary.main" fontWeight={700}>
+                            Rs. {calculateTotal().toFixed(2)}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+              <Box mt={3}>
+                <FormControl component="fieldset" fullWidth>
+                  <FormLabel component="legend" sx={{ mb: 1 }}>
+                    Payment Method
+                  </FormLabel>
+                  <RadioGroup
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <FormControlLabel
+                      value="cash"
+                      control={<Radio />}
+                      label="Cash"
+                    />
+                    <FormControlLabel
+                      value="card"
+                      control={<Radio />}
+                      label="Card (Credit/Debit)"
+                    />
+                    <FormControlLabel
+                      value="mobile"
+                      control={<Radio />}
+                      label="Mobile Payment"
+                    />
+                  </RadioGroup>
+                </FormControl>
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseBill} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCompleteBilling}
+            variant="contained"
+            startIcon={<CheckCircleIcon />}
+          >
+            Complete Payment
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

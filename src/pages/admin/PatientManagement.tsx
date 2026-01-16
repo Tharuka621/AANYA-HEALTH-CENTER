@@ -19,15 +19,14 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Person as PersonIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
+    // PersonIcon import removed as it was unused
 
 const PatientManagement: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
@@ -44,10 +43,10 @@ const PatientManagement: React.FC = () => {
   const patients = [
     {
       id: '1',
-      name: 'John Doe',
-      email: 'john.doe@email.com',
-      phone: '+1234567890',
-      nic: '1234567890123',
+      name: 'Kasun Bandara',
+      email: 'kasun.bandara@aanya.com',
+      phone: '+94 71 123 4567',
+      nic: '199012301234',
       age: 35,
       gender: 'Male',
       allergies: 'Penicillin',
@@ -56,10 +55,10 @@ const PatientManagement: React.FC = () => {
     },
     {
       id: '2',
-      name: 'Alice Smith',
-      email: 'alice.smith@email.com',
-      phone: '+1234567891',
-      nic: '1234567890124',
+      name: 'Nimal Perera',
+      email: 'nimal.perera@aanya.com',
+      phone: '+94 77 555 8899',
+      nic: '198506152345',
       age: 28,
       gender: 'Female',
       allergies: 'None',
@@ -68,10 +67,10 @@ const PatientManagement: React.FC = () => {
     },
     {
       id: '3',
-      name: 'Bob Johnson',
-      email: 'bob.johnson@email.com',
-      phone: '+1234567892',
-      nic: '1234567890125',
+      name: 'Ishara Silva',
+      email: 'ishara.silva@aanya.com',
+      phone: '+94 76 234 5678',
+      nic: '199310052678',
       age: 42,
       gender: 'Male',
       allergies: 'Shellfish',
@@ -80,10 +79,10 @@ const PatientManagement: React.FC = () => {
     },
     {
       id: '4',
-      name: 'Emma Wilson',
-      email: 'emma.wilson@email.com',
-      phone: '+1234567893',
-      nic: '1234567890126',
+      name: 'Amaya Fernando',
+      email: 'amaya.fernando@aanya.com',
+      phone: '+94 72 987 6543',
+      nic: '199708152156',
       age: 31,
       gender: 'Female',
       allergies: 'Latex',

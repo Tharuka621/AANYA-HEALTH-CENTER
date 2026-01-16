@@ -3,7 +3,6 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   Button,
@@ -30,6 +29,8 @@ import {
   Science as LabIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import Grid from "@mui/material/Grid";
+
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -284,7 +285,7 @@ const AdminDashboard: React.FC = () => {
           </Grid>
 
           {/* Quick Actions */}
-          <Grid item xs={12} md={6}>
+          <Grid  item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -321,7 +322,7 @@ const AdminDashboard: React.FC = () => {
           </Grid>
 
           {/* System Information */}
-          <Grid item xs={12} md={6}>
+          <Grid  item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" fontWeight={600} gutterBottom>

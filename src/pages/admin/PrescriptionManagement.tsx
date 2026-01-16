@@ -23,14 +23,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as ViewIcon,
-  LocalPharmacy as PharmacyIcon,
 } from '@mui/icons-material';
 
 const PrescriptionManagement: React.FC = () => {
@@ -38,7 +36,7 @@ const PrescriptionManagement: React.FC = () => {
   const [editingPrescription, setEditingPrescription] = useState<any>(null);
   const [formData, setFormData] = useState({
     patient_name: '',
-    doctor_name: 'Dr. Sarah Wilson',
+    doctor_name: 'Dr. Milinda Abeykoon',
     medicines: '',
     status: 'active',
     notes: '',
@@ -48,8 +46,8 @@ const PrescriptionManagement: React.FC = () => {
   const prescriptions = [
     {
       id: '1',
-      patient: 'John Doe',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Kasun Bandara',
+      doctor: 'Dr. Milinda Abeykoon',
       medicines: ['Metformin 500mg', 'Lisinopril 10mg'],
       issued_date: '2024-12-15',
       status: 'dispensed',
@@ -57,8 +55,8 @@ const PrescriptionManagement: React.FC = () => {
     },
     {
       id: '2',
-      patient: 'Alice Smith',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Nimal Perera',
+      doctor: 'Dr. Milinda Abeykoon',
       medicines: ['Aspirin 81mg', 'Vitamin D3'],
       issued_date: '2024-12-16',
       status: 'active',
@@ -66,8 +64,8 @@ const PrescriptionManagement: React.FC = () => {
     },
     {
       id: '3',
-      patient: 'Bob Johnson',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Ishara Silva',
+      doctor: 'Dr. Milinda Abeykoon',
       medicines: ['Atorvastatin 20mg'],
       issued_date: '2024-12-17',
       status: 'active',
@@ -75,8 +73,8 @@ const PrescriptionManagement: React.FC = () => {
     },
     {
       id: '4',
-      patient: 'Emma Wilson',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Amaya Fernando',
+      doctor: 'Dr. Milinda Abeykoon',
       medicines: ['Levothyroxine 50mcg'],
       issued_date: '2024-12-18',
       status: 'cancelled',
@@ -98,7 +96,7 @@ const PrescriptionManagement: React.FC = () => {
     setEditingPrescription(null);
     setFormData({
       patient_name: '',
-      doctor_name: 'Dr. Sarah Wilson',
+  doctor_name: 'Dr. Milinda Abeykoon',
       medicines: '',
       status: 'active',
       notes: '',
@@ -256,7 +254,7 @@ const PrescriptionManagement: React.FC = () => {
                   label="Doctor"
                   onChange={(e) => setFormData({ ...formData, doctor_name: e.target.value })}
                 >
-                  <MenuItem value="Dr. Sarah Wilson">Dr. Sarah Wilson</MenuItem>
+                  <MenuItem value="Dr. Milinda Abeykoon">Dr. Milinda Abeykoon</MenuItem>
                 </Select>
               </FormControl>
               <TextField

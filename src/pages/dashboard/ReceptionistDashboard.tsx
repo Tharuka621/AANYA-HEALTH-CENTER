@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box,
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   Button,
@@ -15,7 +14,11 @@ import {
   TableHead,
   TableRow,
   Paper,
-  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
@@ -28,34 +31,37 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const ReceptionistDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [appointments, setAppointments] = useState<Array<{
+    id: string; patient: string; time: string; doctor: string; status: 'scheduled'|'checked_in'|'completed'; phone: string; nic?: string;
+  }>>([
+    { id: '1', patient: 'Kasun Bandara', time: '10:00 AM', doctor: 'Dr. Milinda Abeykoon', status: 'scheduled', phone: '+94 71 123 4567', nic: '199012301234' },
+    { id: '2', patient: 'Nimal Perera', time: '11:30 AM', doctor: 'Dr. Milinda Abeykoon', status: 'checked_in', phone: '+94 77 555 8899', nic: '198506152345' },
+    { id: '3', patient: 'Ishara Silva', time: '2:00 PM', doctor: 'Dr. Milinda Abeykoon', status: 'scheduled', phone: '+94 76 234 5678', nic: '199310052678' },
+    { id: '4', patient: 'Amaya Fernando', time: '3:15 PM', doctor: 'Dr. Milinda Abeykoon', status: 'scheduled', phone: '+94 72 987 6543', nic: '199708152156' },
+  ]);
 
-  // Mock data
-  const todayAppointments = [
-    {
-      id: '1',
-      patient: 'John Doe',
-      time: '10:00 AM',
-      doctor: 'Dr. Sarah Wilson',
-      status: 'scheduled',
-      phone: '+1234567890',
-    },
-    {
-      id: '2',
-      patient: 'Alice Smith',
-      time: '11:30 AM',
-      doctor: 'Dr. Sarah Wilson',
-      status: 'checked_in',
-      phone: '+1234567891',
-    },
-    {
-      id: '3',
-      patient: 'Bob Johnson',
-      time: '2:00 PM',
-      doctor: 'Dr. Sarah Wilson',
-      status: 'scheduled',
-      phone: '+1234567892',
-    },
-  ];
+  const [search, setSearch] = useState('');
+  const [vitalsOpen, setVitalsOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [tempC, setTempC] = useState('');
+  const [bpSys, setBpSys] = useState('');
+  const [bpDia, setBpDia] = useState('');
+  const [allergies, setAllergies] = useState('');
+
+  // local storage of vitals by appointment id
+  const [vitalsMap, setVitalsMap] = useState<Record<string, { tempC: string; bpSys: string; bpDia: string; allergies: string }>>({
+    '2': { tempC: '36.9', bpSys: '120', bpDia: '80', allergies: 'None' },
+  });
+
+  const filtered = useMemo(() => {
+    if (!search) return appointments;
+    const s = search.toLowerCase();
+    return appointments.filter(a =>
+      a.patient.toLowerCase().includes(s) ||
+      a.phone.toLowerCase().includes(s) ||
+      (a.nic || '').toLowerCase().includes(s)
+    );
+  }, [appointments, search]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -70,9 +76,22 @@ const ReceptionistDashboard: React.FC = () => {
     }
   };
 
-  const handleCheckIn = (appointmentId: string) => {
-    console.log('Check in appointment:', appointmentId);
-    // In a real app, this would call the API
+  const openVitalsFor = (appointmentId: string) => {
+    setActiveId(appointmentId);
+    const existing = vitalsMap[appointmentId];
+    setTempC(existing?.tempC || '');
+    setBpSys(existing?.bpSys || '');
+    setBpDia(existing?.bpDia || '');
+    setAllergies(existing?.allergies || '');
+    setVitalsOpen(true);
+  };
+
+  const handleSaveVitals = () => {
+    if (!activeId) return;
+    setVitalsMap(prev => ({ ...prev, [activeId]: { tempC, bpSys, bpDia, allergies } }));
+    setAppointments(prev => prev.map(a => a.id === activeId ? { ...a, status: 'checked_in' } : a));
+    setVitalsOpen(false);
+    setActiveId(null);
   };
 
   const handleRegisterPatient = () => {
@@ -93,15 +112,15 @@ const ReceptionistDashboard: React.FC = () => {
           </Typography>
         </Box>
 
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 3 }}>
           {/* Statistics Cards */}
-          <Grid item xs={12} sm={6} md={3}>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Box>
                     <Typography variant="h4" fontWeight={700} color="primary.main">
-                      12
+                      {appointments.length}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total Today
@@ -111,15 +130,15 @@ const ReceptionistDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Box>
                     <Typography variant="h4" fontWeight={700} color="success.main">
-                      8
+                      {appointments.filter(a => a.status === 'checked_in').length}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Checked In
@@ -129,15 +148,15 @@ const ReceptionistDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Box>
                     <Typography variant="h4" fontWeight={700} color="warning.main">
-                      4
+                      {appointments.filter(a => a.status === 'scheduled').length}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Waiting
@@ -147,9 +166,9 @@ const ReceptionistDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -165,10 +184,11 @@ const ReceptionistDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
+        </Box>
 
           {/* Today's Appointments */}
-          <Grid item xs={12}>
+          <Box sx={{ mt: 3 }}>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
@@ -184,6 +204,16 @@ const ReceptionistDashboard: React.FC = () => {
                   </Button>
                 </Box>
 
+                <Box display="flex" gap={2} mb={2}>
+                  <TextField
+                    placeholder="Search by name, phone or NIC"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    fullWidth
+                    size="small"
+                  />
+                </Box>
+
                 <TableContainer component={Paper} elevation={0}>
                   <Table>
                     <TableHead>
@@ -193,11 +223,12 @@ const ReceptionistDashboard: React.FC = () => {
                         <TableCell>Doctor</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell>Phone</TableCell>
+                        <TableCell>NIC</TableCell>
                         <TableCell>Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {todayAppointments.map((appointment) => (
+                      {filtered.map((appointment) => (
                         <TableRow key={appointment.id}>
                           <TableCell>
                             <Box display="flex" alignItems="center" gap={1}>
@@ -215,17 +246,29 @@ const ReceptionistDashboard: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell>{appointment.phone}</TableCell>
+                          <TableCell>{appointment.nic}</TableCell>
                           <TableCell>
-                            {appointment.status === 'scheduled' && (
-                              <Button
-                                size="small"
-                                variant="contained"
-                                color="success"
-                                onClick={() => handleCheckIn(appointment.id)}
-                              >
-                                Check In
-                              </Button>
-                            )}
+                            <Box display="flex" gap={1}>
+                              {appointment.status === 'scheduled' && (
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="success"
+                                  onClick={() => openVitalsFor(appointment.id)}
+                                >
+                                  Check In & Add Vitals
+                                </Button>
+                              )}
+                              {appointment.status === 'checked_in' && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => openVitalsFor(appointment.id)}
+                                >
+                                  Update Vitals
+                                </Button>
+                              )}
+                            </Box>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -234,8 +277,45 @@ const ReceptionistDashboard: React.FC = () => {
                 </TableContainer>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+
+        {/* Vitals Dialog */}
+        <Dialog open={vitalsOpen} onClose={() => setVitalsOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Patient Vitals</DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <TextField
+                label="Temperature (°C)"
+                value={tempC}
+                onChange={(e) => setTempC(e.target.value)}
+                type="number"
+                inputProps={{ step: '0.1' }}
+              />
+              <TextField
+                label="BP Systolic (mmHg)"
+                value={bpSys}
+                onChange={(e) => setBpSys(e.target.value)}
+                type="number"
+              />
+              <TextField
+                label="BP Diastolic (mmHg)"
+                value={bpDia}
+                onChange={(e) => setBpDia(e.target.value)}
+                type="number"
+              />
+              <TextField
+                label="Allergies"
+                value={allergies}
+                onChange={(e) => setAllergies(e.target.value)}
+                placeholder="e.g., Penicillin, Peanuts"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setVitalsOpen(false)}>Cancel</Button>
+            <Button variant="contained" onClick={handleSaveVitals}>Save</Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Container>
   );

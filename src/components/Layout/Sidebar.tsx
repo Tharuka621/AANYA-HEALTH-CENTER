@@ -215,11 +215,13 @@ const Sidebar: React.FC = () => {
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Box display="flex" alignItems="center" gap={2}>
           <Avatar sx={{ bgcolor: 'primary.light' }}>
-            {user.full_name.split(' ').map(n => n[0]).join('')}
+            {user.role === 'doctor' 
+              ? 'MA' 
+              : user.full_name.split(' ').map(n => n[0]).join('')}
           </Avatar>
           <Box>
             <Typography variant="body2" fontWeight={600}>
-              {user.full_name}
+              {user.role === 'doctor' ? 'Dr. Milinda Abeykoon' : user.full_name}
             </Typography>
             <Typography variant="caption" color="text.secondary" textTransform="capitalize">
               {user.role.replace('_', ' ')}

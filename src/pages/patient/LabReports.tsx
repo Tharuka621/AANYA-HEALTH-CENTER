@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Container,
@@ -18,13 +18,13 @@ import {
   DialogContent,
   DialogActions,
   Alert,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Download as DownloadIcon,
   Visibility as ViewIcon,
   Science as ScienceIcon,
   Print as PrintIcon,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 
 const LabReports: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
@@ -33,75 +33,79 @@ const LabReports: React.FC = () => {
   // Mock lab reports data
   const labReports = [
     {
-      id: '1',
-      test_name: 'Complete Blood Count',
-      test_type: 'Blood Test',
-      requested_date: '2024-12-15',
-      completed_date: '2024-12-16',
-      status: 'completed',
-      doctor: 'Dr. Sarah Wilson',
-      notes: 'All values within normal range',
-      result_url: '/reports/cbc_report.pdf',
+      id: "1",
+      test_name: "Complete Blood Count",
+      test_type: "Blood Test",
+      requested_date: "2024-12-15",
+      completed_date: "2024-12-16",
+      status: "completed",
+      doctor: "Dr. Milinda Abeykoon",
+      notes: "All values within normal range",
+      result_url: "/reports/cbc_report.pdf",
       values: {
-        'Hemoglobin': '14.2 g/dL',
-        'White Blood Cells': '7.2 x 10³/μL',
-        'Platelets': '280 x 10³/μL',
-        'Red Blood Cells': '4.5 x 10⁶/μL'
-      }
+        Hemoglobin: "14.2 g/dL",
+        "White Blood Cells": "7.2 x 10³/μL",
+        Platelets: "280 x 10³/μL",
+        "Red Blood Cells": "4.5 x 10⁶/μL",
+      },
     },
     {
-      id: '2',
-      test_name: 'Lipid Profile',
-      test_type: 'Blood Test',
-      requested_date: '2024-12-10',
-      completed_date: '2024-12-11',
-      status: 'completed',
-      doctor: 'Dr. Sarah Wilson',
-      notes: 'Cholesterol levels slightly elevated',
-      result_url: '/reports/lipid_report.pdf',
+      id: "2",
+      test_name: "Lipid Profile",
+      test_type: "Blood Test",
+      requested_date: "2024-12-10",
+      completed_date: "2024-12-11",
+      status: "completed",
+      doctor: "Dr. Milinda Abeykoon",
+      notes: "Cholesterol levels slightly elevated",
+      result_url: "/reports/lipid_report.pdf",
       values: {
-        'Total Cholesterol': '220 mg/dL',
-        'HDL Cholesterol': '45 mg/dL',
-        'LDL Cholesterol': '150 mg/dL',
-        'Triglycerides': '180 mg/dL'
-      }
+        "Total Cholesterol": "220 mg/dL",
+        "HDL Cholesterol": "45 mg/dL",
+        "LDL Cholesterol": "150 mg/dL",
+        Triglycerides: "180 mg/dL",
+      },
     },
     {
-      id: '3',
-      test_name: 'Urine Analysis',
-      test_type: 'Urine Test',
-      requested_date: '2024-12-08',
+      id: "3",
+      test_name: "Urine Analysis",
+      test_type: "Urine Test",
+      requested_date: "2024-12-08",
       completed_date: null,
-      status: 'in_progress',
-      doctor: 'Dr. Sarah Wilson',
-      notes: 'Test in progress',
+      status: "in_progress",
+      doctor: "Dr. Milinda Abeykoon",
+      notes: "Test in progress",
       result_url: null,
-      values: null
+      values: null,
     },
     {
-      id: '4',
-      test_name: 'Thyroid Function Test',
-      test_type: 'Blood Test',
-      requested_date: '2024-12-05',
-      completed_date: '2024-12-06',
-      status: 'completed',
-      doctor: 'Dr. Sarah Wilson',
-      notes: 'Normal thyroid function',
-      result_url: '/reports/thyroid_report.pdf',
+      id: "4",
+      test_name: "Thyroid Function Test",
+      test_type: "Blood Test",
+      requested_date: "2024-12-05",
+      completed_date: "2024-12-06",
+      status: "completed",
+      doctor: "Dr. Milinda Abeykoon",
+      notes: "Normal thyroid function",
+      result_url: "/reports/thyroid_report.pdf",
       values: {
-        'TSH': '2.1 mIU/L',
-        'Free T4': '1.2 ng/dL',
-        'Free T3': '3.1 pg/mL'
-      }
+        TSH: "2.1 mIU/L",
+        "Free T4": "1.2 ng/dL",
+        "Free T3": "3.1 pg/mL",
+      },
     },
   ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'success';
-      case 'in_progress': return 'warning';
-      case 'cancelled': return 'error';
-      default: return 'default';
+      case "completed":
+        return "success";
+      case "in_progress":
+        return "warning";
+      case "cancelled":
+        return "error";
+      default:
+        return "default";
     }
   };
 
@@ -111,22 +115,31 @@ const LabReports: React.FC = () => {
   };
 
   const handleDownloadReport = (reportId: string) => {
-    console.log('Download report:', reportId);
+    console.log("Download report:", reportId);
     // In a real app, this would download the report
   };
 
   const handlePrintReport = (reportId: string) => {
-    console.log('Print report:', reportId);
+    console.log("Print report:", reportId);
     // In a real app, this would open print dialog
   };
 
-  const completedReports = labReports.filter(r => r.status === 'completed').length;
-  const pendingReports = labReports.filter(r => r.status === 'in_progress').length;
+  const completedReports = labReports.filter(
+    (r) => r.status === "completed"
+  ).length;
+  const pendingReports = labReports.filter(
+    (r) => r.status === "in_progress"
+  ).length;
 
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={4}
+        >
           <Typography variant="h4" fontWeight={700}>
             My Lab Reports
           </Typography>
@@ -134,14 +147,14 @@ const LabReports: React.FC = () => {
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}
-              onClick={() => console.log('Download all reports')}
+              onClick={() => console.log("Download all reports")}
             >
               Download All
             </Button>
             <Button
               variant="outlined"
               startIcon={<PrintIcon />}
-              onClick={() => console.log('Print all reports')}
+              onClick={() => console.log("Print all reports")}
             >
               Print All
             </Button>
@@ -197,7 +210,9 @@ const LabReports: React.FC = () => {
                     {new Date(report.requested_date).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    {report.completed_date ? new Date(report.completed_date).toLocaleDateString() : 'N/A'}
+                    {report.completed_date
+                      ? new Date(report.completed_date).toLocaleDateString()
+                      : "N/A"}
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -216,7 +231,7 @@ const LabReports: React.FC = () => {
                       >
                         <ViewIcon />
                       </IconButton>
-                      {report.status === 'completed' && report.result_url && (
+                      {report.status === "completed" && report.result_url && (
                         <>
                           <IconButton
                             size="small"
@@ -243,10 +258,13 @@ const LabReports: React.FC = () => {
         </TableContainer>
 
         {/* Report Details Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            Lab Report Details
-          </DialogTitle>
+        <Dialog
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Lab Report Details</DialogTitle>
           <DialogContent>
             {selectedReport && (
               <Box sx={{ pt: 2 }}>
@@ -257,21 +275,28 @@ const LabReports: React.FC = () => {
                       {selectedReport.test_name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {selectedReport.test_type} - Requested by {selectedReport.doctor}
+                      {selectedReport.test_type} - Requested by{" "}
+                      {selectedReport.doctor}
                     </Typography>
                   </Box>
                 </Box>
-                
+
                 <Box mb={2}>
                   <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                     Test Information
                   </Typography>
                   <Typography variant="body2">
-                    Requested Date: {new Date(selectedReport.requested_date).toLocaleDateString()}
+                    Requested Date:{" "}
+                    {new Date(
+                      selectedReport.requested_date
+                    ).toLocaleDateString()}
                   </Typography>
                   {selectedReport.completed_date && (
                     <Typography variant="body2">
-                      Completed Date: {new Date(selectedReport.completed_date).toLocaleDateString()}
+                      Completed Date:{" "}
+                      {new Date(
+                        selectedReport.completed_date
+                      ).toLocaleDateString()}
                     </Typography>
                   )}
                   <Box mt={1}>
@@ -285,7 +310,11 @@ const LabReports: React.FC = () => {
 
                 {selectedReport.values && (
                   <Box mb={2}>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={600}
+                      gutterBottom
+                    >
                       Test Results
                     </Typography>
                     <TableContainer component={Paper} variant="outlined">
@@ -297,7 +326,9 @@ const LabReports: React.FC = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {Object.entries(selectedReport.values).map(([parameter, value]) => (
+                          {Object.entries(
+                            selectedReport.values as Record<string, string>
+                          ).map(([parameter, value]) => (
                             <TableRow key={parameter}>
                               <TableCell>{parameter}</TableCell>
                               <TableCell>{value}</TableCell>
@@ -322,14 +353,15 @@ const LabReports: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDialog(false)}>Close</Button>
-            {selectedReport?.status === 'completed' && selectedReport?.result_url && (
-              <Button 
-                variant="contained" 
-                onClick={() => handleDownloadReport(selectedReport.id)}
-              >
-                Download Report
-              </Button>
-            )}
+            {selectedReport?.status === "completed" &&
+              selectedReport?.result_url && (
+                <Button
+                  variant="contained"
+                  onClick={() => handleDownloadReport(selectedReport.id)}
+                >
+                  Download Report
+                </Button>
+              )}
           </DialogActions>
         </Dialog>
       </Box>
@@ -338,4 +370,3 @@ const LabReports: React.FC = () => {
 };
 
 export default LabReports;
-

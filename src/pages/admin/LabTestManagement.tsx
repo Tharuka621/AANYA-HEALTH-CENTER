@@ -39,7 +39,7 @@ const LabTestManagement: React.FC = () => {
     patient_name: '',
     test_name: '',
     test_type: '',
-    doctor_name: 'Dr. Sarah Wilson',
+    doctor_name: 'Dr. Milinda Abeykoon',
     requested_date: '',
     status: 'requested',
     notes: '',
@@ -49,21 +49,21 @@ const LabTestManagement: React.FC = () => {
   const labTests = [
     {
       id: '1',
-      patient: 'John Doe',
+      patient: 'Kasun Bandara',
       test_name: 'Complete Blood Count',
       test_type: 'Blood Test',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       requested_date: '2024-12-15',
       status: 'completed',
       notes: 'Routine checkup',
-      result_url: '/reports/cbc_john_doe.pdf',
+      result_url: '/reports/cbc_kasun_bandara.pdf',
     },
     {
       id: '2',
-      patient: 'Alice Smith',
+      patient: 'Nimal Perera',
       test_name: 'Lipid Profile',
       test_type: 'Blood Test',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       requested_date: '2024-12-16',
       status: 'in_progress',
       notes: 'Cholesterol monitoring',
@@ -71,10 +71,10 @@ const LabTestManagement: React.FC = () => {
     },
     {
       id: '3',
-      patient: 'Bob Johnson',
+      patient: 'Ishara Silva',
       test_name: 'Urine Analysis',
       test_type: 'Urine Test',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       requested_date: '2024-12-17',
       status: 'requested',
       notes: 'Diabetes screening',
@@ -82,10 +82,10 @@ const LabTestManagement: React.FC = () => {
     },
     {
       id: '4',
-      patient: 'Emma Wilson',
+      patient: 'Amaya Fernando',
       test_name: 'Thyroid Function Test',
       test_type: 'Blood Test',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       requested_date: '2024-12-18',
       status: 'cancelled',
       notes: 'Patient did not show up',
@@ -109,7 +109,7 @@ const LabTestManagement: React.FC = () => {
       patient_name: '',
       test_name: '',
       test_type: '',
-      doctor_name: 'Dr. Sarah Wilson',
+  doctor_name: 'Dr. Milinda Abeykoon',
       requested_date: '',
       status: 'requested',
       notes: '',
@@ -298,7 +298,7 @@ const LabTestManagement: React.FC = () => {
                   label="Doctor"
                   onChange={(e) => setFormData({ ...formData, doctor_name: e.target.value })}
                 >
-                  <MenuItem value="Dr. Sarah Wilson">Dr. Sarah Wilson</MenuItem>
+                  <MenuItem value="Dr. Milinda Abeykoon">Dr. Milinda Abeykoon</MenuItem>
                 </Select>
               </FormControl>
               <TextField

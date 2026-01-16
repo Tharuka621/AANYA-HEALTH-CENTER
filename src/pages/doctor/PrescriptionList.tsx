@@ -48,7 +48,7 @@ const PrescriptionList: React.FC = () => {
   const prescriptions = [
     {
       id: '1',
-      patient: 'John Doe',
+      patient: 'Nimal Perera',
       medicines: ['Metformin 500mg', 'Lisinopril 10mg'],
       issued_date: '2024-12-15',
       status: 'dispensed',
@@ -56,7 +56,7 @@ const PrescriptionList: React.FC = () => {
     },
     {
       id: '2',
-      patient: 'Alice Smith',
+      patient: 'Kamani Silva',
       medicines: ['Aspirin 81mg', 'Vitamin D3'],
       issued_date: '2024-12-16',
       status: 'active',
@@ -64,7 +64,7 @@ const PrescriptionList: React.FC = () => {
     },
     {
       id: '3',
-      patient: 'Bob Johnson',
+      patient: 'Sunil Fernando',
       medicines: ['Atorvastatin 20mg'],
       issued_date: '2024-12-17',
       status: 'active',
@@ -72,7 +72,7 @@ const PrescriptionList: React.FC = () => {
     },
     {
       id: '4',
-      patient: 'Emma Wilson',
+      patient: 'Sanduni Wickramasinghe',
       medicines: ['Levothyroxine 50mcg'],
       issued_date: '2024-12-18',
       status: 'cancelled',

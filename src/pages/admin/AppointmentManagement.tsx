@@ -37,7 +37,7 @@ const AppointmentManagement: React.FC = () => {
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [formData, setFormData] = useState({
     patient_name: '',
-    doctor_name: 'Dr. Sarah Wilson',
+    doctor_name: 'Dr. Milinda Abeykoon',
     date: '',
     time: '',
     reason: '',
@@ -48,43 +48,43 @@ const AppointmentManagement: React.FC = () => {
   const appointments = [
     {
       id: '1',
-      patient: 'John Doe',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Kasun Bandara',
+      doctor: 'Dr. Milinda Abeykoon',
       date: '2024-12-20',
       time: '10:00 AM',
-      reason: 'Regular checkup',
+      reason: 'පරීක්ෂාව (Checkup)',
       status: 'scheduled',
-      phone: '+1234567890',
+      phone: '+94 71 123 4567',
     },
     {
       id: '2',
-      patient: 'Alice Smith',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Nimal Perera',
+      doctor: 'Dr. Milinda Abeykoon',
       date: '2024-12-20',
       time: '11:30 AM',
-      reason: 'Blood pressure follow-up',
+      reason: 'රුධිර පීඩනය පරීක්ෂා',
       status: 'completed',
-      phone: '+1234567891',
+      phone: '+94 77 555 8899',
     },
     {
       id: '3',
-      patient: 'Bob Johnson',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Ishara Silva',
+      doctor: 'Dr. Milinda Abeykoon',
       date: '2024-12-21',
       time: '2:00 PM',
-      reason: 'Diabetes consultation',
+      reason: 'මdhumeha උපදේශනය',
       status: 'cancelled',
-      phone: '+1234567892',
+      phone: '+94 76 234 5678',
     },
     {
       id: '4',
-      patient: 'Emma Wilson',
-      doctor: 'Dr. Sarah Wilson',
+      patient: 'Amaya Fernando',
+      doctor: 'Dr. Milinda Abeykoon',
       date: '2024-12-21',
       time: '3:30 PM',
-      reason: 'Annual physical',
+      reason: 'වාර්ෂික ආරෝగ్య පරීක්ෂාව',
       status: 'scheduled',
-      phone: '+1234567893',
+      phone: '+94 72 987 6543',
     },
   ];
 
@@ -102,7 +102,7 @@ const AppointmentManagement: React.FC = () => {
     setEditingAppointment(null);
     setFormData({
       patient_name: '',
-      doctor_name: 'Dr. Sarah Wilson',
+  doctor_name: 'Dr. Milinda Abeykoon',
       date: '',
       time: '',
       reason: '',
@@ -272,7 +272,7 @@ const AppointmentManagement: React.FC = () => {
                   label="Doctor"
                   onChange={(e) => setFormData({ ...formData, doctor_name: e.target.value })}
                 >
-                  <MenuItem value="Dr. Sarah Wilson">Dr. Sarah Wilson</MenuItem>
+                  <MenuItem value="Dr. Milinda Abeykoon">Dr. Milinda Abeykoon</MenuItem>
                 </Select>
               </FormControl>
               <TextField

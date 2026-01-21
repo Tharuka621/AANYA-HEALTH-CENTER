@@ -131,9 +131,9 @@ export interface Bill {
 
 // Authentication types
 export interface AuthResponse {
+  ok: boolean;
   token: string;
   user: User;
-  expires_at: string;
 }
 
 export interface LoginRequest {

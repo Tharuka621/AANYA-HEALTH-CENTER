@@ -72,11 +72,12 @@ const Login: React.FC = () => {
       const result = await login.mutateAsync(formData);
       showSuccess('Login successful! Redirecting...');
       
-      // Redirect based on user role
+      // Redirect based on user role (normalized to lowercase)
       setTimeout(() => {
         const user = result.user;
         if (user) {
-          navigate(`/dashboard/${user.role}`);
+          const normalizedRole = user.role.toLowerCase();
+          navigate(`/dashboard/${normalizedRole}`);
         } else {
           navigate('/dashboard');
         }

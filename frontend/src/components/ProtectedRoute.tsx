@@ -35,7 +35,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  // Normalize role for case-insensitive comparison
+  const normalizedUserRole = user.role?.toLowerCase();
+  const normalizedAllowedRoles = allowedRoles?.map(role => role.toLowerCase());
+
+  if (normalizedAllowedRoles && !normalizedAllowedRoles.includes(normalizedUserRole)) {
     return (
       <Box
         sx={{

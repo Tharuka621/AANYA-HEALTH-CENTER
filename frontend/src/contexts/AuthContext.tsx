@@ -34,6 +34,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const token = tokenStorage.get();
     
     if (storedUser && token && tokenStorage.isValid()) {
+      // Normalize role to lowercase for consistency
+      if (storedUser.role) {
+        storedUser.role = storedUser.role.toLowerCase() as any;
+      }
       setUser(storedUser);
     } else {
       // Clear invalid data

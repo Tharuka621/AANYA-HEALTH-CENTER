@@ -49,6 +49,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
+import AvailabilityManager from '../../components/Doctor/AvailabilityManager';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -482,6 +483,11 @@ const DoctorDashboard: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Availability Manager Section */}
+        <Box sx={{ mt: 3 }}>
+          <AvailabilityManager />
+        </Box>
       </Box>
 
       {/* Patient Details Modal */}

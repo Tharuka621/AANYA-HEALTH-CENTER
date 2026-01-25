@@ -47,21 +47,21 @@ const Dashboard: React.FC = () => {
 
   const recentAppointments = [
     {
-      patient: 'John Doe',
+      patient: 'Nimal Perera',
       time: '09:00 AM',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       status: 'scheduled'
     },
     {
-      patient: 'Jane Smith',
+      patient: 'Kamani Silva',
       time: '10:30 AM',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       status: 'in_progress'
     },
     {
-      patient: 'Mike Johnson',
+      patient: 'Sunil Fernando',
       time: '11:15 AM',
-      doctor: 'Dr. Sarah Wilson',
+      doctor: 'Dr. Milinda Abeykoon',
       status: 'completed'
     }
   ];

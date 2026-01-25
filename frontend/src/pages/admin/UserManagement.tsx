@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
   Typography,
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -12,128 +11,114 @@ import {
   TableRow,
   Paper,
   Chip,
-  IconButton,
   Avatar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-} from '@mui/icons-material';
-import { UserRole } from '../../types';
+import { axiosInstance } from '../../services/api';
+import { useToast } from '../../components/common/Toast';
+
+interface UserData {
+  id: number;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  role_id: number;
+  is_active: boolean;
+  created_at: string;
+  last_login: string | null;
+}
 
 const UserManagement: React.FC = () => {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingUser, setEditingUser] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-    role: 'patient' as UserRole,
-  });
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+  const { showSuccess, showError } = useToast();
 
-  // Mock users data
-  const users = [
-    {
-      id: '1',
-      name: 'Dr. Milinda Abeykoon',
-      email: 'doctor@aanya.com',
-      role: 'doctor',
-      status: 'active',
-      lastLogin: '2024-12-19',
-    },
-    {
-      id: '2',
-      name: 'Tharushi Perera',
-      email: 'receptionist@aanya.com',
-      role: 'receptionist',
-      status: 'active',
-      lastLogin: '2024-12-19',
-    },
-    {
-      id: '3',
-      name: 'Dinesh Fernando',
-      email: 'pharmacist@aanya.com',
-      role: 'pharmacist',
-      status: 'active',
-      lastLogin: '2024-12-15',
-    },
-    {
-      id: '4',
-      name: 'Chamara Silva',
-      email: 'labtech@aanya.com',
-      role: 'lab',
-      status: 'active',
-      lastLogin: '2024-12-18',
-    },
-    {
-      id: '5',
-      name: 'Kasun Bandara',
-      email: 'patient@aanya.com',
-      role: 'patient',
-      status: 'active',
-      lastLogin: '2024-12-17',
-    },
+  const roleOptions = [
+    { value: 'PATIENT', label: 'Patient' },
+    { value: 'DOCTOR', label: 'Doctor' },
+    { value: 'RECEPTIONIST', label: 'Receptionist' },
+    { value: 'PHARMACIST', label: 'Pharmacist' },
+    { value: 'LAB', label: 'Lab Technician' },
+    { value: 'ADMIN', label: 'Admin' },
   ];
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get('/admin/users');
+      setUsers(response.data.users);
+      setError(null);
+    } catch (err: any) {
+      console.error('Failed to fetch users:', err);
+      console.error('Error response:', err.response?.data);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to fetch users';
+      setError(errorMsg);
+      showError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (userId: number, newRole: string) => {
+    try {
+      setUpdatingUserId(userId);
+      await axiosInstance.put(`/admin/users/${userId}/role`, {
+        role: newRole,
+      });
+      
+      // Update local state
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          user.id === userId ? { ...user, role: newRole } : user
+        )
+      );
+      
+      showSuccess(`User role updated to ${newRole}`);
+    } catch (err: any) {
+      console.error('Failed to update role:', err);
+      showError(err.response?.data?.message || 'Failed to update user role');
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
   const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'error';
-      case 'doctor': return 'primary';
-      case 'nurse': return 'secondary';
-      case 'receptionist': return 'info';
-      case 'pharmacist': return 'warning';
-      case 'lab': return 'success';
-      case 'patient': return 'default';
+    const roleUpper = role.toUpperCase();
+    switch (roleUpper) {
+      case 'ADMIN': return 'error';
+      case 'DOCTOR': return 'primary';
+      case 'NURSE': return 'secondary';
+      case 'RECEPTIONIST': return 'info';
+      case 'PHARMACIST': return 'warning';
+      case 'LAB': return 'success';
+      case 'PATIENT': return 'default';
       default: return 'default';
     }
   };
 
-  const getStatusColor = (status: string) => {
-    return status === 'active' ? 'success' : 'error';
+  const getStatusColor = (isActive: boolean) => {
+    return isActive ? 'success' : 'error';
   };
 
-  const handleAddUser = () => {
-    setEditingUser(null);
-    setFormData({
-      full_name: '',
-      email: '',
-      phone: '',
-      role: 'patient',
-    });
-    setOpenDialog(true);
-  };
-
-  const handleEditUser = (user: any) => {
-    setEditingUser(user);
-    setFormData({
-      full_name: user.name,
-      email: user.email,
-      phone: '+1234567890',
-      role: user.role,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleDeleteUser = (userId: string) => {
-    console.log('Delete user:', userId);
-    // In a real app, this would call the API
-  };
-
-  const handleSaveUser = () => {
-    console.log('Save user:', formData);
-    setOpenDialog(false);
-    // In a real app, this would call the API
-  };
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Container maxWidth="lg">
@@ -142,75 +127,75 @@ const UserManagement: React.FC = () => {
           <Typography variant="h4" fontWeight={700}>
             User Management
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddUser}
-          >
-            Add User
-          </Button>
         </Box>
 
-        <TableContainer component={Paper} elevation={0}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        <TableContainer component={Paper} elevation={2}>
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>User</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Last Login</TableCell>
-                <TableCell>Actions</TableCell>
+              <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                <TableCell sx={{ color: 'white', fontWeight: 600 }}>User</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Email</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Phone</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Role</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Registered</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user.id} hover>
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        {user.name.split(' ').map(n => n[0]).join('')}
+                      <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
+                        {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </Avatar>
                       <Typography variant="body2" fontWeight={600}>
-                        {user.name}
+                        {user.full_name}
                       </Typography>
                     </Box>
                   </TableCell>
-                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{user.email}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{user.phone || 'N/A'}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                      <Select
+                        value={user.role.toUpperCase()}
+                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        disabled={updatingUserId === user.id}
+                      >
+                        {roleOptions.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            <Chip
+                              label={option.label}
+                              color={getRoleColor(option.value)}
+                              size="small"
+                            />
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </TableCell>
                   <TableCell>
                     <Chip
-                      label={user.role}
-                      color={getRoleColor(user.role)}
+                      label={user.is_active ? 'Active' : 'Inactive'}
+                      color={getStatusColor(user.is_active)}
                       size="small"
                     />
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={user.status}
-                      color={getStatusColor(user.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.lastLogin).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={1}>
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleEditUser(user)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteUser(user.id)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
+                    <Typography variant="body2">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ))}
@@ -218,64 +203,16 @@ const UserManagement: React.FC = () => {
           </Table>
         </TableContainer>
 
-        {/* Add/Edit User Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            {editingUser ? 'Edit User' : 'Add New User'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <TextField
-                fullWidth
-                label="Full Name"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                margin="normal"
-              />
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                margin="normal"
-              />
-              <TextField
-                fullWidth
-                label="Phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                margin="normal"
-              />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Role</InputLabel>
-                <Select
-                  value={formData.role}
-                  label="Role"
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                >
-                  <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="doctor">Doctor</MenuItem>
-                  <MenuItem value="nurse">Nurse</MenuItem>
-                  <MenuItem value="receptionist">Receptionist</MenuItem>
-                  <MenuItem value="pharmacist">Pharmacist</MenuItem>
-                  <MenuItem value="lab">Lab Technician</MenuItem>
-                  <MenuItem value="patient">Patient</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSaveUser} variant="contained">
-              {editingUser ? 'Update' : 'Add'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+        {users.length === 0 && !loading && (
+          <Box textAlign="center" py={8}>
+            <Typography variant="h6" color="text.secondary">
+              No users found
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Container>
   );
 };
 
 export default UserManagement;
-

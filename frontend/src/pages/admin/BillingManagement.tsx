@@ -52,7 +52,7 @@ const BillingManagement: React.FC = () => {
       id: '1',
       patient: 'Kasun Bandara',
       service_type: 'Consultation',
-      amount: 50.00,
+      amount: 2500.00,
       status: 'paid',
       date: '2024-12-15',
       notes: 'Regular checkup',
@@ -61,7 +61,7 @@ const BillingManagement: React.FC = () => {
       id: '2',
       patient: 'Nimal Perera',
       service_type: 'Lab Test',
-      amount: 25.00,
+      amount: 1500.00,
       status: 'pending',
       date: '2024-12-16',
       notes: 'Blood test',
@@ -70,7 +70,7 @@ const BillingManagement: React.FC = () => {
       id: '3',
       patient: 'Ishara Silva',
       service_type: 'Prescription',
-      amount: 15.00,
+      amount: 800.00,
       status: 'paid',
       date: '2024-12-17',
       notes: 'Medication',
@@ -79,7 +79,7 @@ const BillingManagement: React.FC = () => {
       id: '4',
       patient: 'Amaya Fernando',
       service_type: 'Consultation',
-      amount: 50.00,
+      amount: 2500.00,
       status: 'overdue',
       date: '2024-12-10',
       notes: 'Follow-up visit',
@@ -169,7 +169,7 @@ const BillingManagement: React.FC = () => {
                   <PaymentIcon color="success" />
                   <Box>
                     <Typography variant="h6" fontWeight={600}>
-                      ${totalRevenue.toFixed(2)}
+                      Rs. {totalRevenue.toFixed(2)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total Revenue
@@ -186,7 +186,7 @@ const BillingManagement: React.FC = () => {
                   <ReceiptIcon color="warning" />
                   <Box>
                     <Typography variant="h6" fontWeight={600}>
-                      ${pendingAmount.toFixed(2)}
+                      Rs. {pendingAmount.toFixed(2)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Pending Amount
@@ -203,7 +203,7 @@ const BillingManagement: React.FC = () => {
                   <ReceiptIcon color="error" />
                   <Box>
                     <Typography variant="h6" fontWeight={600}>
-                      ${overdueAmount.toFixed(2)}
+                      Rs. {overdueAmount.toFixed(2)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Overdue Amount
@@ -261,7 +261,7 @@ const BillingManagement: React.FC = () => {
                   <TableCell>{bill.service_type}</TableCell>
                   <TableCell>
                     <Typography variant="body2" fontWeight={600}>
-                      ${bill.amount.toFixed(2)}
+                      Rs. {bill.amount.toFixed(2)}
                     </Typography>
                   </TableCell>
                   <TableCell>

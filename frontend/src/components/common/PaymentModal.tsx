@@ -228,7 +228,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   }}
                   error={!!errors.cardName}
                   helperText={errors.cardName}
-                  placeholder="JOHN DOE"
+                  placeholder="NIMAL PERERA"
                 />
               </Grid>
 

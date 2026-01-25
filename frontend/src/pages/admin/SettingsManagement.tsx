@@ -31,8 +31,8 @@ const SettingsManagement: React.FC = () => {
   const [settings, setSettings] = useState({
     // General Settings
     clinic_name: 'Aanya Health Center',
-    clinic_address: '123 Medical Street, Health City, HC 12345',
-    clinic_phone: '+1 (555) 123-4567',
+    clinic_address: 'Aanya Health Center, Uhumeeya, Kurunegala',
+    clinic_phone: '037 2238700',
     clinic_email: 'info@aanyahealth.com',
     clinic_website: 'www.aanyahealth.com',
     
@@ -55,9 +55,9 @@ const SettingsManagement: React.FC = () => {
     audit_logging: true,
     
     // System Settings
-    timezone: 'UTC-5',
-    date_format: 'MM/DD/YYYY',
-    currency: 'USD',
+    timezone: 'UTC+5:30',
+    date_format: 'DD/MM/YYYY',
+    currency: 'LKR',
     language: 'en',
   });
 
@@ -189,10 +189,10 @@ const SettingsManagement: React.FC = () => {
                         label="Timezone"
                         onChange={(e) => handleSettingChange('timezone', e.target.value)}
                       >
-                        <MenuItem value="UTC-5">UTC-5 (EST)</MenuItem>
-                        <MenuItem value="UTC-6">UTC-6 (CST)</MenuItem>
-                        <MenuItem value="UTC-7">UTC-7 (MST)</MenuItem>
-                        <MenuItem value="UTC-8">UTC-8 (PST)</MenuItem>
+                        <MenuItem value="UTC+5:30">UTC+5:30 (Sri Lanka)</MenuItem>
+                        <MenuItem value="UTC+5:45">UTC+5:45 (Nepal)</MenuItem>
+                        <MenuItem value="UTC+5:00">UTC+5:00 (Pakistan)</MenuItem>
+                        <MenuItem value="UTC+6:00">UTC+6:00 (Bangladesh)</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
@@ -323,9 +323,9 @@ const SettingsManagement: React.FC = () => {
                         label="Currency"
                         onChange={(e) => handleSettingChange('currency', e.target.value)}
                       >
+                        <MenuItem value="LKR">LKR (Rs.)</MenuItem>
                         <MenuItem value="USD">USD ($)</MenuItem>
                         <MenuItem value="EUR">EUR (€)</MenuItem>
-                        <MenuItem value="GBP">GBP (£)</MenuItem>
                         <MenuItem value="INR">INR (₹)</MenuItem>
                       </Select>
                     </FormControl>

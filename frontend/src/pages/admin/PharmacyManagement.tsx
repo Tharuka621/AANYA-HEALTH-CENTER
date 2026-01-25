@@ -56,7 +56,7 @@ const PharmacyManagement: React.FC = () => {
       batch_number: 'MF2024001',
       expiry_date: '2025-12-31',
       stock_quantity: 500,
-      unit_price: 2.50,
+      unit_price: 125.00,
       reorder_level: 50,
       category: 'Diabetes',
     },
@@ -68,7 +68,7 @@ const PharmacyManagement: React.FC = () => {
       batch_number: 'LS2024001',
       expiry_date: '2025-06-30',
       stock_quantity: 25,
-      unit_price: 1.80,
+      unit_price: 90.00,
       reorder_level: 30,
       category: 'Hypertension',
     },
@@ -80,7 +80,7 @@ const PharmacyManagement: React.FC = () => {
       batch_number: 'AS2024001',
       expiry_date: '2025-03-15',
       stock_quantity: 1000,
-      unit_price: 0.50,
+      unit_price: 25.00,
       reorder_level: 100,
       category: 'Cardiovascular',
     },
@@ -92,13 +92,13 @@ const PharmacyManagement: React.FC = () => {
       batch_number: 'VD2024001',
       expiry_date: '2025-08-20',
       stock_quantity: 5,
-      unit_price: 3.20,
+      unit_price: 160.00,
       reorder_level: 20,
       category: 'Supplements',
     },
   ];
 
-  const getStockStatus = (quantity: number, reorderLevel: number) => {
+  const getStockStatus = (quantity: number, reorderLevel: number): { status: string; color: 'error' | 'warning' | 'success' } => {
     if (quantity <= reorderLevel) return { status: 'low', color: 'error' };
     if (quantity <= reorderLevel * 2) return { status: 'medium', color: 'warning' };
     return { status: 'good', color: 'success' };
@@ -237,7 +237,7 @@ const PharmacyManagement: React.FC = () => {
                   <InventoryIcon color="info" />
                   <Box>
                     <Typography variant="h6" fontWeight={600}>
-                      ${medicines.reduce((sum, m) => sum + (m.stock_quantity * m.unit_price), 0).toFixed(2)}
+                      Rs. {medicines.reduce((sum, m) => sum + (m.stock_quantity * m.unit_price), 0).toFixed(2)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total Value
@@ -295,7 +295,7 @@ const PharmacyManagement: React.FC = () => {
                         />
                       </Box>
                     </TableCell>
-                    <TableCell>${medicine.unit_price}</TableCell>
+                    <TableCell>Rs. {medicine.unit_price}</TableCell>
                     <TableCell>{medicine.category}</TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>

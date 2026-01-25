@@ -11,22 +11,24 @@ import {
   InputAdornment,
   CircularProgress,
   Divider,
-  LinearProgress,
   Grid,
 } from '@mui/material';
 import {
   Person as PersonIcon,
   Email as EmailIcon,
-  Phone as PhoneIcon,
   Lock as LockIcon,
   Visibility,
   VisibilityOff,
-  CreditCard as CreditCardIcon,
+  VpnKey as VpnKeyIcon,
 } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useSignup } from '../hooks/useAuth';
 import { useToast } from '../components/common/Toast';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+
+type Step = 'signup' | 'verify';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -34,18 +36,21 @@ const Signup: React.FC = () => {
   const { showError, showSuccess } = useToast();
   const { user, loading } = useAuth();
   
+  const [currentStep, setCurrentStep] = useState<Step>('signup');
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
-    nic: '',
-    allergies: '',
   });
+  const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   // Redirect if already logged in
   useEffect(() => {
@@ -53,22 +58,6 @@ const Signup: React.FC = () => {
       navigate(`/dashboard/${user.role}`);
     }
   }, [user, loading, navigate]);
-
-  const calculatePasswordStrength = (password: string) => {
-    let score = 0;
-    const checks = {
-      length: password.length >= 8,
-      lowercase: /[a-z]/.test(password),
-      uppercase: /[A-Z]/.test(password),
-      number: /\d/.test(password),
-      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-    };
-
-    score = Object.values(checks).filter(Boolean).length;
-    return { score, checks };
-  };
-
-  const passwordStrength = calculatePasswordStrength(formData.password);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -85,28 +74,16 @@ const Signup: React.FC = () => {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    if (!formData.phone) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^\+?[\d\s-()]+$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
-    }
-
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    } else if (passwordStrength.score < 3) {
-      newErrors.password = 'Password must include uppercase, lowercase, and numbers';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    if (formData.nic && formData.nic.length < 5) {
-      newErrors.nic = 'NIC must be at least 5 characters';
     }
 
     setErrors(newErrors);
@@ -119,22 +96,93 @@ const Signup: React.FC = () => {
     if (!validateForm()) return;
 
     try {
-      const result = await signup.mutateAsync({
+      const response = await signup.mutateAsync({
         full_name: formData.full_name.trim(),
         email: formData.email,
-        phone: formData.phone,
         password: formData.password,
-        nic: formData.nic || undefined,
-        allergies: formData.allergies || undefined,
       });
       
-      showSuccess('Account created successfully! Redirecting to dashboard...');
-      
-      setTimeout(() => {
-        navigate('/dashboard/patient');
-      }, 1000);
+      // Check if email verification is required
+      if (response.requiresVerification) {
+        showSuccess('Account created! Please check your email for verification code.');
+        setCurrentStep('verify');
+      } else {
+        showSuccess('Account created successfully! Redirecting to dashboard...');
+        setTimeout(() => {
+          navigate('/dashboard/patient');
+        }, 1000);
+      }
     } catch (error: any) {
       showError(error.message || 'Signup failed. Please try again.');
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!otp) {
+      setErrors({ otp: 'OTP is required' });
+      return;
+    }
+    
+    if (otp.length !== 6) {
+      setErrors({ otp: 'OTP must be 6 digits' });
+      return;
+    }
+
+    setIsVerifying(true);
+    setErrors({});
+
+    try {
+      const response = await axios.post(`${API_URL}/auth/verify-email`, {
+        email: formData.email,
+        otp,
+      });
+      
+      if (response.data.ok) {
+        showSuccess('Email verified successfully!');
+        
+        // Store token and user data
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Navigate to appropriate dashboard
+        setTimeout(() => {
+          const role = response.data.user.role?.toLowerCase();
+          if (role === 'patient') {
+            navigate('/patient/dashboard');
+          } else {
+            navigate(`/${role}/dashboard`);
+          }
+        }, 1000);
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Invalid OTP. Please try again.';
+      showError(message);
+      setErrors({ otp: message });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setIsResending(true);
+    setErrors({});
+
+    try {
+      const response = await axios.post(`${API_URL}/auth/resend-verification`, {
+        email: formData.email,
+      });
+      
+      if (response.data.ok) {
+        showSuccess('Verification code sent! Please check your email.');
+        setOtp('');
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to resend code.';
+      showError(message);
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -151,19 +199,6 @@ const Signup: React.FC = () => {
 
   const toggleConfirmPasswordVisibility = () => {
     setShowConfirmPassword(!showConfirmPassword);
-  };
-
-  const getPasswordStrengthColor = () => {
-    if (passwordStrength.score <= 2) return 'error';
-    if (passwordStrength.score <= 3) return 'warning';
-    return 'success';
-  };
-
-  const getPasswordStrengthText = () => {
-    if (passwordStrength.score <= 2) return 'Weak';
-    if (passwordStrength.score <= 3) return 'Medium';
-    if (passwordStrength.score <= 4) return 'Strong';
-    return 'Very Strong';
   };
 
   // Show loading while checking authentication
@@ -205,22 +240,26 @@ const Signup: React.FC = () => {
           {/* Header */}
           <Box textAlign="center" mb={4}>
             <Typography component="h1" variant="h4" fontWeight={700} color="primary.main" gutterBottom>
-              Create Account
+              {currentStep === 'signup' ? 'Create Account' : 'Verify Your Email'}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Join Aanya Health Center as a patient
+              {currentStep === 'signup' 
+                ? 'Create an account and take the first step toward smarter healthcare.'
+                : `We've sent a 6-digit code to ${formData.email}`
+              }
             </Typography>
           </Box>
 
           {/* Error Alert */}
-          {signup.error && (
+          {signup.error && currentStep === 'signup' && (
             <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
               {signup.error.message || 'Signup failed. Please try again.'}
             </Alert>
           )}
 
           {/* Signup Form */}
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+          {currentStep === 'signup' && (
+            <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
@@ -243,7 +282,7 @@ const Signup: React.FC = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Email Address"
@@ -267,60 +306,12 @@ const Signup: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Phone Number"
-                  value={formData.phone}
-                  onChange={handleInputChange('phone')}
-                  error={!!errors.phone}
-                  helperText={errors.phone}
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PhoneIcon color="action" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  autoComplete="tel"
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="NIC (Optional)"
-                  value={formData.nic}
-                  onChange={handleInputChange('nic')}
-                  error={!!errors.nic}
-                  helperText={errors.nic || 'National Identity Card number'}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <CreditCardIcon color="action" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Allergies (Optional)"
-                  value={formData.allergies}
-                  onChange={handleInputChange('allergies')}
-                  helperText="Any known allergies or medical conditions"
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
                   label="Password"
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleInputChange('password')}
                   error={!!errors.password}
-                  helperText={errors.password}
+                  helperText={errors.password || 'Minimum 6 characters'}
                   required
                   InputProps={{
                     startAdornment: (
@@ -330,39 +321,18 @@ const Signup: React.FC = () => {
                     ),
                     endAdornment: (
                       <InputAdornment position="end">
-                        <Button
+                        <IconButton
                           onClick={togglePasswordVisibility}
                           edge="end"
                           size="small"
-                          sx={{ minWidth: 'auto', p: 0.5 }}
                         >
                           {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </Button>
+                        </IconButton>
                       </InputAdornment>
                     ),
                   }}
                   autoComplete="new-password"
                 />
-                
-                {/* Password Strength Indicator */}
-                {formData.password && (
-                  <Box mt={1}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                      <Typography variant="caption" color="text.secondary">
-                        Password Strength:
-                      </Typography>
-                      <Typography variant="caption" color={`${getPasswordStrengthColor()}.main`}>
-                        {getPasswordStrengthText()}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(passwordStrength.score / 5) * 100}
-                      color={getPasswordStrengthColor()}
-                      sx={{ height: 4, borderRadius: 2 }}
-                    />
-                  </Box>
-                )}
               </Grid>
 
               <Grid item xs={12} sm={6}>
@@ -383,14 +353,13 @@ const Signup: React.FC = () => {
                     ),
                     endAdornment: (
                       <InputAdornment position="end">
-                        <Button
+                        <IconButton
                           onClick={toggleConfirmPasswordVisibility}
                           edge="end"
                           size="small"
-                          sx={{ minWidth: 'auto', p: 0.5 }}
                         >
                           {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                        </Button>
+                        </IconButton>
                       </InputAdornment>
                     ),
                   }}
@@ -439,6 +408,79 @@ const Signup: React.FC = () => {
               </Typography>
             </Box>
           </Box>
+          )}
+
+          {/* OTP Verification Step */}
+          {currentStep === 'verify' && (
+            <Box component="form" onSubmit={handleVerifyOTP} sx={{ width: '100%' }}>
+              <TextField
+                fullWidth
+                label="Enter Verification Code"
+                type="text"
+                value={otp}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  setOtp(value);
+                  setErrors({});
+                }}
+                error={!!errors.otp}
+                helperText={errors.otp || 'Enter the 6-digit code from your email'}
+                margin="normal"
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <VpnKeyIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+                inputProps={{
+                  maxLength: 6,
+                  pattern: '[0-9]{6}',
+                  inputMode: 'numeric',
+                }}
+                autoFocus
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={isVerifying || otp.length !== 6}
+                sx={{ mt: 3, mb: 2, py: 1.5 }}
+              >
+                {isVerifying ? (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CircularProgress size={20} color="inherit" />
+                    Verifying...
+                  </Box>
+                ) : (
+                  'Verify Email'
+                )}
+              </Button>
+
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Button
+                  onClick={() => {
+                    setCurrentStep('signup');
+                    setOtp('');
+                    setErrors({});
+                  }}
+                  variant="text"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleResendOTP}
+                  variant="text"
+                  disabled={isResending}
+                >
+                  {isResending ? 'Sending...' : 'Resend Code'}
+                </Button>
+              </Box>
+            </Box>
+          )}
         </Paper>
       </Box>
     </Container>

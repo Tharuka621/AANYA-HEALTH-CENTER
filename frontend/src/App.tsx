@@ -52,8 +52,8 @@ function App() {
         <ToastProvider>
           <Router>
             <Routes>
-              {/* Public routes */}
-              <Route element={<MainLayout />}> 
+              {/* Public routes with MainLayout */}
+              <Route element={<MainLayout />}>
                 <Route path="/home" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />

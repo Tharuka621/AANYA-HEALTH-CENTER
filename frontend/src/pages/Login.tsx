@@ -268,46 +268,6 @@ const Login: React.FC = () => {
             </Box>
           </Box>
         </Paper>
-
-        {/* Demo Credentials */}
-        <Paper
-          elevation={1}
-          sx={{
-            p: 3,
-            mt: 3,
-            backgroundColor: "background.default",
-            border: 1,
-            borderColor: "divider",
-          }}
-        >
-          <Typography variant="h6" gutterBottom color="primary.main">
-            Demo Credentials
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Use these credentials to test different user roles:
-          </Typography>
-          <Box component="ul" sx={{ pl: 2, m: 0 }}>
-            <Typography component="li" variant="body2" gutterBottom>
-              <strong>Admin:</strong> admin@aanya.com / admin123
-            </Typography>
-            <Typography component="li" variant="body2" gutterBottom>
-              <strong>Doctor:</strong> doctor@aanya.com / doctor123
-            </Typography>
-            <Typography component="li" variant="body2" gutterBottom>
-              <strong>Patient:</strong> patient@aanya.com / patient123
-            </Typography>
-            <Typography component="li" variant="body2" gutterBottom>
-              <strong>Receptionist:</strong> receptionist@aanya.com /
-              reception123
-            </Typography>
-            <Typography component="li" variant="body2" gutterBottom>
-              <strong>Pharmacist:</strong> pharmacist@aanya.com / pharma123
-            </Typography>
-            <Typography component="li" variant="body2" gutterBottom>
-              <strong>Lab Tech:</strong> labtech@aanya.com / lab123
-            </Typography>
-          </Box>
-        </Paper>
       </Box>
     </Container>
   );

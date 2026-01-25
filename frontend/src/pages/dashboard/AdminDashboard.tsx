@@ -46,7 +46,7 @@ const AdminDashboard: React.FC = () => {
   const recentUsers = [
     {
       id: '1',
-      name: 'Dr. Sarah Wilson',
+      name: 'Dr. Milinda Abeykoon',
       email: 'doctor@aanya.com',
       role: 'doctor',
       status: 'active',
@@ -62,8 +62,8 @@ const AdminDashboard: React.FC = () => {
     },
     {
       id: '3',
-      name: 'David Miller',
-      email: 'david@aanya.com',
+      name: 'Kasun Jayawardena',
+      email: 'kasun@aanya.com',
       role: 'pharmacist',
       status: 'inactive',
       lastLogin: '2024-12-15',

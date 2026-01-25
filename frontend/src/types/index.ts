@@ -132,8 +132,11 @@ export interface Bill {
 // Authentication types
 export interface AuthResponse {
   ok: boolean;
-  token: string;
-  user: User;
+  token?: string;
+  user?: User;
+  message?: string;
+  requiresVerification?: boolean;
+  email?: string;
 }
 
 export interface LoginRequest {
@@ -145,7 +148,7 @@ export interface SignupRequest {
   full_name: string;
   email: string;
   password: string;
-  phone: string;
+  phone?: string;
   nic?: string;
   allergies?: string;
 }

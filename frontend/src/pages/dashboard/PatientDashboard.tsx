@@ -31,6 +31,7 @@ import {
   LocalHospital as HospitalIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import AppointmentBooking from '../../components/Patient/AppointmentBooking';
 // import { useAppointmentsByPatient, usePrescriptionsByPatient, useLabTestsByPatient } from '../../hooks';
 import Modal from '../../components/common/Modal';
 import AppointmentModal from '../../components/common/AppointmentModal';
@@ -228,6 +229,11 @@ const PatientDashboard: React.FC = () => {
           <Typography variant="body1" color="text.secondary">
             Here's an overview of your health information and upcoming appointments.
           </Typography>
+        </Box>
+
+        {/* Book Appointment Section */}
+        <Box mb={3}>
+          <AppointmentBooking />
         </Box>
 
         <Grid container spacing={3}>

@@ -11,14 +11,14 @@ const PatientList: React.FC = () => {
     {
       id: '1',
       patient_id: 'P001234',
-      full_name: 'John Doe',
-      email: 'john.doe@email.com',
-      phone: '+1234567890',
+      full_name: 'Nimal Perera',
+      email: 'nimal.perera@email.com',
+      phone: '+94771234567',
       date_of_birth: '1985-06-15',
       gender: 'male',
-      address: '123 Main St, City, State 12345',
-      emergency_contact: 'Jane Doe',
-      emergency_phone: '+1234567891',
+      address: '123/A, Galle Road, Colombo 03',
+      emergency_contact: 'Sumudu Perera',
+      emergency_phone: '+94771234568',
       blood_group: 'O+',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -26,14 +26,14 @@ const PatientList: React.FC = () => {
     {
       id: '2',
       patient_id: 'P001235',
-      full_name: 'Sarah Smith',
-      email: 'sarah.smith@email.com',
-      phone: '+1234567892',
+      full_name: 'Kamani Silva',
+      email: 'kamani.silva@email.com',
+      phone: '+94712345678',
       date_of_birth: '1990-03-22',
       gender: 'female',
-      address: '456 Oak Ave, City, State 12345',
-      emergency_contact: 'Mike Smith',
-      emergency_phone: '+1234567893',
+      address: '45, Kandy Road, Kadawatha',
+      emergency_contact: 'Ruwan Silva',
+      emergency_phone: '+94712345679',
       blood_group: 'A-',
       created_at: '2024-01-02T00:00:00Z',
       updated_at: '2024-01-02T00:00:00Z'
@@ -41,14 +41,14 @@ const PatientList: React.FC = () => {
     {
       id: '3',
       patient_id: 'P001236',
-      full_name: 'Michael Johnson',
-      email: 'mike.johnson@email.com',
-      phone: '+1234567894',
+      full_name: 'Sunil Fernando',
+      email: 'sunil.fernando@email.com',
+      phone: '+94773456789',
       date_of_birth: '1978-11-08',
       gender: 'male',
-      address: '789 Pine Rd, City, State 12345',
-      emergency_contact: 'Lisa Johnson',
-      emergency_phone: '+1234567895',
+      address: '78/B, Temple Road, Nugegoda',
+      emergency_contact: 'Nimali Fernando',
+      emergency_phone: '+94773456780',
       blood_group: 'B+',
       created_at: '2024-01-03T00:00:00Z',
       updated_at: '2024-01-03T00:00:00Z'
@@ -110,6 +110,7 @@ const PatientList: React.FC = () => {
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={filterGender}
                 onChange={(e) => setFilterGender(e.target.value)}
+                aria-label="Filter patients by gender"
               >
                 <option value="all">All Genders</option>
                 <option value="male">Male</option>
@@ -166,10 +167,16 @@ const PatientList: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                      <button 
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        aria-label="View patient details"
+                      >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                      <button 
+                        className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        aria-label="Edit patient information"
+                      >
                         <Edit className="w-4 h-4" />
                       </button>
                     </div>

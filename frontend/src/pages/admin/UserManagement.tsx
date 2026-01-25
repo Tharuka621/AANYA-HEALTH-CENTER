@@ -46,7 +46,7 @@ const UserManagement: React.FC = () => {
     { value: 'DOCTOR', label: 'Doctor' },
     { value: 'RECEPTIONIST', label: 'Receptionist' },
     { value: 'PHARMACIST', label: 'Pharmacist' },
-    { value: 'LAB', label: 'Lab Technician' },
+    { value: 'LAB_TECH', label: 'Lab Technician' },
     { value: 'ADMIN', label: 'Admin' },
   ];
 
@@ -102,7 +102,8 @@ const UserManagement: React.FC = () => {
       case 'NURSE': return 'secondary';
       case 'RECEPTIONIST': return 'info';
       case 'PHARMACIST': return 'warning';
-      case 'LAB': return 'success';
+      case 'LAB_TECH': return 'secondary';
+      case 'LAB': return 'secondary';
       case 'PATIENT': return 'default';
       default: return 'default';
     }

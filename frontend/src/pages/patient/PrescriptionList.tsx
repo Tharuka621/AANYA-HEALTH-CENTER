@@ -105,22 +105,6 @@ const PrescriptionList: React.FC = () => {
           <Typography variant="h4" fontWeight={700}>
             My Prescriptions
           </Typography>
-          <Box display="flex" gap={1}>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={() => console.log('Download all prescriptions')}
-            >
-              Download All
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<PrintIcon />}
-              onClick={() => console.log('Print all prescriptions')}
-            >
-              Print All
-            </Button>
-          </Box>
         </Box>
 
         {/* Summary Cards */}
@@ -199,13 +183,6 @@ const PrescriptionList: React.FC = () => {
                         onClick={() => handleDownloadPrescription(prescription.id)}
                       >
                         <DownloadIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handlePrintPrescription(prescription.id)}
-                      >
-                        <PrintIcon />
                       </IconButton>
                     </Box>
                   </TableCell>

@@ -152,13 +152,6 @@ const AppointmentManagement: React.FC = () => {
           <Typography variant="h4" fontWeight={700}>
             Appointment Management
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddAppointment}
-          >
-            Schedule Appointment
-          </Button>
         </Box>
 
         <TableContainer component={Paper} elevation={0}>

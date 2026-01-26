@@ -143,22 +143,6 @@ const LabReports: React.FC = () => {
           <Typography variant="h4" fontWeight={700}>
             My Lab Reports
           </Typography>
-          <Box display="flex" gap={1}>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={() => console.log("Download all reports")}
-            >
-              Download All
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<PrintIcon />}
-              onClick={() => console.log("Print all reports")}
-            >
-              Print All
-            </Button>
-          </Box>
         </Box>
 
         {/* Summary Cards */}
@@ -239,13 +223,6 @@ const LabReports: React.FC = () => {
                             onClick={() => handleDownloadReport(report.id)}
                           >
                             <DownloadIcon />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handlePrintReport(report.id)}
-                          >
-                            <PrintIcon />
                           </IconButton>
                         </>
                       )}

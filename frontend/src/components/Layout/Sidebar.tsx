@@ -74,7 +74,6 @@ const Sidebar: React.FC = () => {
         return [
           ...baseItems,
           { icon: PeopleIcon, label: 'User Management', path: '/dashboard/admin/users' },
-          { icon: PersonAddIcon, label: 'Patients', path: '/dashboard/admin/patients' },
           { icon: CalendarIcon, label: 'Appointments', path: '/dashboard/admin/appointments' },
           { icon: LabIcon, label: 'Lab Tests', path: '/dashboard/admin/lab-tests' },
           { icon: DescriptionIcon, label: 'Prescriptions', path: '/dashboard/admin/prescriptions' },

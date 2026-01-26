@@ -139,13 +139,6 @@ const PrescriptionManagement: React.FC = () => {
           <Typography variant="h4" fontWeight={700}>
             Prescription Management
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddPrescription}
-          >
-            Create Prescription
-          </Button>
         </Box>
 
         <TableContainer component={Paper} elevation={0}>

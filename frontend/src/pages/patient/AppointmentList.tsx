@@ -49,7 +49,7 @@ const AppointmentList: React.FC = () => {
       date: '2024-12-20',
       time: '10:00 AM',
       reason: 'Regular checkup',
-      status: 'scheduled',
+      status: 'COMPLETED',
       doctor: 'Dr. Milinda Abeykoon',
       notes: 'Annual physical examination',
     },
@@ -58,7 +58,7 @@ const AppointmentList: React.FC = () => {
       date: '2024-12-15',
       time: '11:30 AM',
       reason: 'Blood pressure follow-up',
-      status: 'completed',
+      status: 'COMPLETED',
       doctor: 'Dr. Milinda Abeykoon',
       notes: 'BP medication adjustment',
     },
@@ -67,7 +67,7 @@ const AppointmentList: React.FC = () => {
       date: '2024-12-25',
       time: '2:00 PM',
       reason: 'Diabetes consultation',
-      status: 'scheduled',
+      status: 'CONFIRMED',
       doctor: 'Dr. Milinda Abeykoon',
       notes: 'Diabetes management review',
     },
@@ -76,7 +76,7 @@ const AppointmentList: React.FC = () => {
       date: '2024-12-10',
       time: '3:30 PM',
       reason: 'Follow-up visit',
-      status: 'cancelled',
+      status: 'CANCELLED',
       doctor: 'Dr. Milinda Abeykoon',
       notes: 'Patient cancelled due to emergency',
     },
@@ -84,9 +84,9 @@ const AppointmentList: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'primary';
-      case 'completed': return 'success';
-      case 'cancelled': return 'error';
+      case 'CONFIRMED': return 'primary';
+      case 'COMPLETED': return 'success';
+      case 'CANCELLED': return 'error';
       case 'no_show': return 'warning';
       default: return 'default';
     }

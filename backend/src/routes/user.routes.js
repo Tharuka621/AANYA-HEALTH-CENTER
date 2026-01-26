@@ -5,7 +5,8 @@ const {
   getAllUsers, 
   updateUserRole, 
   toggleUserStatus,
-  getUserById 
+  getUserById,
+  deleteUser 
 } = require("../controllers/user.controller");
 
 const { authenticate, isAdmin } = require("../middlewares/auth.middleware");
@@ -19,5 +20,6 @@ router.get("/users", getAllUsers);
 router.get("/users/:userId", getUserById);
 router.put("/users/:userId/role", updateUserRole);
 router.put("/users/:userId/status", toggleUserStatus);
+router.delete("/users/:userId", deleteUser);
 
 module.exports = router;

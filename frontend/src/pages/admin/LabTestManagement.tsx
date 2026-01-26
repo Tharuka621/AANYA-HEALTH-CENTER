@@ -41,7 +41,7 @@ const LabTestManagement: React.FC = () => {
     test_type: '',
     doctor_name: 'Dr. Milinda Abeykoon',
     requested_date: '',
-    status: 'requested',
+    status: 'ORDERED',
     notes: '',
   });
 
@@ -54,7 +54,7 @@ const LabTestManagement: React.FC = () => {
       test_type: 'Blood Test',
       doctor: 'Dr. Milinda Abeykoon',
       requested_date: '2024-12-15',
-      status: 'completed',
+      status: 'IN_PROGRESS',
       notes: 'Routine checkup',
       result_url: '/reports/cbc_kasun_bandara.pdf',
     },
@@ -65,7 +65,7 @@ const LabTestManagement: React.FC = () => {
       test_type: 'Blood Test',
       doctor: 'Dr. Milinda Abeykoon',
       requested_date: '2024-12-16',
-      status: 'in_progress',
+      status: 'COMPLETED',
       notes: 'Cholesterol monitoring',
       result_url: null,
     },
@@ -76,7 +76,7 @@ const LabTestManagement: React.FC = () => {
       test_type: 'Urine Test',
       doctor: 'Dr. Milinda Abeykoon',
       requested_date: '2024-12-17',
-      status: 'requested',
+      status: 'ORDERED',
       notes: 'Diabetes screening',
       result_url: null,
     },
@@ -95,10 +95,10 @@ const LabTestManagement: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'requested': return 'primary';
-      case 'in_progress': return 'warning';
-      case 'completed': return 'success';
-      case 'cancelled': return 'error';
+      case 'ORDERED': return 'primary';
+      case 'IN_PROGRESS': return 'warning';
+      case 'COMPLETED': return 'success';
+      case 'CANCELLED': return 'error';
       default: return 'default';
     }
   };
@@ -111,7 +111,7 @@ const LabTestManagement: React.FC = () => {
       test_type: '',
   doctor_name: 'Dr. Milinda Abeykoon',
       requested_date: '',
-      status: 'requested',
+      status: 'ORDERED',
       notes: '',
     });
     setOpenDialog(true);
@@ -159,13 +159,6 @@ const LabTestManagement: React.FC = () => {
           <Typography variant="h4" fontWeight={700}>
             Lab Test Management
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddTest}
-          >
-            Add Lab Test
-          </Button>
         </Box>
 
         <TableContainer component={Paper} elevation={0}>

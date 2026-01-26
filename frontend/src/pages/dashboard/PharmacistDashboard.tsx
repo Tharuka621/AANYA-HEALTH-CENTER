@@ -32,6 +32,10 @@ import {
   Select,
   MenuItem,
   TextField,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Avatar,
 } from '@mui/material';
 import {
   LocalPharmacy as PharmacyIcon,
@@ -45,6 +49,8 @@ import {
   Print as PrintIcon,
   Payment as PaymentIcon,
   MoneyOff as UnpaidIcon,
+  Search as SearchIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -63,7 +69,7 @@ import {
 } from '../../utils/stock';
 
 const PharmacistDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // Medicine thresholds for low stock calculation
   const medicineThresholds = useMemo(() => {
@@ -171,6 +177,10 @@ const PharmacistDashboard: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'ONLINE'>('CASH');
   const [paymentRef, setPaymentRef] = useState('');
 
+  // Inventory view state
+  const [inventoryDialogOpen, setInventoryDialogOpen] = useState(false);
+  const [inventorySearchQuery, setInventorySearchQuery] = useState('');
+
   // Calculate low stock medicines dynamically using batches
   const lowStockMedicines = useMemo(() => {
     return getLowStockMedicines(inventoryBatches, medicineThresholds);
@@ -199,6 +209,48 @@ const PharmacistDashboard: React.FC = () => {
     });
     return uniqueMedicines.size;
   }, [inventoryBatches]);
+
+  // Aggregate medicines with total quantities from all batches
+  const aggregatedMedicines = useMemo(() => {
+    const medicineMap = new Map<string, {
+      medicine_id: string;
+      medicine_name: string;
+      dosage: string;
+      total_quantity: number;
+      batch_count: number;
+    }>();
+
+    inventoryBatches.forEach(batch => {
+      const key = `${batch.medicine_id}-${batch.dosage}`;
+      if (medicineMap.has(key)) {
+        const existing = medicineMap.get(key)!;
+        existing.total_quantity += batch.qty_available;
+        existing.batch_count += 1;
+      } else {
+        medicineMap.set(key, {
+          medicine_id: batch.medicine_id,
+          medicine_name: batch.medicine_name,
+          dosage: batch.dosage,
+          total_quantity: batch.qty_available,
+          batch_count: 1,
+        });
+      }
+    });
+
+    return Array.from(medicineMap.values());
+  }, [inventoryBatches]);
+
+  // Filtered medicines based on search query
+  const filteredMedicines = useMemo(() => {
+    if (!inventorySearchQuery.trim()) return aggregatedMedicines;
+    
+    const query = inventorySearchQuery.toLowerCase();
+    return aggregatedMedicines.filter(med => 
+      med.medicine_name.toLowerCase().includes(query) ||
+      med.dosage.toLowerCase().includes(query) ||
+      med.medicine_id.toLowerCase().includes(query)
+    );
+  }, [aggregatedMedicines, inventorySearchQuery]);
 
   const handleDispense = (prescriptionId: string) => {
     const prescription = prescriptions.find((p) => p.id === prescriptionId);
@@ -338,6 +390,16 @@ const PharmacistDashboard: React.FC = () => {
     setErrorMessage('');
   };
 
+  const handleViewInventory = () => {
+    setInventoryDialogOpen(true);
+    setInventorySearchQuery('');
+  };
+
+  const handleCloseInventoryDialog = () => {
+    setInventoryDialogOpen(false);
+    setInventorySearchQuery('');
+  };
+
   const handlePrintReceipt = () => {
     if (currentInvoice) {
       console.log('=== RECEIPT ===');
@@ -355,17 +417,57 @@ const PharmacistDashboard: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ py: 3 }}>
-        {/* Welcome Section */}
-        <Box mb={4}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            Welcome, {user?.full_name}!
+    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
+      {/* Header */}
+      <AppBar position="static" elevation={2}>
+        <Toolbar>
+          <PharmacyIcon sx={{ mr: 2, fontSize: 32 }} />
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700 }}>
+            AANYA Health - Pharmacy Dashboard
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage prescriptions and monitor inventory levels.
-          </Typography>
-        </Box>
+          
+          {/* User Profile Section */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
+              <Typography variant="body2" fontWeight={600}>
+                {user?.full_name}
+              </Typography>
+              <Typography variant="caption" color="inherit" sx={{ opacity: 0.8 }}>
+                Pharmacist
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: 'primary.dark', fontWeight: 700 }}>
+              {user?.full_name?.charAt(0)}
+            </Avatar>
+            <IconButton 
+              color="inherit" 
+              onClick={logout}
+              title="Logout"
+              sx={{ 
+                ml: 1,
+                '&:hover': {
+                  bgcolor: 'rgba(255, 255, 255, 0.1)'
+                }
+              }}
+            >
+              <LogoutIcon />
+            </IconButton>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* Main Content */}
+      <Container maxWidth="lg">
+        <Box sx={{ py: 3 }}>
+          {/* Welcome Section */}
+          <Box mb={4}>
+            <Typography variant="h4" fontWeight={700} gutterBottom>
+              Welcome, {user?.full_name}!
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Manage prescriptions and monitor inventory levels.
+            </Typography>
+          </Box>
 
         {/* Low Stock Alert */}
         {lowStockMedicines.length > 0 && (
@@ -392,7 +494,17 @@ const PharmacistDashboard: React.FC = () => {
             mb: 3,
           }}
         >
-          <Card>
+          <Card 
+            sx={{ 
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              '&:hover': { 
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleViewInventory}
+          >
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
@@ -618,7 +730,6 @@ const PharmacistDashboard: React.FC = () => {
             </Card>
           </Box>
         </Box>
-      </Box>
 
       {/* Dispense Medicines Dialog */}
       <Dialog 
@@ -1019,6 +1130,142 @@ const PharmacistDashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Inventory Dialog */}
+      <Dialog 
+        open={inventoryDialogOpen} 
+        onClose={handleCloseInventoryDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            <PharmacyIcon color="primary" />
+            <Typography variant="h6" fontWeight={700}>
+              Pharmacy Inventory
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {/* Search Bar */}
+          <Box sx={{ mb: 3 }}>
+            <TextField
+              fullWidth
+              placeholder="Search by medicine name, ID, or dosage..."
+              value={inventorySearchQuery}
+              onChange={(e) => setInventorySearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Showing {filteredMedicines.length} of {aggregatedMedicines.length} medicines
+            </Typography>
+          </Box>
+
+          {/* Medicines Table */}
+          <TableContainer component={Paper} variant="outlined">
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: 'primary.main' }}>
+                  <TableCell>
+                    <Typography fontWeight={700} color="white">Medicine ID</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography fontWeight={700} color="white">Medicine Name</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography fontWeight={700} color="white">Dosage</Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography fontWeight={700} color="white">Total Quantity</Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography fontWeight={700} color="white">Batches</Typography>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredMedicines.length > 0 ? (
+                  filteredMedicines.map((medicine) => {
+                    const isLowStock = (medicineThresholds.get(medicine.medicine_id) || 0) > medicine.total_quantity;
+                    return (
+                      <TableRow 
+                        key={`${medicine.medicine_id}-${medicine.dosage}`}
+                        sx={{
+                          bgcolor: isLowStock ? 'warning.lighter' : 'inherit',
+                          '&:hover': { bgcolor: isLowStock ? 'warning.light' : 'grey.50' },
+                        }}
+                      >
+                        <TableCell>
+                          <Chip 
+                            label={medicine.medicine_id} 
+                            size="small" 
+                            variant="outlined"
+                            sx={{ fontFamily: 'monospace' }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography fontWeight={600}>
+                            {medicine.medicine_name}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={medicine.dosage} 
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                            <Typography variant="h6" fontWeight={700} color={isLowStock ? 'warning.main' : 'success.main'}>
+                              {medicine.total_quantity}
+                            </Typography>
+                            {isLowStock && (
+                              <Tooltip title="Low Stock">
+                                <WarningIcon color="warning" fontSize="small" />
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip 
+                            label={`${medicine.batch_count} batch${medicine.batch_count > 1 ? 'es' : ''}`}
+                            size="small"
+                            color="info"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      <Box py={3}>
+                        <Typography variant="body2" color="text.secondary">
+                          No medicines found matching "{inventorySearchQuery}"
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={handleCloseInventoryDialog} variant="outlined">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Error Snackbar */}
       <Snackbar
         open={snackbarOpen}
@@ -1032,7 +1279,9 @@ const PharmacistDashboard: React.FC = () => {
           </Typography>
         </Alert>
       </Snackbar>
+      </Box>
     </Container>
+    </Box>
   );
 };
 

@@ -51,6 +51,7 @@ function App() {
             <Routes>
               {/* Public routes with MainLayout */}
               <Route element={<MainLayout />}>
+                <Route path="/" element={<Home />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
@@ -321,8 +322,7 @@ function App() {
                 }
               />
 
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="*" element={<Navigate to="/home" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
         </ToastProvider>

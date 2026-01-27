@@ -37,12 +37,25 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!loading && user) {
-      navigate(`/dashboard/${user.role}`);
-    }
-  }, [user, loading, navigate]);
+  // Redirect if already logged in - TEMPORARILY DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   if (!loading && user && user.role) {
+  //     const normalizedRole = user.role.toLowerCase();
+  //     const roleRouteMap: Record<string, string> = {
+  //       'patient': 'patient',
+  //       'doctor': 'doctor',
+  //       'nurse': 'nurse',
+  //       'receptionist': 'receptionist',
+  //       'pharmacist': 'pharmacist',
+  //       'lab': 'lab',
+  //       'lab technician': 'lab',
+  //       'admin': 'admin',
+  //       'administrator': 'admin'
+  //     };
+  //     const dashboardRoute = roleRouteMap[normalizedRole] || normalizedRole;
+  //     navigate(`/dashboard/${dashboardRoute}`, { replace: true });
+  //   }
+  // }, [user, loading, navigate]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -75,11 +88,26 @@ const Login: React.FC = () => {
       // Redirect based on user role (normalized to lowercase)
       setTimeout(() => {
         const user = result.user;
-        if (user) {
+        if (user && user.role) {
           const normalizedRole = user.role.toLowerCase();
-          navigate(`/dashboard/${normalizedRole}`);
+          
+          // Map role names to dashboard routes
+          const roleRouteMap: Record<string, string> = {
+            'patient': 'patient',
+            'doctor': 'doctor',
+            'nurse': 'nurse',
+            'receptionist': 'receptionist',
+            'pharmacist': 'pharmacist',
+            'lab': 'lab',
+            'lab technician': 'lab',
+            'admin': 'admin',
+            'administrator': 'admin'
+          };
+          
+          const dashboardRoute = roleRouteMap[normalizedRole] || normalizedRole;
+          navigate(`/dashboard/${dashboardRoute}`, { replace: true });
         } else {
-          navigate('/dashboard');
+          navigate('/home', { replace: true });
         }
       }, 1000);
     } catch (error: any) {

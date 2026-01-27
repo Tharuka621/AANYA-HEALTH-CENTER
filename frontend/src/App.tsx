@@ -28,10 +28,7 @@ import ReportsManagement from './pages/admin/ReportsManagement';
 import SettingsManagement from './pages/admin/SettingsManagement';
 import PatientList from './pages/doctor/PatientList';
 import AppointmentList from './pages/doctor/AppointmentList';
-import VitalSigns from './pages/doctor/VitalSigns';
 import LabTestList from './pages/doctor/LabTestList';
-import PrescriptionList from './pages/doctor/PrescriptionList';
-import ReportsList from './pages/doctor/ReportsList';
 import PatientAppointmentList from './pages/patient/AppointmentList';
 import PatientPrescriptionList from './pages/patient/PrescriptionList';
 import PatientLabReports from './pages/patient/LabReports';
@@ -233,41 +230,11 @@ function App() {
                 }
               />
               <Route
-                path="/dashboard/doctor/vital-signs"
-                element={
-                  <ProtectedRoute allowedRoles={["doctor"]}>
-                    <DashboardLayout>
-                      <VitalSigns />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/dashboard/doctor/lab-tests"
                 element={
                   <ProtectedRoute allowedRoles={["doctor"]}>
                     <DashboardLayout>
                       <LabTestList />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/doctor/prescriptions"
-                element={
-                  <ProtectedRoute allowedRoles={["doctor"]}>
-                    <DashboardLayout>
-                      <PrescriptionList />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/doctor/reports"
-                element={
-                  <ProtectedRoute allowedRoles={["doctor"]}>
-                    <DashboardLayout>
-                      <ReportsList />
                     </DashboardLayout>
                   </ProtectedRoute>
                 }

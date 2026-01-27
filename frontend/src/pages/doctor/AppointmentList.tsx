@@ -20,148 +20,141 @@ import {
   DialogActions,
   TextField,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   Alert,
+  Card,
+  CardContent,
+  Grid,
 } from '@mui/material';
 import {
   CheckCircle as CheckIcon,
   Cancel as CancelIcon,
-  Edit as EditIcon,
   Visibility as ViewIcon,
-  Add as AddIcon,
+  CalendarToday as CalendarIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
+import { getAppointmentsWithDetails, mockSlots } from '../../mock/doctorMock';
+import { appointmentStatusLabels, appointmentStatusColors, formatTime, formatDate } from '../../utils/doctorUtils';
 
 const AppointmentList: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    patient_name: '',
-    date: '',
-    time: '',
-    reason: '',
-    status: 'scheduled',
-    notes: '',
-  });
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedSlot, setSelectedSlot] = useState<string>('');
 
-  // Mock appointments data
-  const appointments = [
-    {
-      id: '1',
-      patient: 'Nimal Perera',
-      date: '2024-12-20',
-      time: '10:00 AM',
-      reason: 'Regular checkup',
-      status: 'scheduled',
-      phone: '+94771234567',
-      notes: 'Patient requested morning appointment',
-    },
-    {
-      id: '2',
-      patient: 'Kamani Silva',
-      date: '2024-12-20',
-      time: '11:30 AM',
-      reason: 'Blood pressure follow-up',
-      status: 'completed',
-      phone: '+94771234568',
-      notes: 'BP medication adjustment needed',
-    },
-    {
-      id: '3',
-      patient: 'Sunil Fernando',
-      date: '2024-12-21',
-      time: '2:00 PM',
-      reason: 'Diabetes consultation',
-      status: 'cancelled',
-      phone: '+94771234569',
-      notes: 'Patient cancelled due to emergency',
-    },
-    {
-      id: '4',
-      patient: 'Sanduni Wickramasinghe',
-      date: '2024-12-21',
-      time: '3:30 PM',
-      reason: 'Annual physical',
-      status: 'scheduled',
-      phone: '+94771234570',
-      notes: 'Annual checkup',
-    },
-  ];
+  // Get appointments with details using mock data
+  const allAppointments = getAppointmentsWithDetails();
+  
+  // Filter appointments by selected date
+  const appointmentsByDate = selectedDate 
+    ? allAppointments.filter(app => app.slot_date === selectedDate)
+    : allAppointments;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'scheduled': return 'primary';
-      case 'completed': return 'success';
-      case 'cancelled': return 'error';
-      case 'no_show': return 'warning';
-      default: return 'default';
-    }
-  };
+  // Further filter by slot if selected
+  const filteredAppointments = selectedSlot
+    ? appointmentsByDate.filter(app => app.slot_id === selectedSlot)
+    : appointmentsByDate;
+
+  // Get slots for selected date
+  const slotsForDate = mockSlots.filter(slot => slot.slot_date === selectedDate);
 
   const handleViewAppointment = (appointment: any) => {
     setSelectedAppointment(appointment);
-    setFormData({
-      patient_name: appointment.patient,
-      date: appointment.date,
-      time: appointment.time,
-      reason: appointment.reason,
-      status: appointment.status,
-      notes: appointment.notes,
-    });
     setOpenDialog(true);
   };
 
   const handleCompleteAppointment = (appointmentId: string) => {
     console.log('Complete appointment:', appointmentId);
-    // In a real app, this would call the API
+    alert('Appointment marked as completed!');
   };
 
   const handleCancelAppointment = (appointmentId: string) => {
     console.log('Cancel appointment:', appointmentId);
-    // In a real app, this would call the API
+    alert('Appointment cancelled!');
   };
-
-  const handleAddAppointment = () => {
-    console.log('Add new appointment');
-    // In a real app, this would navigate to add appointment form
-  };
-
-  const handleSaveAppointment = () => {
-    console.log('Save appointment:', formData);
-    setOpenDialog(false);
-    // In a real app, this would call the API
-  };
-
-  const todayAppointments = appointments.filter(app => app.date === new Date().toISOString().split('T')[0]);
-  const upcomingAppointments = appointments.filter(app => app.status === 'scheduled');
 
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" fontWeight={700}>
+        <Box mb={4}>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
             My Appointments
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddAppointment}
-          >
-            Schedule Appointment
-          </Button>
+          <Typography variant="body1" color="text.secondary">
+            View and manage your appointment schedule
+          </Typography>
         </Box>
+
+        {/* Date and Slot Filters */}
+        <Grid container spacing={3} mb={3}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={1} mb={2}>
+                  <CalendarIcon color="primary" />
+                  <Typography variant="h6" fontWeight={600}>
+                    Select Date
+                  </Typography>
+                </Box>
+                <TextField
+                  fullWidth
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setSelectedSlot(''); // Reset slot when date changes
+                  }}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={1} mb={2}>
+                  <ScheduleIcon color="primary" />
+                  <Typography variant="h6" fontWeight={600}>
+                    Select Time Slot
+                  </Typography>
+                </Box>
+                <FormControl fullWidth>
+                  <Select
+                    value={selectedSlot}
+                    onChange={(e) => setSelectedSlot(e.target.value)}
+                    displayEmpty
+                  >
+                    <MenuItem value="">All Slots</MenuItem>
+                    {slotsForDate.map((slot) => (
+                      <MenuItem key={slot.id} value={slot.id}>
+                        {formatTime(slot.start_time)} - {formatTime(slot.end_time)} 
+                        {!slot.is_active && ' (Inactive)'}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
 
         {/* Summary Cards */}
         <Box display="flex" gap={2} mb={4}>
           <Alert severity="info" sx={{ flex: 1 }}>
             <Typography variant="body2">
-              Today's Appointments: {todayAppointments.length}
+              Total Appointments: {filteredAppointments.length}
+            </Typography>
+          </Alert>
+          <Alert severity="warning" sx={{ flex: 1 }}>
+            <Typography variant="body2">
+              Pending: {filteredAppointments.filter(a => a.status === 'PENDING').length}
             </Typography>
           </Alert>
           <Alert severity="success" sx={{ flex: 1 }}>
             <Typography variant="body2">
-              Upcoming Appointments: {upcomingAppointments.length}
+              Confirmed: {filteredAppointments.filter(a => a.status === 'CONFIRMED').length}
             </Typography>
           </Alert>
         </Box>
@@ -171,7 +164,8 @@ const AppointmentList: React.FC = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Patient</TableCell>
-                <TableCell>Date & Time</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Time Slot</TableCell>
                 <TableCell>Reason</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Contact</TableCell>
@@ -179,77 +173,92 @@ const AppointmentList: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {appointments.map((appointment) => (
-                <TableRow key={appointment.id}>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        {appointment.patient.split(' ').map(n => n[0]).join('')}
-                      </Avatar>
-                      <Typography variant="body2" fontWeight={600}>
-                        {appointment.patient}
+              {filteredAppointments.length > 0 ? (
+                filteredAppointments.map((appointment) => (
+                  <TableRow key={appointment.id}>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Avatar sx={{ width: 32, height: 32 }}>
+                          {appointment.patient_name.split(' ').map(n => n[0]).join('')}
+                        </Avatar>
+                        <Typography variant="body2" fontWeight={600}>
+                          {appointment.patient_name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{formatDate(appointment.slot_date)}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
                       </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2">{appointment.date}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {appointment.time}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {appointment.reason || 'N/A'}
                       </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {appointment.reason}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={appointment.status}
-                      color={getStatusColor(appointment.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{appointment.phone}</TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={1}>
-                      {appointment.status === 'scheduled' && (
-                        <>
-                          <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => handleCompleteAppointment(appointment.id)}
-                          >
-                            <CheckIcon />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleCancelAppointment(appointment.id)}
-                          >
-                            <CancelIcon />
-                          </IconButton>
-                        </>
-                      )}
-                      <IconButton
-                        size="small"
-                        color="info"
-                        onClick={() => handleViewAppointment(appointment)}
-                      >
-                        <ViewIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => console.log('Edit appointment:', appointment.id)}
-                      >
-                        <EditIcon />
-                      </IconButton>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" gap={1} alignItems="center">
+                        <Chip
+                          label={appointmentStatusLabels[appointment.status]}
+                          color={appointmentStatusColors[appointment.status]}
+                          size="small"
+                        />
+                        {appointment.has_visit && (
+                          <Chip label="Checked In" size="small" color="success" variant="outlined" />
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{appointment.patient_phone}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" gap={1}>
+                        {appointment.status === 'PENDING' && (
+                          <>
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() => handleCompleteAppointment(appointment.id)}
+                              title="Mark as Confirmed"
+                            >
+                              <CheckIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleCancelAppointment(appointment.id)}
+                              title="Cancel"
+                            >
+                              <CancelIcon />
+                            </IconButton>
+                          </>
+                        )}
+                        <IconButton
+                          size="small"
+                          color="info"
+                          onClick={() => handleViewAppointment(appointment)}
+                          title="View Details"
+                        >
+                          <ViewIcon />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    <Box py={4}>
+                      <Typography variant="body1" color="text.secondary">
+                        No appointments found for the selected date and slot
+                      </Typography>
                     </Box>
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -260,69 +269,55 @@ const AppointmentList: React.FC = () => {
             Appointment Details
           </DialogTitle>
           <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <TextField
-                fullWidth
-                label="Patient Name"
-                value={formData.patient_name}
-                onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
-                margin="normal"
-                disabled
-              />
-              <TextField
-                fullWidth
-                label="Date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                fullWidth
-                label="Time"
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                fullWidth
-                label="Reason"
-                value={formData.reason}
-                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                margin="normal"
-              />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  label="Status"
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                >
-                  <MenuItem value="scheduled">Scheduled</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                  <MenuItem value="no_show">No Show</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                fullWidth
-                label="Notes"
-                multiline
-                rows={3}
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                margin="normal"
-              />
-            </Box>
+            {selectedAppointment && (
+              <Box sx={{ pt: 2 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Patient Name</Typography>
+                    <Typography variant="body1" fontWeight={600}>{selectedAppointment.patient_name}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Phone</Typography>
+                    <Typography variant="body1" fontWeight={600}>{selectedAppointment.patient_phone}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Date</Typography>
+                    <Typography variant="body1" fontWeight={600}>{formatDate(selectedAppointment.slot_date)}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Time Slot</Typography>
+                    <Typography variant="body1" fontWeight={600}>
+                      {formatTime(selectedAppointment.start_time)} - {formatTime(selectedAppointment.end_time)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Status</Typography>
+                    <Chip
+                      label={appointmentStatusLabels[selectedAppointment.status as keyof typeof appointmentStatusLabels]}
+                      color={appointmentStatusColors[selectedAppointment.status as keyof typeof appointmentStatusColors]}
+                      size="small"
+                      sx={{ mt: 0.5 }}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Check-In Status</Typography>
+                    <Chip
+                      label={selectedAppointment.has_visit ? 'Checked In' : 'Not Checked In'}
+                      color={selectedAppointment.has_visit ? 'success' : 'default'}
+                      size="small"
+                      sx={{ mt: 0.5 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">Reason for Visit</Typography>
+                    <Typography variant="body1">{selectedAppointment.reason || 'N/A'}</Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSaveAppointment} variant="contained">
-              Save Changes
-            </Button>
+            <Button onClick={() => setOpenDialog(false)}>Close</Button>
           </DialogActions>
         </Dialog>
       </Box>

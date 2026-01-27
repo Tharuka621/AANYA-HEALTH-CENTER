@@ -189,118 +189,185 @@ const AvailabilityManager: React.FC = () => {
   };
 
   return (
-    <Card>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Box>
-            <Typography variant="h5" fontWeight={600} gutterBottom>
-              Manage Availability
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Set your available time slots for patient appointments
-            </Typography>
-          </Box>
+    <Box>
+      {/* Action Bar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box>
+          <Typography variant="body1" color="text.secondary">
+            Manage your weekly schedule and time slots
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenDialog()}
+          size="large"
+          sx={{ 
+            fontWeight: 600,
+            px: 3,
+            boxShadow: 2,
+            '&:hover': {
+              boxShadow: 4
+            }
+          }}
+        >
+          Add Time Slot
+        </Button>
+      </Box>
+
+      {loading ? (
+        <Box display="flex" justifyContent="center" py={8}>
+          <CircularProgress size={48} />
+        </Box>
+      ) : slots.length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 8, bgcolor: 'grey.50', borderRadius: 2 }}>
+          <CalendarIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No availability slots configured
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Add your first time slot to start accepting patient appointments
+          </Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
           >
-            Add Time Slot
+            Add Your First Slot
           </Button>
         </Box>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
-          </Box>
-        ) : slots.length === 0 ? (
-          <Alert severity="info">
-            No availability slots set. Add your first time slot to start accepting appointments.
-          </Alert>
-        ) : (
-          <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Date</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Time</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Max Appointments</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {slots.map((slot) => (
-                  <TableRow key={slot.id} hover>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <CalendarIcon color="action" fontSize="small" />
-                        <Typography variant="body2">
-                          {formatDate(slot.slot_date)}
-                        </Typography>
+      ) : (
+        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: 'grey.100' }}>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Time Slot</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Capacity</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }} align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {slots.map((slot) => (
+                <TableRow 
+                  key={slot.id} 
+                  hover
+                  sx={{
+                    '&:hover': {
+                      bgcolor: 'action.hover'
+                    }
+                  }}
+                >
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 1,
+                          bgcolor: 'primary.light',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'primary.main'
+                        }}
+                      >
+                        <CalendarIcon fontSize="small" />
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                      <Typography variant="body2" fontWeight={600}>
+                        {formatDate(slot.slot_date)}
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={`${slot.max_appointments} patients`} 
-                        size="small" 
-                        color="primary"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={slot.is_active ? 'Active' : 'Inactive'}
-                        color={slot.is_active ? 'success' : 'default'}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Typography variant="body2" fontWeight={500}>
+                        {formatTime(slot.start_time)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">-</Typography>
+                      <Typography variant="body2" fontWeight={500}>
+                        {formatTime(slot.end_time)}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={`${slot.max_appointments} patients`} 
+                      size="small" 
+                      sx={{
+                        bgcolor: 'primary.light',
+                        color: 'primary.main',
+                        fontWeight: 600
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={slot.is_active ? 'Active' : 'Inactive'}
+                      color={slot.is_active ? 'success' : 'default'}
+                      size="small"
+                      sx={{ fontWeight: 600 }}
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Box display="flex" gap={0.5} justifyContent="flex-end">
+                      <IconButton
                         size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box display="flex" gap={1} justifyContent="flex-end">
-                        <IconButton
+                        onClick={() => handleOpenDialog(slot)}
+                        sx={{
+                          color: 'primary.main',
+                          '&:hover': {
+                            bgcolor: 'primary.light'
+                          }
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleToggleActive(slot)}
+                        sx={{
+                          color: slot.is_active ? 'warning.main' : 'success.main',
+                          '&:hover': {
+                            bgcolor: slot.is_active ? 'warning.light' : 'success.light'
+                          }
+                        }}
+                      >
+                        <Switch 
+                          checked={slot.is_active} 
                           size="small"
-                          color="primary"
-                          onClick={() => handleOpenDialog(slot)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color={slot.is_active ? 'warning' : 'success'}
-                          onClick={() => handleToggleActive(slot)}
-                        >
-                          <Switch 
-                            checked={slot.is_active} 
-                            size="small"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDelete(slot.id)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDelete(slot.id)}
+                        sx={{
+                          color: 'error.main',
+                          '&:hover': {
+                            bgcolor: 'error.light'
+                          }
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
-        {/* Add/Edit Dialog */}
-        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-          <DialogTitle>
+      {/* Add/Edit Dialog */}
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h5" fontWeight={700}>
             {editingSlot ? 'Edit Availability Slot' : 'Add New Availability Slot'}
-          </DialogTitle>
+          </Typography>
+        </DialogTitle>
           <DialogContent>
             <Box sx={{ pt: 2 }}>
               <TextField
@@ -357,15 +424,14 @@ const AvailabilityManager: React.FC = () => {
               />
             </Box>
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
             <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button onClick={handleSave} variant="contained">
-              {editingSlot ? 'Update' : 'Create'}
+            <Button onClick={handleSave} variant="contained" size="large" sx={{ px: 4, fontWeight: 600 }}>
+              {editingSlot ? 'Update Slot' : 'Create Slot'}
             </Button>
           </DialogActions>
         </Dialog>
-      </CardContent>
-    </Card>
+      </Box>
   );
 };
 

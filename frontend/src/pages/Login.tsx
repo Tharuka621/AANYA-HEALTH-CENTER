@@ -83,6 +83,10 @@ const Login: React.FC = () => {
 
     try {
       const result = await login.mutateAsync(formData);
+      console.log('Login result:', result);
+      console.log('User:', result.user);
+      console.log('User role:', result.user?.role);
+      
       showSuccess('Login successful! Redirecting...');
       
       // Redirect based on user role (normalized to lowercase)
@@ -90,6 +94,7 @@ const Login: React.FC = () => {
         const user = result.user;
         if (user && user.role) {
           const normalizedRole = user.role.toLowerCase();
+          console.log('Normalized role:', normalizedRole);
           
           // Map role names to dashboard routes
           const roleRouteMap: Record<string, string> = {
@@ -99,18 +104,24 @@ const Login: React.FC = () => {
             'receptionist': 'receptionist',
             'pharmacist': 'pharmacist',
             'lab': 'lab',
+            'lab_tech': 'lab',
             'lab technician': 'lab',
             'admin': 'admin',
             'administrator': 'admin'
           };
           
           const dashboardRoute = roleRouteMap[normalizedRole] || normalizedRole;
+          console.log('Dashboard route:', dashboardRoute);
+          console.log('Navigating to:', `/dashboard/${dashboardRoute}`);
+          
           navigate(`/dashboard/${dashboardRoute}`, { replace: true });
         } else {
+          console.error('No user or role in result');
           navigate('/home', { replace: true });
         }
       }, 1000);
     } catch (error: any) {
+      console.error('Login error:', error);
       showError(error.message || 'Login failed. Please try again.');
     }
   };

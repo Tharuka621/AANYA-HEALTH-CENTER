@@ -52,12 +52,12 @@ const Signup: React.FC = () => {
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!loading && user) {
-      navigate(`/dashboard/${user.role}`);
-    }
-  }, [user, loading, navigate]);
+  // Redirect if already logged in - TEMPORARILY DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   if (!loading && user) {
+  //     navigate(`/dashboard/${user.role}`);
+  //   }
+  // }, [user, loading, navigate]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

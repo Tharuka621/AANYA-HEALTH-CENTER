@@ -6,19 +6,23 @@ import {
   Grid,
   Card,
   CardContent,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Button,
   Chip,
-  Divider,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Avatar,
+  Divider,
 } from '@mui/material';
 import {
   Science as LabIcon,
@@ -27,369 +31,499 @@ import {
   Schedule as ScheduleIcon,
   Description as ReportIcon,
   Person as PersonIcon,
+  LocalHospital,
+  CalendarToday,
+  Close,
+  PlayArrow,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import {
+  getPendingLabOrderItems,
+  getCompletedLabOrderItems,
+  updateOrderItemStatus,
+  addLabResult,
+  updateLabOrderStatus,
+} from '../../mock/labMock';
+import { LabOrderItemWithDetails } from '../../types/lab';
 
 const LabDashboard: React.FC = () => {
-  const { user } = useAuth();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [selectedTest, setSelectedTest] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<LabOrderItemWithDetails | null>(null);
+  const [resultText, setResultText] = useState('');
   const [reportFile, setReportFile] = useState<File | null>(null);
 
-  // Mock data
-  const pendingTests = [
-    {
-      id: '1',
-      patient: 'Nimal Perera',
-      doctor: 'Dr. Milinda Abeykoon',
-      test_name: 'Complete Blood Count',
-      requested_date: '2024-12-15',
-      status: 'requested',
-    },
-    {
-      id: '2',
-      patient: 'Kamani Silva',
-      doctor: 'Dr. Milinda Abeykoon',
-      test_name: 'Lipid Profile',
-      requested_date: '2024-12-14',
-      status: 'requested',
-    },
-    {
-      id: '3',
-      patient: 'Sunil Fernando',
-      doctor: 'Dr. Milinda Abeykoon',
-      test_name: 'Thyroid Function Test',
-      requested_date: '2024-12-13',
-      status: 'requested',
-    },
-  ];
+  // Get data from mock database
+  const pendingItems = getPendingLabOrderItems();
+  const completedItems = getCompletedLabOrderItems();
 
-  const completedTests = [
-    {
-      id: '4',
-      patient: 'Madhavi Jayawardena',
-      doctor: 'Dr. Milinda Abeykoon',
-      test_name: 'Blood Sugar Test',
-      completed_date: '2024-12-16',
-      status: 'completed',
-      report_url: '/reports/blood-sugar-001.pdf',
-    },
-    {
-      id: '5',
-      patient: 'Pradeep Kumara',
-      doctor: 'Dr. Milinda Abeykoon',
-      test_name: 'Urine Analysis',
-      completed_date: '2024-12-15',
-      status: 'completed',
-      report_url: '/reports/urine-001.pdf',
-    },
-  ];
+  const stats = {
+    pending: pendingItems.length,
+    inProgress: pendingItems.filter(item => item.order_status === 'IN_PROGRESS').length,
+    completed: completedItems.length,
+  };
+
+  const handleStartTest = (item: LabOrderItemWithDetails) => {
+    // Update order status to IN_PROGRESS
+    updateLabOrderStatus(item.lab_order_id, 'IN_PROGRESS');
+    window.location.reload(); // Refresh to show updated status
+  };
+
+  const handleUploadClick = (item: LabOrderItemWithDetails) => {
+    setSelectedItem(item);
+    setUploadModalOpen(true);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setReportFile(event.target.files[0]);
+    }
+  };
+
+  const handleSubmitResults = () => {
+    if (!selectedItem) return;
+
+    // Create file URL if file exists
+    const fileUrl = reportFile ? URL.createObjectURL(reportFile) : null;
+    
+    // Add lab result to database
+    addLabResult(selectedItem.id, resultText || null, fileUrl);
+
+    // Update item status to DONE (will auto-complete order if all items done)
+    updateOrderItemStatus(selectedItem.id, 'DONE');
+
+    // Close dialog and reset
+    setUploadModalOpen(false);
+    setResultText('');
+    setReportFile(null);
+    setSelectedItem(null);
+  };
+
+  const handleCancelUpload = () => {
+    setUploadModalOpen(false);
+    setSelectedItem(null);
+    setResultText('');
+    setReportFile(null);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'requested':
+      case 'ORDERED':
         return 'warning';
-      case 'in_progress':
+      case 'IN_PROGRESS':
         return 'info';
-      case 'completed':
+      case 'COMPLETED':
         return 'success';
       default:
         return 'default';
     }
   };
 
-  const handleUploadResult = (test: any) => {
-    setSelectedTest(test);
-    setUploadModalOpen(true);
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setReportFile(file);
-    }
-  };
-
-  const handleSubmitUpload = () => {
-    if (selectedTest && reportFile) {
-      console.log('Uploading report for test:', selectedTest.id, 'File:', reportFile.name);
-      // In a real app, this would upload the file and update the test status
-      setUploadModalOpen(false);
-      setSelectedTest(null);
-      setReportFile(null);
-    }
-  };
-
-  const handleCancelUpload = () => {
-    setUploadModalOpen(false);
-    setSelectedTest(null);
-    setReportFile(null);
-  };
-
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 3 }}>
-        {/* Welcome Section */}
+        {/* Header */}
         <Box mb={4}>
           <Typography variant="h4" fontWeight={700} gutterBottom>
-              Welcome, Dilini Rajapaksha!
+            Lab Technician Dashboard
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage lab test requests and upload results.
+            Process lab test orders and upload results
           </Typography>
         </Box>
 
         <Grid container spacing={3}>
           {/* Statistics Cards */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
+          <Grid item xs={12} sm={6} md={4}>
+            <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Box>
-                    <Typography variant="h4" fontWeight={700} color="primary.main">
-                      24
+                    <Typography variant="h3" fontWeight={700} color="white">
+                      {stats.pending}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Tests Today
-                    </Typography>
-                  </Box>
-                  <LabIcon color="primary" sx={{ fontSize: 40 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" fontWeight={700} color="warning.main">
-                      {pendingTests.length}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body1" color="rgba(255,255,255,0.9)">
                       Pending Tests
                     </Typography>
                   </Box>
-                  <ScheduleIcon color="warning" sx={{ fontSize: 40 }} />
+                  <ScheduleIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.8)' }} />
                 </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
+          <Grid item xs={12} sm={6} md={4}>
+            <Card sx={{ background: 'linear-gradient(135deg, #939dfb 0%, #2f40c3 100%)' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Box>
-                    <Typography variant="h4" fontWeight={700} color="success.main">
-                      {completedTests.length}
+                    <Typography variant="h3" fontWeight={700} color="white">
+                      {stats.inProgress}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body1" color="rgba(255,255,255,0.9)">
+                      In Progress
+                    </Typography>
+                  </Box>
+                  <LabIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.8)' }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={4}>
+            <Card sx={{ background: 'linear-gradient(135deg, #3d58f3 0%, #e1e2ff 100%)' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" justifyContent="space-between">
+                  <Box>
+                    <Typography variant="h3" fontWeight={700} color="white">
+                      {stats.completed}
+                    </Typography>
+                    <Typography variant="body1" color="rgba(255,255,255,0.9)">
                       Completed Today
                     </Typography>
                   </Box>
-                  <CheckCircleIcon color="success" sx={{ fontSize: 40 }} />
+                  <CheckCircleIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.8)' }} />
                 </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          {/* Pending Lab Tests Table */}
+          <Grid item xs={12}>
             <Card>
+              <Box
+                sx={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  p: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1}>
+                  <ScheduleIcon sx={{ color: 'white' }} />
+                  <Typography variant="h6" fontWeight={600} color="white">
+                    Pending Lab Tests ({stats.pending})
+                  </Typography>
+                </Box>
+              </Box>
               <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" fontWeight={700} color="info.main">
-                      18
+                {pendingItems.length > 0 ? (
+                  <TableContainer component={Paper} elevation={0}>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: 'grey.50' }}>
+                          <TableCell><strong>Patient</strong></TableCell>
+                          <TableCell><strong>Test Name</strong></TableCell>
+                          <TableCell><strong>Test Type</strong></TableCell>
+                          <TableCell><strong>Doctor</strong></TableCell>
+                          <TableCell><strong>Requested Date</strong></TableCell>
+                          <TableCell><strong>Order Status</strong></TableCell>
+                          <TableCell align="center"><strong>Action</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {pendingItems.map((item) => (
+                          <TableRow key={item.id} hover>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                                  <PersonIcon fontSize="small" />
+                                </Avatar>
+                                <Box>
+                                  <Typography variant="body2" fontWeight={600}>
+                                    {item.patient_name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {item.patient_phone}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600}>
+                                {item.test_name}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip label={item.test_type} size="small" variant="outlined" />
+                            </TableCell>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                <LocalHospital fontSize="small" color="action" />
+                                <Typography variant="body2">
+                                  {item.doctor_name}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                <CalendarToday fontSize="small" color="action" />
+                                <Typography variant="body2">
+                                  {formatDate(item.requested_date)}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={item.order_status}
+                                size="small"
+                                color={getStatusColor(item.order_status) as any}
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Box display="flex" gap={1} justifyContent="center">
+                                {item.order_status === 'ORDERED' && (
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="info"
+                                    startIcon={<PlayArrow />}
+                                    onClick={() => handleStartTest(item)}
+                                  >
+                                    Start Test
+                                  </Button>
+                                )}
+                                {item.order_status === 'IN_PROGRESS' && (
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    startIcon={<UploadIcon />}
+                                    onClick={() => handleUploadClick(item)}
+                                  >
+                                    Upload Result
+                                  </Button>
+                                )}
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Box textAlign="center" py={6}>
+                    <ScheduleIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary">
+                      No pending lab tests
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Reports Generated
+                      All tests have been processed
                     </Typography>
                   </Box>
-                  <ReportIcon color="info" sx={{ fontSize: 40 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Pending Lab Tests */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                  <Typography variant="h6" fontWeight={600}>
-                    Pending Lab Tests
-                  </Typography>
-                  <LabIcon color="primary" />
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-                
-                {pendingTests.length > 0 ? (
-                  <List>
-                    {pendingTests.map((test, index) => (
-                      <React.Fragment key={test.id}>
-                        <ListItem>
-                          <ListItemIcon>
-                            <LabIcon color="action" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Typography variant="subtitle1" fontWeight={600}>
-                                  {test.test_name}
-                                </Typography>
-                                <Chip
-                                  label={test.status}
-                                  size="small"
-                                  color={getStatusColor(test.status)}
-                                />
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                  Patient: {test.patient}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  Doctor: {test.doctor}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  Requested: {new Date(test.requested_date).toLocaleDateString()}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<UploadIcon />}
-                            onClick={() => handleUploadResult(test)}
-                          >
-                            Upload Result
-                          </Button>
-                        </ListItem>
-                        {index < pendingTests.length - 1 && <Divider />}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                ) : (
-                  <Alert severity="info">
-                    No pending lab tests at the moment.
-                  </Alert>
                 )}
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Completed Tests */}
-          <Grid item xs={12} md={6}>
+          {/* Completed Tests Table */}
+          <Grid item xs={12}>
             <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                  <Typography variant="h6" fontWeight={600}>
-                    Recent Completed Tests
+              <Box
+                sx={{
+                  background: 'linear-gradient(135deg, #4191d8 0%, #00f2fe 100%)',
+                  p: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CheckCircleIcon sx={{ color: 'white' }} />
+                  <Typography variant="h6" fontWeight={600} color="white">
+                    Completed Tests ({completedItems.length})
                   </Typography>
-                  <CheckCircleIcon color="primary" />
                 </Box>
-                <Divider sx={{ mb: 2 }} />
-                
-                {completedTests.length > 0 ? (
-                  <List>
-                    {completedTests.map((test, index) => (
-                      <React.Fragment key={test.id}>
-                        <ListItem>
-                          <ListItemIcon>
-                            <CheckCircleIcon color="action" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
+              </Box>
+              <CardContent>
+                {completedItems.length > 0 ? (
+                  <TableContainer component={Paper} elevation={0}>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: 'grey.50' }}>
+                          <TableCell><strong>Patient</strong></TableCell>
+                          <TableCell><strong>Test Name</strong></TableCell>
+                          <TableCell><strong>Test Type</strong></TableCell>
+                          <TableCell><strong>Doctor</strong></TableCell>
+                          <TableCell><strong>Requested Date</strong></TableCell>
+                          <TableCell><strong>Status</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {completedItems.map((item) => (
+                          <TableRow key={item.id} hover>
+                            <TableCell>
                               <Box display="flex" alignItems="center" gap={1}>
-                                <Typography variant="subtitle1" fontWeight={600}>
-                                  {test.test_name}
-                                </Typography>
-                                <Chip
-                                  label={test.status}
-                                  size="small"
-                                  color={getStatusColor(test.status)}
-                                />
+                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'success.main' }}>
+                                  <PersonIcon fontSize="small" />
+                                </Avatar>
+                                <Box>
+                                  <Typography variant="body2" fontWeight={600}>
+                                    {item.patient_name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {item.patient_phone}
+                                  </Typography>
+                                </Box>
                               </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                  Patient: {test.patient}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  Doctor: {test.doctor}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  Completed: {new Date(test.completed_date).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600}>
+                                {item.test_name}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip label={item.test_type} size="small" variant="outlined" />
+                            </TableCell>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                <LocalHospital fontSize="small" color="action" />
+                                <Typography variant="body2">
+                                  {item.doctor_name}
                                 </Typography>
                               </Box>
-                            }
-                          />
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<ReportIcon />}
-                            href={test.report_url}
-                            target="_blank"
-                          >
-                            View Report
-                          </Button>
-                        </ListItem>
-                        {index < completedTests.length - 1 && <Divider />}
-                      </React.Fragment>
-                    ))}
-                  </List>
+                            </TableCell>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                <CalendarToday fontSize="small" color="action" />
+                                <Typography variant="body2">
+                                  {formatDate(item.requested_date)}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Chip label="DONE" size="small" color="success" />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 ) : (
-                  <Alert severity="info">
-                    No completed tests found.
-                  </Alert>
+                  <Box textAlign="center" py={6}>
+                    <CheckCircleIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary">
+                      No completed tests yet
+                    </Typography>
+                  </Box>
                 )}
               </CardContent>
             </Card>
           </Grid>
         </Grid>
 
-        {/* Upload Modal */}
+        {/* Upload Result Modal */}
         <Dialog open={uploadModalOpen} onClose={handleCancelUpload} maxWidth="sm" fullWidth>
-          <DialogTitle>Upload Lab Test Result</DialogTitle>
+          <DialogTitle>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box display="flex" alignItems="center" gap={1}>
+                <UploadIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
+                  Upload Lab Test Result
+                </Typography>
+              </Box>
+              <IconButton size="small" onClick={handleCancelUpload}>
+                <Close />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <Divider />
           <DialogContent>
-            {selectedTest && (
+            {selectedItem && (
               <Box>
-                <Typography variant="body1" gutterBottom>
-                  <strong>Test:</strong> {selectedTest.test_name}
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  <strong>Patient:</strong> {selectedTest.patient}
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  <strong>Doctor:</strong> {selectedTest.doctor}
-                </Typography>
-                
-                <Box mt={3}>
-                  <TextField
+                {/* Test Details */}
+                <Card variant="outlined" sx={{ mb: 3, bgcolor: 'grey.50' }}>
+                  <CardContent>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Test Name
+                        </Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {selectedItem.test_name}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Patient
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {selectedItem.patient_name}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Doctor
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {selectedItem.doctor_name}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Test Type
+                        </Typography>
+                        <Chip label={selectedItem.test_type} size="small" />
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+
+                {/* Result Text */}
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  label="Test Results (Text)"
+                  placeholder="Enter test results, values, and observations..."
+                  value={resultText}
+                  onChange={(e) => setResultText(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+
+                {/* File Upload */}
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Upload Report File (Optional)
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<ReportIcon />}
                     fullWidth
-                    type="file"
-                    label="Upload Report"
-                    InputLabelProps={{ shrink: true }}
-                    inputProps={{ accept: '.pdf,.doc,.docx' }}
-                    onChange={handleFileUpload}
-                  />
+                  >
+                    {reportFile ? reportFile.name : 'Choose File (PDF, DOC, DOCX)'}
+                    <input
+                      type="file"
+                      hidden
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileChange}
+                    />
+                  </Button>
                 </Box>
               </Box>
             )}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCancelUpload}>Cancel</Button>
+          <Divider />
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleCancelUpload} color="inherit">
+              Cancel
+            </Button>
             <Button
-              onClick={handleSubmitUpload}
+              onClick={handleSubmitResults}
               variant="contained"
-              disabled={!reportFile}
+              startIcon={<CheckCircleIcon />}
+              disabled={!resultText && !reportFile}
             >
-              Upload Result
+              Submit Result
             </Button>
           </DialogActions>
         </Dialog>

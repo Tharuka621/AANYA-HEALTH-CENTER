@@ -77,22 +77,22 @@ const PatientDashboard: React.FC = () => {
   const mockPrescriptions = [
     {
       id: '1',
+      appointment_no: 'APT-2024-001',
       issued_date: '2024-12-15',
       doctor: { full_name: 'Dr. Milinda Abeykoon' },
       medicines: [
         { medicine_name: 'Metformin', dosage: '500mg', frequency: 'Twice daily' },
         { medicine_name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily' },
       ],
-      status: 'active',
     },
     {
       id: '2',
+      appointment_no: 'APT-2024-002',
       issued_date: '2024-12-10',
       doctor: { full_name: 'Dr. Milinda Abeykoon' },
       medicines: [
         { medicine_name: 'Aspirin', dosage: '81mg', frequency: 'Once daily' },
       ],
-      status: 'dispensed',
     },
   ];
 
@@ -322,9 +322,10 @@ const PatientDashboard: React.FC = () => {
                                   {prescription.doctor.full_name}
                                 </Typography>
                                 <Chip
-                                  label={prescription.status}
+                                  label={prescription.appointment_no}
                                   size="small"
-                                  color={getStatusColor(prescription.status)}
+                                  color="primary"
+                                  variant="outlined"
                                 />
                               </Box>
                             }

@@ -221,6 +221,7 @@ const LabDashboard: React.FC = () => {
                     <Table>
                       <TableHead>
                         <TableRow sx={{ bgcolor: 'grey.50' }}>
+                          <TableCell><strong>Appointment No</strong></TableCell>
                           <TableCell><strong>Patient</strong></TableCell>
                           <TableCell><strong>Test Name</strong></TableCell>
                           <TableCell><strong>Test Type</strong></TableCell>
@@ -233,6 +234,14 @@ const LabDashboard: React.FC = () => {
                       <TableBody>
                         {pendingItems.map((item) => (
                           <TableRow key={item.id} hover>
+                            <TableCell>
+                              <Chip 
+                                label={item.appointment_no} 
+                                size="small" 
+                                color="primary" 
+                                variant="outlined"
+                              />
+                            </TableCell>
                             <TableCell>
                               <Box display="flex" alignItems="center" gap={1}>
                                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
@@ -349,6 +358,7 @@ const LabDashboard: React.FC = () => {
                     <Table>
                       <TableHead>
                         <TableRow sx={{ bgcolor: 'grey.50' }}>
+                          <TableCell><strong>Appointment No</strong></TableCell>
                           <TableCell><strong>Patient</strong></TableCell>
                           <TableCell><strong>Test Name</strong></TableCell>
                           <TableCell><strong>Test Type</strong></TableCell>
@@ -360,6 +370,14 @@ const LabDashboard: React.FC = () => {
                       <TableBody>
                         {completedItems.map((item) => (
                           <TableRow key={item.id} hover>
+                            <TableCell>
+                              <Chip 
+                                label={item.appointment_no} 
+                                size="small" 
+                                color="primary" 
+                                variant="outlined"
+                              />
+                            </TableCell>
                             <TableCell>
                               <Box display="flex" alignItems="center" gap={1}>
                                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'success.main' }}>

@@ -12,6 +12,11 @@ import {
   CircularProgress,
   Divider,
   Grid,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -20,6 +25,8 @@ import {
   Visibility,
   VisibilityOff,
   VpnKey as VpnKeyIcon,
+  CheckCircle,
+  Cancel,
 } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -51,6 +58,42 @@ const Signup: React.FC = () => {
   const [isResending, setIsResending] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+  // Calculate password strength
+  const getPasswordStrength = (password: string) => {
+    if (!password) return { score: 0, label: '', color: '' };
+
+    let score = 0;
+    const criteria = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+
+    if (criteria.length) score++;
+    if (criteria.uppercase) score++;
+    if (criteria.lowercase) score++;
+    if (criteria.number) score++;
+    if (criteria.special) score++;
+
+    if (score <= 2) return { score: (score / 5) * 100, label: 'Weak', color: 'error' };
+    if (score === 3) return { score: (score / 5) * 100, label: 'Fair', color: 'warning' };
+    if (score === 4) return { score: (score / 5) * 100, label: 'Good', color: 'info' };
+    return { score: 100, label: 'Strong', color: 'success' };
+  };
+
+  const getPasswordCriteria = (password: string) => [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'Contains lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'Contains number', met: /[0-9]/.test(password) },
+    { label: 'Contains special character', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+  ];
+
+  const passwordStrength = getPasswordStrength(formData.password);
+  const passwordCriteria = getPasswordCriteria(formData.password);
 
   // Redirect if already logged in - TEMPORARILY DISABLED FOR DEBUGGING
   // useEffect(() => {
@@ -311,7 +354,7 @@ const Signup: React.FC = () => {
                   value={formData.password}
                   onChange={handleInputChange('password')}
                   error={!!errors.password}
-                  helperText={errors.password || 'Minimum 6 characters'}
+                  helperText={errors.password}
                   required
                   InputProps={{
                     startAdornment: (
@@ -333,6 +376,44 @@ const Signup: React.FC = () => {
                   }}
                   autoComplete="new-password"
                 />
+                {formData.password && (
+                  <Box mt={1}>
+                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
+                      <Typography variant="caption" color="text.secondary">
+                        Password Strength:
+                      </Typography>
+                      <Typography variant="caption" fontWeight={600} color={`${passwordStrength.color}.main`}>
+                        {passwordStrength.label}
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={passwordStrength.score}
+                      color={passwordStrength.color as any}
+                      sx={{ height: 6, borderRadius: 3 }}
+                    />
+                    <List dense sx={{ mt: 1, p: 0 }}>
+                      {passwordCriteria.map((criterion, index) => (
+                        <ListItem key={index} sx={{ py: 0, px: 0 }}>
+                          <ListItemIcon sx={{ minWidth: 28 }}>
+                            {criterion.met ? (
+                              <CheckCircle fontSize="small" color="success" />
+                            ) : (
+                              <Cancel fontSize="small" color="disabled" />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={criterion.label}
+                            primaryTypographyProps={{
+                              variant: 'caption',
+                              color: criterion.met ? 'success.main' : 'text.secondary',
+                            }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                )}
               </Grid>
 
               <Grid item xs={12} sm={6}>

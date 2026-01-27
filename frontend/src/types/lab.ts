@@ -10,6 +10,7 @@ export interface LabOrder {
   patient_id: string;
   status: LabOrderStatus;
   created_at: string;
+  appointment_no?: string;
 }
 
 export interface LabOrderItem {
@@ -66,4 +67,5 @@ export interface LabOrderItemWithDetails extends LabOrderItem {
   requested_date: string;
   doctor_name: string;
   order_status: LabOrderStatus;
+  appointment_no?: string;
 }

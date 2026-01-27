@@ -49,6 +49,7 @@ export const mockLabOrders: LabOrder[] = [
     patient_id: 'P1',
     status: 'IN_PROGRESS',
     created_at: '2026-01-27T08:30:00',
+    appointment_no: 'APT-2026-001',
   },
   {
     id: 'LO2',
@@ -57,6 +58,7 @@ export const mockLabOrders: LabOrder[] = [
     patient_id: 'P2',
     status: 'ORDERED',
     created_at: '2026-01-27T09:15:00',
+    appointment_no: 'APT-2026-002',
   },
   {
     id: 'LO3',
@@ -65,6 +67,7 @@ export const mockLabOrders: LabOrder[] = [
     patient_id: 'P3',
     status: 'IN_PROGRESS',
     created_at: '2026-01-27T10:00:00',
+    appointment_no: 'APT-2026-003',
   },
   {
     id: 'LO4',
@@ -73,6 +76,7 @@ export const mockLabOrders: LabOrder[] = [
     patient_id: 'P1',
     status: 'COMPLETED',
     created_at: '2026-01-26T14:00:00',
+    appointment_no: 'APT-2026-004',
   },
 ];
 
@@ -138,6 +142,7 @@ export const getLabOrderItemsWithDetails = (): LabOrderItemWithDetails[] => {
       requested_date: order?.created_at || '',
       doctor_name: doctorUser?.full_name || 'Unknown Doctor',
       order_status: order?.status || 'ORDERED',
+      appointment_no: order?.appointment_no || 'N/A',
     };
   });
 };

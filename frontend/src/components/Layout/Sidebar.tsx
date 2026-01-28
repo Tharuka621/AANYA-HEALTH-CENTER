@@ -32,6 +32,7 @@ import {
   ExpandLess,
   ExpandMore,
   Menu as MenuIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLogout } from '../../hooks/useAuth';
@@ -127,7 +128,8 @@ const Sidebar: React.FC = () => {
           ...baseItems,
           { icon: CalendarIcon, label: 'Appointments', path: '/dashboard/patient/appointments' },
           { icon: DescriptionIcon, label: 'Prescriptions', path: '/dashboard/patient/prescriptions' },
-          { icon: LabIcon, label: 'Lab Reports', path: '/dashboard/patient/lab-reports' }
+          { icon: LabIcon, label: 'Lab Reports', path: '/dashboard/patient/lab-reports' },
+          { icon: PersonIcon, label: 'My Profile', path: '/dashboard/patient/profile' }
         ];
       
       default:

@@ -16,7 +16,6 @@ import {
   Fab,
   Divider,
   Alert,
-  CircularProgress,
   Snackbar,
 } from '@mui/material';
 import {
@@ -31,6 +30,7 @@ import {
   LocalHospital as HospitalIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import AppointmentBooking from '../../components/Patient/AppointmentBooking';
 // import { useAppointmentsByPatient, usePrescriptionsByPatient, useLabTestsByPatient } from '../../hooks';
 import Modal from '../../components/common/Modal';
@@ -40,6 +40,7 @@ import { User } from '../../types';
 
 const PatientDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<User | null>(null);
@@ -128,7 +129,7 @@ const PatientDashboard: React.FC = () => {
   };
 
   // Mock doctor availability check (simulates checking against existing appointments)
-  const checkDoctorAvailability = (appointmentData: any): boolean => {
+  const checkDoctorAvailability = (_appointmentData: any): boolean => {
     // Simulate random availability (70% chance available)
     // In a real app, this would check the database for existing appointments
     return Math.random() > 0.3;
@@ -224,7 +225,7 @@ const PatientDashboard: React.FC = () => {
         {/* Welcome Section */}
         <Box mb={4}>
           <Typography variant="h4" fontWeight={700} gutterBottom>
-            Welcome back, {user?.full_name}!
+            Welcome back, {user?.full_name || 'Patient'}!
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Here's an overview of your health information and upcoming appointments.
@@ -431,7 +432,7 @@ const PatientDashboard: React.FC = () => {
           <Button
             variant="outlined"
             startIcon={<PersonIcon />}
-            onClick={() => console.log('View Profile - Feature coming soon')}
+            onClick={() => navigate('/dashboard/patient/profile')}
           >
             View Profile
           </Button>

@@ -32,6 +32,7 @@ import LabTestList from './pages/doctor/LabTestList';
 import PatientAppointmentList from './pages/patient/AppointmentList';
 import PatientPrescriptionList from './pages/patient/PrescriptionList';
 import PatientLabReports from './pages/patient/LabReports';
+import PatientProfile from './pages/patient/PatientProfile';
 
 function App() {
   const queryClient = new QueryClient({
@@ -317,6 +318,16 @@ function App() {
                   <ProtectedRoute allowedRoles={["patient"]}>
                     <DashboardLayout>
                       <PatientLabReports />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/patient/profile"
+                element={
+                  <ProtectedRoute allowedRoles={["patient"]}>
+                    <DashboardLayout>
+                      <PatientProfile />
                     </DashboardLayout>
                   </ProtectedRoute>
                 }

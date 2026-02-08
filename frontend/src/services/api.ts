@@ -69,14 +69,6 @@ let mockUsers: User[] = [
   },
   {
     id: '3',
-    email: 'nurse@aanya.com',
-    full_name: 'Nurse Mary Johnson',
-    role: 'nurse',
-    phone: '+1234567892',
-    created_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '4',
     email: 'receptionist@aanya.com',
     full_name: 'Emma Davis',
     role: 'receptionist',
@@ -377,9 +369,21 @@ export const appointmentsApi = {
   },
 
   getByPatient: async (patientId: string): Promise<ApiResponse<Appointment[]>> => {
-    await delay();
-    const appointments = mockAppointments.filter(a => a.patient_id === patientId);
-    return createResponse(appointments);
+    try {
+      const response = await axiosInstance.get('/appointments/patient/appointments');
+      return {
+        success: true,
+        data: response.data.data || response.data,
+        message: 'Appointments fetched successfully'
+      };
+    } catch (error: any) {
+      console.error('Error fetching patient appointments:', error);
+      return {
+        success: false,
+        data: [],
+        message: error.response?.data?.message || 'Failed to fetch appointments'
+      };
+    }
   },
 
   getByDoctor: async (doctorId: string): Promise<ApiResponse<Appointment[]>> => {

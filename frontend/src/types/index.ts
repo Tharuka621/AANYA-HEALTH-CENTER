@@ -8,7 +8,7 @@ export interface User {
   created_at: string;
 }
 
-export type UserRole = 'admin' | 'doctor' | 'nurse' | 'receptionist' | 'pharmacist' | 'lab' | 'patient';
+export type UserRole = 'admin' | 'doctor' | 'receptionist' | 'pharmacist' | 'lab' | 'patient';
 
 // Patient types
 export interface Patient {
@@ -103,7 +103,7 @@ export interface Medicine {
 export interface VitalSigns {
   id: string;
   patient_id: string;
-  nurse_id: string;
+  recorded_by?: string;
   temperature?: number;
   blood_pressure_systolic?: number;
   blood_pressure_diastolic?: number;
@@ -112,7 +112,6 @@ export interface VitalSigns {
   height?: number;
   recorded_date: string;
   patient?: Patient;
-  nurse?: User;
 }
 
 // Billing types

@@ -92,14 +92,6 @@ const Sidebar: React.FC = () => {
           { icon: LabIcon, label: 'Lab Tests', path: '/dashboard/doctor/lab-tests' }
         ];
       
-      case 'nurse':
-        return [
-          ...baseItems,
-          { icon: PersonAddIcon, label: 'Patients', path: '/dashboard/nurse/patients' },
-          { icon: CalendarIcon, label: 'Appointments', path: '/dashboard/nurse/appointments' },
-          { icon: VitalSignsIcon, label: 'Vital Signs', path: '/dashboard/nurse/vital-signs' }
-        ];
-      
       case 'receptionist':
         return [
           ...baseItems,

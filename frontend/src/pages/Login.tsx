@@ -100,7 +100,6 @@ const Login: React.FC = () => {
           const roleRouteMap: Record<string, string> = {
             'patient': 'patient',
             'doctor': 'doctor',
-            'nurse': 'nurse',
             'receptionist': 'receptionist',
             'pharmacist': 'pharmacist',
             'lab': 'lab',

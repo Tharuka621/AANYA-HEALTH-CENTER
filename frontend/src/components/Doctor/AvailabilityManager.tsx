@@ -59,38 +59,21 @@ const AvailabilityManager: React.FC = () => {
   });
 
   useEffect(() => {
-    // Initialize with dummy data
-    const dummySlots: TimeSlot[] = [
-      {
-        id: 1,
-        doctor_id: 1,
-        slot_date: '2026-01-27',
-        start_time: '09:00',
-        end_time: '12:00',
-        max_appointments: 12,
-        is_active: true,
-      },
-      {
-        id: 2,
-        doctor_id: 1,
-        slot_date: '2026-01-27',
-        start_time: '14:00',
-        end_time: '17:00',
-        max_appointments: 10,
-        is_active: true,
-      },
-      {
-        id: 3,
-        doctor_id: 1,
-        slot_date: '2026-01-28',
-        start_time: '09:00',
-        end_time: '13:00',
-        max_appointments: 15,
-        is_active: false,
-      },
-    ];
-    setSlots(dummySlots);
+    fetchSlots();
   }, []);
+
+  const fetchSlots = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get('/appointments/doctor/slots');
+      setSlots(response.data);
+    } catch (error: any) {
+      console.error('Error fetching slots:', error);
+      showError(error.response?.data?.message || 'Failed to fetch availability slots');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenDialog = (slot?: TimeSlot) => {
     if (slot) {
@@ -120,7 +103,7 @@ const AvailabilityManager: React.FC = () => {
     setEditingSlot(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.slot_date || !formData.start_time || !formData.end_time) {
       showError('Please fill in all required fields');
       return;
@@ -131,44 +114,67 @@ const AvailabilityManager: React.FC = () => {
       return;
     }
 
-    if (editingSlot) {
-      // Update existing slot
-      setSlots(slots.map(slot =>
-        slot.id === editingSlot.id
-          ? { ...slot, ...formData }
-          : slot
-      ));
-      showSuccess('Availability slot updated successfully');
-    } else {
-      // Add new slot
-      const newSlot: TimeSlot = {
-        id: Math.max(...slots.map(s => s.id), 0) + 1,
-        doctor_id: 1,
-        ...formData,
-      };
-      setSlots([...slots, newSlot]);
-      showSuccess('Availability slot created successfully');
-    }
+    try {
+      setLoading(true);
 
-    handleCloseDialog();
+      if (editingSlot) {
+        // Update existing slot
+        await axiosInstance.put(`/appointments/doctor/slots/${editingSlot.id}`, formData);
+        showSuccess('Availability slot updated successfully');
+      } else {
+        // Add new slot
+        await axiosInstance.post('/appointments/doctor/slots', formData);
+        showSuccess('Availability slot created successfully');
+      }
+
+      // Refresh slots list
+      await fetchSlots();
+      handleCloseDialog();
+    } catch (error: any) {
+      console.error('Error saving slot:', error);
+      showError(error.response?.data?.message || 'Failed to save availability slot');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (slotId: number) => {
-    if (!window.confirm('Are you sure you want to delete this slot?')) {
+  const handleDelete = async (slotId: number) => {
+    if (!window.confirm('Are you sure you want to delete this slot? This action cannot be undone.')) {
       return;
     }
 
-    setSlots(slots.filter(slot => slot.id !== slotId));
-    showSuccess('Availability slot deleted successfully');
+    try {
+      setLoading(true);
+      await axiosInstance.delete(`/appointments/doctor/slots/${slotId}`);
+      showSuccess('Availability slot deleted successfully');
+      
+      // Refresh slots list
+      await fetchSlots();
+    } catch (error: any) {
+      console.error('Error deleting slot:', error);
+      showError(error.response?.data?.message || 'Failed to delete availability slot');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleToggleActive = (slot: TimeSlot) => {
-    setSlots(slots.map(s =>
-      s.id === slot.id
-        ? { ...s, is_active: !s.is_active }
-        : s
-    ));
-    showSuccess('Slot status updated');
+  const handleToggleActive = async (slot: TimeSlot) => {
+    try {
+      setLoading(true);
+      await axiosInstance.put(`/appointments/doctor/slots/${slot.id}`, {
+        ...slot,
+        is_active: !slot.is_active,
+      });
+      showSuccess(`Slot ${!slot.is_active ? 'activated' : 'deactivated'} successfully`);
+      
+      // Refresh slots list
+      await fetchSlots();
+    } catch (error: any) {
+      console.error('Error updating slot status:', error);
+      showError(error.response?.data?.message || 'Failed to update slot status');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -364,9 +370,7 @@ const AvailabilityManager: React.FC = () => {
       {/* Add/Edit Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ pb: 1 }}>
-          <Typography variant="h5" fontWeight={700}>
-            {editingSlot ? 'Edit Availability Slot' : 'Add New Availability Slot'}
-          </Typography>
+          {editingSlot ? 'Edit Availability Slot' : 'Add New Availability Slot'}
         </DialogTitle>
           <DialogContent>
             <Box sx={{ pt: 2 }}>

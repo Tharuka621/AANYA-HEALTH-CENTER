@@ -9,15 +9,21 @@ const {
   bookAppointment,
   getPatientAppointments,
   getDoctorAppointments,
-  cancelAppointment
+  cancelAppointment,
+  getAppointmentFee,
+  bookAppointmentWithPayment
 } = require('../controllers/appointment.controller');
 const { authenticate, hasRole } = require('../middlewares/auth.middleware');
 
 // Public route - get available slots for a date
 router.get('/slots/available', getAvailableSlots);
 
+// Get appointment fee (can be public or authenticated depending on your requirements)
+router.get('/fee', getAppointmentFee);
+
 // Patient routes
 router.post('/book', authenticate, hasRole('PATIENT'), bookAppointment);
+router.post('/book-with-payment', authenticate, hasRole('PATIENT'), bookAppointmentWithPayment);
 router.get('/patient/appointments', authenticate, hasRole('PATIENT'), getPatientAppointments);
 
 // Doctor routes - manage availability slots

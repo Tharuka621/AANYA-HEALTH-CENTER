@@ -144,7 +144,6 @@ const UserManagement: React.FC = () => {
     switch (roleUpper) {
       case 'ADMIN': return 'error';
       case 'DOCTOR': return 'primary';
-      case 'NURSE': return 'secondary';
       case 'RECEPTIONIST': return 'info';
       case 'PHARMACIST': return 'warning';
       case 'LAB_TECH': return 'secondary';

@@ -1,6 +1,20 @@
 require("dotenv").config();
 const app = require("./app");
 const { testDbConnection } = require("./config/db");
+
+// Global error handlers
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+  process.exit(1);
+});
+
 testDbConnection();
 const PORT = process.env.PORT || 5000;
 

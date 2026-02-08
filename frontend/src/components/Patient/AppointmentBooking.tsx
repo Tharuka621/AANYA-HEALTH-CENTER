@@ -24,6 +24,8 @@ import {
 } from '@mui/icons-material';
 import { axiosInstance } from '../../services/api';
 import { useToast } from '../common/Toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { appointmentKeys } from '../../hooks/useAppointments';
 
 interface AvailableSlot {
   id: number;
@@ -41,9 +43,15 @@ interface AvailableSlot {
 interface BookingConfirmation {
   appointmentId: number;
   appointmentNumber: string;
+  paymentStatus: string;
+}
+
+interface AppointmentFee {
+  amount: number;
 }
 
 const AppointmentBooking: React.FC = () => {
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,6 +60,8 @@ const AppointmentBooking: React.FC = () => {
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [openPaymentDialog, setOpenPaymentDialog] = useState(false);
   const [bookingConfirmation, setBookingConfirmation] = useState<BookingConfirmation | null>(null);
+  const [appointmentFee, setAppointmentFee] = useState<number>(2500);
+  const [paymentMethod, setPaymentMethod] = useState<string>('card');
   const [cardDetails, setCardDetails] = useState({
     cardNumber: '',
     cardHolder: '',
@@ -70,56 +80,23 @@ const AppointmentBooking: React.FC = () => {
     }
   }, [selectedDate]);
 
-  const fetchAvailableSlots = () => {
+  const fetchAvailableSlots = async () => {
     setLoading(true);
     
-    // Simulate API delay
-    setTimeout(() => {
-      const dummySlots: AvailableSlot[] = [
-        {
-          id: 1,
-          doctor_id: 1,
-          doctor_name: 'Milinda Abeykoon',
-          doctor_email: 'milinda.abeykoon@hospital.com',
-          slot_date: selectedDate,
-          start_time: '09:00:00',
-          end_time: '12:00:00',
-          max_appointments: 12,
-          available_slots: 8,
-          booked_count: 4,
-        },
-        {
-          id: 2,
-          doctor_id: 1,
-          doctor_name: 'Milinda Abeykoon',
-          doctor_email: 'milinda.abeykoon@hospital.com',
-          slot_date: selectedDate,
-          start_time: '14:00:00',
-          end_time: '17:00:00',
-          max_appointments: 10,
-          available_slots: 10,
-          booked_count: 0,
-        },
-        {
-          id: 3,
-          doctor_id: 1,
-          doctor_name: 'Milinda Abeykoon',
-          doctor_email: 'milinda.abeykoon@hospital.com',
-          slot_date: selectedDate,
-          start_time: '16:00:00',
-          end_time: '18:00:00',
-          max_appointments: 8,
-          available_slots: 5,
-          booked_count: 3,
-        },
-      ];
+    try {
+      const response = await axiosInstance.get(`/appointments/slots/available?date=${selectedDate}`);
+      setAvailableSlots(response.data);
       
-      setAvailableSlots(dummySlots);
-      if (dummySlots.length === 0) {
+      if (response.data.length === 0) {
         showError('No available slots for this date');
       }
+    } catch (error: any) {
+      console.error('Error fetching available slots:', error);
+      showError(error.response?.data?.message || 'Failed to fetch available slots');
+      setAvailableSlots([]);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   const handleSlotSelect = (slot: AvailableSlot) => {
@@ -127,15 +104,29 @@ const AppointmentBooking: React.FC = () => {
     setOpenConfirmDialog(true);
   };
 
+  const fetchAppointmentFee = async () => {
+    try {
+      const response = await axiosInstance.get('/appointments/fee');
+      setAppointmentFee(response.data.amount);
+    } catch (error) {
+      console.error('Error fetching appointment fee:', error);
+      // Use default fee if fetch fails
+      setAppointmentFee(2500);
+    }
+  };
+
   const handleBookAppointment = () => {
     if (!selectedSlot) return;
+    
+    // Fetch the latest appointment fee
+    fetchAppointmentFee();
     
     // Close confirm dialog and open payment dialog
     setOpenConfirmDialog(false);
     setOpenPaymentDialog(true);
   };
 
-  const handleProcessPayment = () => {
+  const handleProcessPayment = async () => {
     // Validate card details
     if (!cardDetails.cardNumber || !cardDetails.cardHolder || !cardDetails.expiryDate || !cardDetails.cvv) {
       showError('Please fill in all card details');
@@ -152,20 +143,29 @@ const AppointmentBooking: React.FC = () => {
       return;
     }
 
+    if (!selectedSlot) return;
+
     setProcessingPayment(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
-      if (!selectedSlot) return;
-
-      // Generate mock appointment number
-      const mockAppointmentId = Math.floor(Math.random() * 1000) + 1;
-      const appointmentNumber = `APT${String(mockAppointmentId).padStart(6, '0')}`;
+    try {
+      // Book the appointment with payment
+      const response = await axiosInstance.post('/appointments/book-with-payment', {
+        slot_id: selectedSlot.id,
+        doctor_id: selectedSlot.doctor_id,
+        reason: reason || 'General consultation',
+        payment_method: paymentMethod,
+        payment_ref: `PAY${Date.now()}${Math.floor(Math.random() * 1000)}`,
+        amount: appointmentFee,
+      });
 
       setBookingConfirmation({
-        appointmentId: mockAppointmentId,
-        appointmentNumber: appointmentNumber,
+        appointmentId: response.data.appointmentId,
+        appointmentNumber: response.data.appointmentNumber,
+        paymentStatus: response.data.paymentStatus,
       });
+      
+      // Invalidate appointments cache to refetch the latest data
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
       
       // Update available slots (reduce by 1)
       setAvailableSlots(availableSlots.map(slot =>
@@ -188,8 +188,12 @@ const AppointmentBooking: React.FC = () => {
         cvv: '',
       });
 
-      showSuccess('Payment successful! Appointment booked.');
-    }, 2000);
+      showSuccess(`Payment successful! Appointment booked. Confirmation: ${response.data.appointmentNumber}`);
+    } catch (error: any) {
+      console.error('Error booking appointment:', error);
+      showError(error.response?.data?.message || 'Failed to book appointment');
+      setProcessingPayment(false);
+    }
   };
 
   const formatCardNumber = (value: string) => {
@@ -403,7 +407,7 @@ const AppointmentBooking: React.FC = () => {
             <Box>
               <Alert severity="info" sx={{ mb: 3 }}>
                 <Typography variant="body2" fontWeight={600}>
-                  Consultation Fee: Rs. 2,500.00
+                  Consultation Fee: Rs. {appointmentFee.toLocaleString()}.00
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   Dr. {selectedSlot.doctor_name}

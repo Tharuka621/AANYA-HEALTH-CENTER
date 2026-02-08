@@ -105,3 +105,62 @@ mysql -u root -p aanya_health < backend/sql/schema.sql
 - `GET /api/admin/users` - Get all users
 - `PUT /api/admin/users/:userId/role` - Update user role
 - `PUT /api/admin/users/:userId/status` - Toggle user active status
+
+---
+
+## Doctor Availability System 🆕
+
+### Setup for Availability Feature
+
+Run the doctor availability schema to enable appointment slot management:
+
+```bash
+mysql -u root -p aanya_health < backend/sql/doctor_availability.sql
+```
+
+This creates:
+- `doctor_slots` table for managing doctor availability
+- Adds `slot_id` and `booked_by` columns to `appointments` table
+- Adds necessary indexes for performance
+
+### Files Added
+
+1. **`doctor_availability.sql`** - Database schema for availability slots
+2. **`useful_queries.sql`** - 30+ helpful queries for testing and debugging
+
+### Quick Test
+
+```sql
+-- Insert a test availability slot
+INSERT INTO doctor_slots (doctor_id, slot_date, start_time, end_time, max_appointments, is_active)
+VALUES (2, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '09:00:00', '12:00:00', 10, 1);
+
+-- View available slots
+SELECT ds.*, u.full_name as doctor_name,
+       COUNT(a.id) as booked,
+       (ds.max_appointments - COUNT(a.id)) as available
+FROM doctor_slots ds
+JOIN users u ON ds.doctor_id = u.id
+LEFT JOIN appointments a ON ds.id = a.slot_id AND a.status != 'cancelled'
+WHERE ds.is_active = 1
+GROUP BY ds.id;
+```
+
+### API Endpoints for Availability
+
+**Doctor Endpoints (Protected):**
+- `GET /api/appointments/doctor/slots` - Get doctor's slots
+- `POST /api/appointments/doctor/slots` - Create new slot
+- `PUT /api/appointments/doctor/slots/:id` - Update slot
+- `DELETE /api/appointments/doctor/slots/:id` - Delete slot
+
+**Patient Endpoints:**
+- `GET /api/appointments/slots/available?date=YYYY-MM-DD` - Get available slots
+- `POST /api/appointments/book` - Book an appointment
+
+### Documentation
+
+For complete implementation guide, see:
+- **[DOCTOR_AVAILABILITY_SETUP.md](../../DOCTOR_AVAILABILITY_SETUP.md)** - Complete setup and testing guide
+- **[ARCHITECTURE_DIAGRAM.md](../../ARCHITECTURE_DIAGRAM.md)** - System architecture and flow diagrams
+- **[useful_queries.sql](./useful_queries.sql)** - Collection of helpful SQL queries

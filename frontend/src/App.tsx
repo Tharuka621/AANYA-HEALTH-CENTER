@@ -16,7 +16,6 @@ import DoctorDashboard from './pages/dashboard/DoctorDashboard';
 import PharmacistDashboard from './pages/dashboard/PharmacistDashboard';
 import LabDashboard from './pages/dashboard/LabDashboard';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
-import NurseDashboard from './pages/dashboard/NurseDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import PatientManagement from './pages/admin/PatientManagement';
 import AppointmentManagement from './pages/admin/AppointmentManagement';
@@ -241,26 +240,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/dashboard/nurse"
-                element={
-                  <ProtectedRoute allowedRoles={["nurse"]}>
-                    <DashboardLayout>
-                      <NurseDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/nurse/*"
-                element={
-                  <ProtectedRoute allowedRoles={["nurse"]}>
-                    <DashboardLayout>
-                      <NurseDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+
               <Route
                 path="/dashboard/receptionist/*"
                 element={

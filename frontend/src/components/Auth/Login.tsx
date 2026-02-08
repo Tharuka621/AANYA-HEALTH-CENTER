@@ -31,7 +31,6 @@ const Login: React.FC = () => {
   const demoAccounts = [
     { email: 'admin@aanya.com', password: 'admin123', role: 'Administrator' },
     { email: 'doctor@aanya.com', password: 'doctor123', role: 'Doctor' },
-    { email: 'nurse@aanya.com', password: 'nurse123', role: 'Nurse' },
     { email: 'receptionist@aanya.com', password: 'reception123', role: 'Receptionist' },
     { email: 'pharmacist@aanya.com', password: 'pharma123', role: 'Pharmacist' },
     { email: 'labtech@aanya.com', password: 'lab123', role: 'Lab Technician' }

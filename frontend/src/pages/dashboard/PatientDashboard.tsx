@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -17,6 +17,7 @@ import {
   Divider,
   Alert,
   Snackbar,
+  CircularProgress,
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
@@ -32,7 +33,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AppointmentBooking from '../../components/Patient/AppointmentBooking';
-// import { useAppointmentsByPatient, usePrescriptionsByPatient, useLabTestsByPatient } from '../../hooks';
+import { useAppointmentsByPatient } from '../../hooks/useAppointments';
 import Modal from '../../components/common/Modal';
 import AppointmentModal from '../../components/common/AppointmentModal';
 import PaymentModal from '../../components/common/PaymentModal';
@@ -55,26 +56,26 @@ const PatientDashboard: React.FC = () => {
     severity: 'success',
   });
 
-  // Mock data - in a real app, these would come from the API
-  const mockAppointments = [
-    {
-      id: '1',
-      appointment_date: '2024-12-22',
-      appointment_time: '10:00',
-      doctor: { full_name: 'Dr. Milinda Abeykoon', specialization: 'General Medicine' },
-      status: 'scheduled',
-      reason: 'Regular checkup',
-    },
-    {
-      id: '2',
-      appointment_date: '2024-12-25',
-      appointment_time: '14:30',
-      doctor: { full_name: 'Dr. Milinda Abeykoon', specialization: 'General Medicine' },
-      status: 'scheduled',
-      reason: 'Follow-up consultation',
-    },
-  ];
+  // Fetch real appointments from the backend
+  const { data: appointmentsData, isLoading: loadingAppointments, refetch: refetchAppointments } = useAppointmentsByPatient(user?.id || '');
+  const appointments = appointmentsData?.data || [];
 
+  // Filter upcoming appointments (scheduled status and future dates)
+  const upcomingAppointments = appointments.filter((apt: any) => {
+    const aptDate = new Date(apt.slot_date || apt.appointment_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return apt.status === 'scheduled' && aptDate >= today;
+  });
+
+  // Refetch appointments when component mounts or user changes
+  useEffect(() => {
+    if (user?.id) {
+      refetchAppointments();
+    }
+  }, [user?.id, refetchAppointments]);
+
+  // Mock prescriptions - in a real app, these would come from the API
   const mockPrescriptions = [
     {
       id: '1',
@@ -250,9 +251,13 @@ const PatientDashboard: React.FC = () => {
                 </Box>
                 <Divider sx={{ mb: 2 }} />
                 
-                {mockAppointments.length > 0 ? (
+                {loadingAppointments ? (
+                  <Box display="flex" justifyContent="center" py={3}>
+                    <CircularProgress />
+                  </Box>
+                ) : upcomingAppointments.length > 0 ? (
                   <List>
-                    {mockAppointments.map((appointment, index) => (
+                    {upcomingAppointments.map((appointment: any, index: number) => (
                       <React.Fragment key={appointment.id}>
                         <ListItem>
                           <ListItemIcon>
@@ -262,7 +267,7 @@ const PatientDashboard: React.FC = () => {
                             primary={
                               <Box display="flex" alignItems="center" gap={1}>
                                 <Typography variant="subtitle1" fontWeight={600}>
-                                  {appointment.doctor.full_name}
+                                  {appointment.doctor_name || 'Doctor'}
                                 </Typography>
                                 <Chip
                                   label={appointment.status}
@@ -272,18 +277,18 @@ const PatientDashboard: React.FC = () => {
                               </Box>
                             }
                             secondary={
-                              <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                  {formatDate(appointment.appointment_date)} at {formatTime(appointment.appointment_time)}
+                              <>
+                                <Typography variant="body2" color="text.secondary" component="span" display="block">
+                                  {formatDate(appointment.slot_date || appointment.appointment_date)} at {formatTime(appointment.start_time || appointment.appointment_time)}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {appointment.doctor.specialization} - {appointment.reason}
+                                <Typography variant="body2" color="text.secondary" component="span" display="block">
+                                  Appointment #{appointment.appointmentNumber || appointment.appointment_no} - {appointment.reason || 'General consultation'}
                                 </Typography>
-                              </Box>
+                              </>
                             }
                           />
                         </ListItem>
-                        {index < mockAppointments.length - 1 && <Divider />}
+                        {index < upcomingAppointments.length - 1 && <Divider />}
                       </React.Fragment>
                     ))}
                   </List>
@@ -331,14 +336,14 @@ const PatientDashboard: React.FC = () => {
                               </Box>
                             }
                             secondary={
-                              <Box>
-                                <Typography variant="body2" color="text.secondary">
+                              <>
+                                <Typography variant="body2" color="text.secondary" component="span" display="block">
                                   Issued: {formatDate(prescription.issued_date)}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" color="text.secondary" component="span" display="block">
                                   {prescription.medicines.length} medicine(s) prescribed
                                 </Typography>
-                              </Box>
+                              </>
                             }
                           />
                           <IconButton size="small" color="primary">

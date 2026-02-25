@@ -139,6 +139,12 @@ exports.signup = async (req, res) => {
 
     const userId = userResult.insertId;
 
+    // Create a corresponding patients row (required for appointment booking FK)
+    await connection.query(
+      "INSERT INTO patients (user_id, created_at) VALUES (?, NOW())",
+      [userId]
+    );
+
     // Generate OTP for email verification
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes

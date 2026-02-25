@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './components/common/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import MainLayout from './layouts/MainLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import Home from './pages/Home';
@@ -46,277 +48,279 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ToastProvider>
-          <Router>
-            <Routes>
-              {/* Public routes with MainLayout */}
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/home" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-              </Route>
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+          <ToastProvider>
+            <Router>
+              <Routes>
+                {/* Public routes with MainLayout */}
+                <Route element={<MainLayout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/home" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                </Route>
 
-              {/* Protected app routes with dashboard layout */}
-              <Route
-                path="/dashboard/patient"
-                element={
-                  <ProtectedRoute allowedRoles={["patient"]}>
-                    <DashboardLayout>
-                      <PatientDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/receptionist"
-                element={
-                  <ProtectedRoute allowedRoles={["receptionist"]}>
-                    <DashboardLayout>
-                      <ReceptionistDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/doctor"
-                element={
-                  <ProtectedRoute allowedRoles={["doctor"]}>
-                    <DashboardLayout>
-                      <DoctorDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/pharmacist"
-                element={
-                  <ProtectedRoute allowedRoles={["pharmacist"]}>
-                    <PharmacistDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/lab"
-                element={
-                  <ProtectedRoute allowedRoles={["lab", "lab_tech"]}>
-                    <DashboardLayout>
-                      <LabDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <AdminDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Admin routes */}
-              <Route
-                path="/dashboard/admin/users"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <UserManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin/patients"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <PatientManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin/appointments"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <AppointmentManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin/lab-tests"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <LabTestManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin/prescriptions"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <PrescriptionManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin/pharmacy"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <PharmacyManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin/billing"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <BillingManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin/reports"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <ReportsManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin/settings"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <SettingsManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              {/* Doctor routes */}
-              <Route
-                path="/dashboard/doctor/patients"
-                element={
-                  <ProtectedRoute allowedRoles={["doctor"]}>
-                    <DashboardLayout>
-                      <PatientList />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/doctor/appointments"
-                element={
-                  <ProtectedRoute allowedRoles={["doctor"]}>
-                    <DashboardLayout>
-                      <AppointmentList />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/doctor/lab-tests"
-                element={
-                  <ProtectedRoute allowedRoles={["doctor"]}>
-                    <DashboardLayout>
-                      <LabTestList />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/dashboard/receptionist/*"
-                element={
-                  <ProtectedRoute allowedRoles={["receptionist"]}>
-                    <DashboardLayout>
-                      <ReceptionistDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/pharmacist/*"
-                element={
-                  <ProtectedRoute allowedRoles={["pharmacist"]}>
-                    <DashboardLayout>
+                {/* Protected app routes with dashboard layout */}
+                <Route
+                  path="/dashboard/patient"
+                  element={
+                    <ProtectedRoute allowedRoles={["patient"]}>
+                      <DashboardLayout>
+                        <PatientDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/receptionist"
+                  element={
+                    <ProtectedRoute allowedRoles={["receptionist"]}>
+                      <DashboardLayout>
+                        <ReceptionistDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/doctor"
+                  element={
+                    <ProtectedRoute allowedRoles={["doctor"]}>
+                      <DashboardLayout>
+                        <DoctorDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/pharmacist"
+                  element={
+                    <ProtectedRoute allowedRoles={["pharmacist"]}>
                       <PharmacistDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/lab/*"
-                element={
-                  <ProtectedRoute allowedRoles={["lab"]}>
-                    <DashboardLayout>
-                      <LabDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              {/* Patient routes */}
-              <Route
-                path="/dashboard/patient/appointments"
-                element={
-                  <ProtectedRoute allowedRoles={["patient"]}>
-                    <DashboardLayout>
-                      <PatientAppointmentList />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/patient/prescriptions"
-                element={
-                  <ProtectedRoute allowedRoles={["patient"]}>
-                    <DashboardLayout>
-                      <PatientPrescriptionList />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/patient/lab-reports"
-                element={
-                  <ProtectedRoute allowedRoles={["patient"]}>
-                    <DashboardLayout>
-                      <PatientLabReports />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/patient/profile"
-                element={
-                  <ProtectedRoute allowedRoles={["patient"]}>
-                    <DashboardLayout>
-                      <PatientProfile />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/lab"
+                  element={
+                    <ProtectedRoute allowedRoles={["lab", "lab_tech"]}>
+                      <DashboardLayout>
+                        <LabDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <AdminDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Router>
-        </ToastProvider>
+                {/* Admin routes */}
+                <Route
+                  path="/dashboard/admin/users"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <UserManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin/patients"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <PatientManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin/appointments"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <AppointmentManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin/lab-tests"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <LabTestManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin/prescriptions"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <PrescriptionManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin/pharmacy"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <PharmacyManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin/billing"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <BillingManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin/reports"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <ReportsManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin/settings"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <SettingsManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Doctor routes */}
+                <Route
+                  path="/dashboard/doctor/patients"
+                  element={
+                    <ProtectedRoute allowedRoles={["doctor"]}>
+                      <DashboardLayout>
+                        <PatientList />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/doctor/appointments"
+                  element={
+                    <ProtectedRoute allowedRoles={["doctor"]}>
+                      <DashboardLayout>
+                        <AppointmentList />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/doctor/lab-tests"
+                  element={
+                    <ProtectedRoute allowedRoles={["doctor"]}>
+                      <DashboardLayout>
+                        <LabTestList />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/dashboard/receptionist/*"
+                  element={
+                    <ProtectedRoute allowedRoles={["receptionist"]}>
+                      <DashboardLayout>
+                        <ReceptionistDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/pharmacist/*"
+                  element={
+                    <ProtectedRoute allowedRoles={["pharmacist"]}>
+                      <DashboardLayout>
+                        <PharmacistDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/lab/*"
+                  element={
+                    <ProtectedRoute allowedRoles={["lab"]}>
+                      <DashboardLayout>
+                        <LabDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Patient routes */}
+                <Route
+                  path="/dashboard/patient/appointments"
+                  element={
+                    <ProtectedRoute allowedRoles={["patient"]}>
+                      <DashboardLayout>
+                        <PatientAppointmentList />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/patient/prescriptions"
+                  element={
+                    <ProtectedRoute allowedRoles={["patient"]}>
+                      <DashboardLayout>
+                        <PatientPrescriptionList />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/patient/lab-reports"
+                  element={
+                    <ProtectedRoute allowedRoles={["patient"]}>
+                      <DashboardLayout>
+                        <PatientLabReports />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/patient/profile"
+                  element={
+                    <ProtectedRoute allowedRoles={["patient"]}>
+                      <DashboardLayout>
+                        <PatientProfile />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Router>
+          </ToastProvider>
+        </LocalizationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

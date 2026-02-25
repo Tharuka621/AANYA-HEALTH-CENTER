@@ -11,7 +11,11 @@ const {
   getDoctorAppointments,
   cancelAppointment,
   getAppointmentFee,
-  bookAppointmentWithPayment
+  bookAppointmentWithPayment,
+  getReceptionistSlots,
+  getSlotAppointments,
+  checkInPatient,
+  registerWalkIn
 } = require('../controllers/appointment.controller');
 const { authenticate, hasRole } = require('../middlewares/auth.middleware');
 
@@ -32,6 +36,12 @@ router.post('/doctor/slots', authenticate, hasRole('DOCTOR'), createDoctorSlot);
 router.put('/doctor/slots/:slotId', authenticate, hasRole('DOCTOR'), updateDoctorSlot);
 router.delete('/doctor/slots/:slotId', authenticate, hasRole('DOCTOR'), deleteDoctorSlot);
 router.get('/doctor/appointments', authenticate, hasRole('DOCTOR'), getDoctorAppointments);
+
+// Receptionist routes
+router.get('/receptionist/slots', authenticate, hasRole('RECEPTIONIST'), getReceptionistSlots);
+router.get('/receptionist/slots/:slotId/appointments', authenticate, hasRole('RECEPTIONIST'), getSlotAppointments);
+router.post('/receptionist/appointments/:appointmentId/check-in', authenticate, hasRole('RECEPTIONIST'), checkInPatient);
+router.post('/receptionist/register-walk-in', authenticate, hasRole('RECEPTIONIST'), registerWalkIn);
 
 // Common routes - cancel appointment
 router.put('/cancel/:appointmentId', authenticate, cancelAppointment);

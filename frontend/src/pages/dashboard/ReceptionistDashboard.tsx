@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -24,9 +24,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  LinearProgress,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { format, parseISO } from 'date-fns';
 import {
-  CalendarToday as CalendarIcon,
   PersonAdd as PersonAddIcon,
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
@@ -35,155 +37,121 @@ import {
   AccessTime as TimeIcon,
   Logout as LogoutIcon,
   Search as SearchIcon,
+  LocalActivity as TicketIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../services/api';
+import { useToast } from '../../components/common/Toast';
 
 // Database-aligned interfaces
 interface Appointment {
   id: string;
-  appointment_number: string;
+  appointment_no: string;
   patient_id: string;
   patient_name: string;
-  doctor_id: string;
-  doctor_name: string;
-  date: string;
-  time_slot: string;
-  status: 'SCHEDULED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED';
+  status: 'scheduled' | 'checked_in' | 'completed' | 'cancelled';
   phone: string;
   nic: string;
+  reason: string;
+  temperature?: number;
+  pulse?: number;
+  systolic_bp?: number;
+  diastolic_bp?: number;
+  weight?: number;
+  sugar_level?: number;
+  vital_notes?: string;
 }
 
 const ReceptionistDashboard: React.FC = () => {
   const { user, logout } = useAuth();
-
-  // Time slots available
-  const timeSlots = [
-    '09:00-10:00',
-    '10:00-11:00',
-    '11:00-12:00',
-    '14:00-15:00',
-    '15:00-16:00',
-    '16:00-17:00',
-  ];
+  const { showSuccess, showError } = useToast();
 
   // Filter states
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedDoctor] = useState('D001'); // Only Dr. Milinda Abeykoon
-  const [selectedSlot, setSelectedSlot] = useState('09:00-10:00');
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Utility function to mask NIC (e.g., 199012301234 -> 1990******234)
+  // Data states
+  const [slots, setSlots] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch slots for selected date
+  const fetchSlots = async () => {
+    setLoading(true);
+    try {
+      const res = await api.appointments.getReceptionistSlots(selectedDate);
+      if (res.success) {
+        setSlots(res.data);
+        if (res.data.length > 0) {
+          // If previous selection is still there, keep it, otherwise pick first
+          const stillExists = res.data.find((s: any) => s.id === selectedSlotId);
+          if (!stillExists) {
+            setSelectedSlotId(res.data[0].id);
+          }
+        } else {
+          setSelectedSlotId(null);
+        }
+      }
+    } catch (err) {
+      showError('Failed to load slots');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch appointments for selected slot
+  const fetchAppointments = async (slotId: string) => {
+    try {
+      const res = await api.appointments.getSlotAppointments(slotId);
+      if (res.success) {
+        setAppointments(res.data);
+      }
+    } catch (err) {
+      showError('Failed to load appointments');
+    }
+  };
+
+  useEffect(() => {
+    fetchSlots();
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (selectedSlotId) {
+      fetchAppointments(selectedSlotId);
+    } else {
+      setAppointments([]);
+    }
+  }, [selectedSlotId]);
+
+  // Utility function to mask NIC
   const maskNIC = (nic: string) => {
+    if (!nic) return 'N/A';
     if (nic.length < 8) return nic;
     return nic.substring(0, 4) + '******' + nic.substring(nic.length - 3);
   };
 
-  // Mock appointments with appointment numbers (dummy data only)
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: 'APT001',
-      appointment_number: 'APT-2026-001',
-      patient_id: 'P001',
-      patient_name: 'Kasun Bandara',
-      doctor_id: 'D001',
-      doctor_name: 'Dr. Milinda Abeykoon',
-      date: '2026-01-26',
-      time_slot: '09:00-10:00',
-      status: 'SCHEDULED',
-      phone: '+94 71 123 4567',
-      nic: '199012301234',
-    },
-    {
-      id: 'APT002',
-      appointment_number: 'APT-2026-002',
-      patient_id: 'P002',
-      patient_name: 'Nimal Perera',
-      doctor_id: 'D001',
-      doctor_name: 'Dr. Milinda Abeykoon',
-      date: '2026-01-26',
-      time_slot: '09:00-10:00',
-      status: 'CHECKED_IN',
-      phone: '+94 77 555 8899',
-      nic: '198506152345',
-    },
-    {
-      id: 'APT003',
-      appointment_number: 'APT-2026-003',
-      patient_id: 'P003',
-      patient_name: 'Ishara Silva',
-      doctor_id: 'D001',
-      doctor_name: 'Dr. Milinda Abeykoon',
-      date: '2026-01-26',
-      time_slot: '10:00-11:00',
-      status: 'SCHEDULED',
-      phone: '+94 76 234 5678',
-      nic: '199310052678',
-    },
-    {
-      id: 'APT004',
-      appointment_number: 'APT-2026-004',
-      patient_id: 'P004',
-      patient_name: 'Amaya Fernando',
-      doctor_id: 'D001',
-      doctor_name: 'Dr. Milinda Abeykoon',
-      date: '2026-01-26',
-      time_slot: '14:00-15:00',
-      status: 'SCHEDULED',
-      phone: '+94 72 987 6543',
-      nic: '199708152156',
-    },
-    {
-      id: 'APT005',
-      appointment_number: 'APT-2026-005',
-      patient_id: 'P005',
-      patient_name: 'Saman Kumara',
-      doctor_id: 'D001',
-      doctor_name: 'Dr. Milinda Abeykoon',
-      date: '2026-01-28',
-      time_slot: '14:00-15:00',
-      status: 'SCHEDULED',
-      phone: '+94 75 111 2233',
-      nic: '199205103456',
-    },
-    {
-      id: 'APT006',
-      appointment_number: 'APT-2026-006',
-      patient_id: 'P006',
-      patient_name: 'Dilini Jayasinghe',
-      doctor_id: 'D001',
-      doctor_name: 'Dr. Milinda Abeykoon',
-      date: '2026-01-28',
-      time_slot: '09:00-10:00',
-      status: 'SCHEDULED',
-      phone: '+94 76 444 5555',
-      nic: '199501203678',
-    },
-  ]);
-
-  // Filter appointments by date, doctor, slot, and search query
+  // Filter appointments by search query
   const filteredAppointments = useMemo(() => {
     return appointments.filter(
       apt =>
-        apt.date === selectedDate &&
-        apt.doctor_id === selectedDoctor &&
-        apt.time_slot === selectedSlot &&
-        (searchQuery === '' ||
-          apt.patient_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          apt.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          apt.appointment_number.toLowerCase().includes(searchQuery.toLowerCase()))
+        searchQuery === '' ||
+        apt.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        apt.appointment_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        apt.nic.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [appointments, selectedDate, selectedDoctor, selectedSlot, searchQuery]);
+  }, [appointments, searchQuery]);
 
-  // Calculate summary stats for selected date
+  // Daily stats for selected date
   const dailyStats = useMemo(() => {
-    const todayAppts = appointments.filter(apt => apt.date === selectedDate);
     return {
-      total: todayAppts.length,
-      checkedIn: todayAppts.filter(a => a.status === 'CHECKED_IN').length,
-      waiting: todayAppts.filter(a => a.status === 'SCHEDULED').length,
-      completed: todayAppts.filter(a => a.status === 'COMPLETED').length,
+      total: Array.isArray(slots) ? slots.reduce((acc, s) => acc + (Number(s.booked_count) || 0), 0) : 0,
+      slots: slots.length,
+      activeSlots: slots.filter(s => s.is_active).length,
+      availableCount: Array.isArray(slots) ? slots.filter(s => (Number(s.max_appointments) || 0) > (Number(s.booked_count) || 0)).length : 0,
+      checkedInCount: appointments.filter(a => a.status === 'checked_in').length,
     };
-  }, [appointments, selectedDate]);
+  }, [slots, appointments]);
 
   const [vitalsDialogOpen, setVitalsDialogOpen] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
@@ -195,6 +163,7 @@ const ReceptionistDashboard: React.FC = () => {
     systolic_bp: '',
     diastolic_bp: '',
     pulse: '',
+    weight: '',
     sugar_level: '',
     notes: '',
   });
@@ -207,17 +176,18 @@ const ReceptionistDashboard: React.FC = () => {
     gender: 'MALE',
     date_of_birth: '',
     address: '',
+    email: '',
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'CHECKED_IN':
+      case 'checked_in':
         return 'success';
-      case 'SCHEDULED':
+      case 'scheduled':
         return 'warning';
-      case 'COMPLETED':
+      case 'completed':
         return 'info';
-      case 'CANCELLED':
+      case 'cancelled':
         return 'error';
       default:
         return 'default';
@@ -227,48 +197,59 @@ const ReceptionistDashboard: React.FC = () => {
   const handleCheckIn = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setVitalsForm({
-      temperature: '',
-      systolic_bp: '',
-      diastolic_bp: '',
-      pulse: '',
-      sugar_level: '',
-      notes: '',
+      temperature: appointment.temperature?.toString() || '',
+      systolic_bp: appointment.systolic_bp?.toString() || '',
+      diastolic_bp: appointment.diastolic_bp?.toString() || '',
+      pulse: appointment.pulse?.toString() || '',
+      weight: appointment.weight?.toString() || '',
+      sugar_level: appointment.sugar_level?.toString() || '',
+      notes: appointment.vital_notes || '',
     });
     setVitalsDialogOpen(true);
+  };
+
+  const handleSaveVitals = async () => {
+    if (!selectedAppointment) return;
+
+    const res = await api.appointments.checkIn(selectedAppointment.id, vitalsForm);
+    if (res.success) {
+      showSuccess('Patient checked in and vitals saved');
+      setVitalsDialogOpen(false);
+      fetchAppointments(selectedSlotId!);
+      fetchSlots(); // Refresh counts
+    } else {
+      showError(res.message);
+    }
+  };
+
+  const handleSavePatient = async () => {
+    if (!selectedSlotId) {
+      showError('Please select a time slot first');
+      return;
+    }
+
+    const slot = slots.find(s => s.id === selectedSlotId);
+    const data = {
+      patientInfo: patientForm,
+      slotId: selectedSlotId,
+      doctorId: slot.doctor_id,
+      vitals: vitalsForm,
+      reason: 'Walk-in'
+    };
+
+    const res = await api.appointments.registerWalkIn(data);
+    if (res.success) {
+      showSuccess('Walk-in patient registered and checked in');
+      setRegisterDialogOpen(false);
+      fetchSlots();
+      fetchAppointments(selectedSlotId);
+    } else {
+      showError(res.message);
+    }
   };
 
   const handleUpdateVitals = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    // In real app, would load existing vitals
-    setVitalsForm({
-      temperature: '37.0',
-      systolic_bp: '120',
-      diastolic_bp: '80',
-      pulse: '72',
-      sugar_level: '95',
-      notes: 'Normal',
-    });
-    setVitalsDialogOpen(true);
-  };
-
-  const handleSaveVitals = () => {
-    if (!selectedAppointment) return;
-
-    // Dummy: Create visit record and save vitals (frontend only)
-    console.log('Creating visit for appointment:', selectedAppointment.id);
-    console.log('Saving vitals:', vitalsForm);
-
-    // Update appointment status to checked_in
-    setAppointments(prev =>
-      prev.map(apt =>
-        apt.id === selectedAppointment.id
-          ? { ...apt, status: 'CHECKED_IN' }
-          : apt
-      )
-    );
-
-    setVitalsDialogOpen(false);
-    setSelectedAppointment(null);
+    handleCheckIn(appointment);
   };
 
   const handleRegisterPatient = () => {
@@ -279,14 +260,9 @@ const ReceptionistDashboard: React.FC = () => {
       gender: 'MALE',
       date_of_birth: '',
       address: '',
+      email: '',
     });
     setRegisterDialogOpen(true);
-  };
-
-  const handleSavePatient = () => {
-    // Dummy: Save patient to database (frontend only)
-    console.log('Registering new patient:', patientForm);
-    setRegisterDialogOpen(false);
   };
 
   return (
@@ -312,11 +288,11 @@ const ReceptionistDashboard: React.FC = () => {
                   AANYA Health - Receptionist
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {new Date().toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                   })}
                 </Typography>
               </Box>
@@ -355,24 +331,119 @@ const ReceptionistDashboard: React.FC = () => {
         </Container>
       </Box>
 
+      {loading && <LinearProgress sx={{ position: 'sticky', top: 0, zIndex: 1000 }} />}
+
       {/* Main Content */}
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Filter Section */}
-        <Card sx={{ mb: 4, boxShadow: 4, borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" fontWeight={700} color="primary.main" gutterBottom>
-                Filter & Search Appointments
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Use filters to find specific appointments or search by patient ID/name
-              </Typography>
+        <Grid container spacing={4}>
+          {/* Left Side: Time Slots & Summary */}
+          <Grid item xs={12} lg={4}>
+            {/* Filter Card */}
+            <Card sx={{ mb: 3, boxShadow: 3, borderRadius: 2 }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" fontWeight={700} color="primary.main" gutterBottom>
+                  Schedule Date
+                </Typography>
+                <DatePicker
+                  label="Select Date"
+                  format="dd/MM/yyyy"
+                  value={parseISO(selectedDate)}
+                  onChange={(newValue) => {
+                    if (newValue) {
+                      setSelectedDate(format(newValue, 'yyyy-MM-dd'));
+                    }
+                  }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      sx: {
+                        '& .MuiOutlinedInput-root': {
+                          bgcolor: 'grey.50',
+                          borderRadius: 2,
+                        },
+                      }
+                    }
+                  }}
+                />
+
+                <Box sx={{ mt: 3 }}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<PersonAddIcon />}
+                    onClick={handleRegisterPatient}
+                    size="large"
+                    sx={{ borderRadius: 2, height: 48 }}
+                  >
+                    Register Walk-in
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Time Slots List */}
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 2, px: 1 }}>
+              Time Slots ({slots.length})
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {slots.length === 0 ? (
+                <Card sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50', border: '1px dashed grey.300' }}>
+                  <Typography color="text.secondary">No slots for this date</Typography>
+                </Card>
+              ) : (
+                slots.map((slot) => (
+                  <Card
+                    key={slot.id}
+                    onClick={() => setSelectedSlotId(slot.id)}
+                    sx={{
+                      cursor: 'pointer',
+                      transition: '0.2s',
+                      borderRadius: 2,
+                      border: 2,
+                      borderColor: selectedSlotId === slot.id ? 'primary.main' : 'transparent',
+                      bgcolor: selectedSlotId === slot.id ? 'primary.50' : 'background.paper',
+                      '&:hover': {
+                        transform: 'translateX(4px)',
+                        boxShadow: 2,
+                        borderColor: selectedSlotId === slot.id ? 'primary.main' : 'primary.light',
+                      }
+                    }}
+                  >
+                    <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <TimeIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                          <Typography fontWeight={700}>
+                            {slot.start_time} - {slot.end_time}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <PersonIcon sx={{ fontSize: 16 }} />
+                          {slot.doctor_name}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`${slot.booked_count || 0}/${slot.max_appointments}`}
+                        size="small"
+                        color={slot.booked_count >= slot.max_appointments ? "error" : "primary"}
+                        variant={selectedSlotId === slot.id ? "contained" : "outlined"}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </Box>
+                  </Card>
+                ))
+              )}
             </Box>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={6}>
+          </Grid>
+
+          {/* Right Side: Appointments Table */}
+          <Grid item xs={12} lg={8}>
+            {/* Search Header */}
+            <Card sx={{ mb: 3, boxShadow: 1, borderRadius: 2 }}>
+              <CardContent sx={{ py: 2 }}>
                 <TextField
                   fullWidth
-                  placeholder="Search by Patient ID, Name, or Appointment Number..."
+                  placeholder="Search by Patient ID, Name, or NIC..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   InputProps={{
@@ -380,583 +451,351 @@ const ReceptionistDashboard: React.FC = () => {
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      bgcolor: 'grey.50',
-                      borderRadius: 2,
-                      '&:hover': {
-                        bgcolor: 'background.paper',
-                      },
-                      '&.Mui-focused': {
-                        bgcolor: 'background.paper',
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  startIcon={<PersonAddIcon />}
-                  onClick={handleRegisterPatient}
-                  sx={{ 
-                    height: 56,
-                    borderRadius: 2,
-                    boxShadow: 2,
-                    '&:hover': {
-                      boxShadow: 4,
-                    },
-                  }}
-                >
-                  Register New Patient
-                </Button>
-              </Grid>
-            </Grid>
-            <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Select Date"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      bgcolor: 'background.paper',
                       borderRadius: 2,
                     },
                   }}
                 />
+              </CardContent>
+            </Card>
+
+            {/* Daily Stats Summary */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={6} sm={3}>
+                <Card sx={{ bgcolor: 'primary.50', color: 'primary.main', borderRadius: 2 }}>
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="caption" fontWeight={700} sx={{ textTransform: 'uppercase' }}>Booked</Typography>
+                    <Typography variant="h5" fontWeight={700}>{dailyStats.total}</Typography>
+                  </Box>
+                </Card>
               </Grid>
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel id="doctor-select-label">Doctor</InputLabel>
-                  <Select
-                    labelId="doctor-select-label"
-                    id="doctor-select"
-                    value={selectedDoctor}
-                    label="Doctor"
-                    disabled
-                    inputProps={{ 'aria-label': 'Select doctor', title: 'Select doctor' }}
-                    sx={{
-                      bgcolor: 'background.paper',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <MenuItem value="D001">Dr. Milinda Abeykoon</MenuItem>
-                  </Select>
-                </FormControl>
+              <Grid item xs={6} sm={3}>
+                <Card sx={{ bgcolor: 'success.50', color: 'success.main', borderRadius: 2 }}>
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="caption" fontWeight={700} sx={{ textTransform: 'uppercase' }}>Checked-in</Typography>
+                    <Typography variant="h5" fontWeight={700}>{dailyStats.checkedInCount}</Typography>
+                  </Box>
+                </Card>
               </Grid>
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel id="slot-select-label">Time Slot</InputLabel>
-                  <Select
-                    labelId="slot-select-label"
-                    id="slot-select"
-                    value={selectedSlot}
-                    label="Time Slot"
-                    onChange={(e) => setSelectedSlot(e.target.value)}
-                    inputProps={{ 'aria-label': 'Select time slot', title: 'Select time slot' }}
-                    sx={{
-                      bgcolor: 'background.paper',
-                      borderRadius: 2,
-                    }}
-                  >
-                    {timeSlots.map((slot) => (
-                      <MenuItem key={slot} value={slot}>
-                        {slot}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+              <Grid item xs={6} sm={3}>
+                <Card sx={{ bgcolor: 'info.50', color: 'info.main', borderRadius: 2 }}>
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="caption" fontWeight={700} sx={{ textTransform: 'uppercase' }}>Active Slots</Typography>
+                    <Typography variant="h5" fontWeight={700}>{dailyStats.activeSlots}</Typography>
+                  </Box>
+                </Card>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Card sx={{ bgcolor: 'warning.50', color: 'warning.main', borderRadius: 2 }}>
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="caption" fontWeight={700} sx={{ textTransform: 'uppercase' }}>Available</Typography>
+                    <Typography variant="h5" fontWeight={700}>{dailyStats.availableCount}</Typography>
+                  </Box>
+                </Card>
               </Grid>
             </Grid>
-          </CardContent>
-        </Card>
 
-        {/* Summary Cards */}
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              height: '100%', 
-              borderLeft: 4, 
-              borderColor: 'primary.main', 
-              boxShadow: 3,
-              borderRadius: 2,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                boxShadow: 6,
-                transform: 'translateY(-4px)',
-              },
-            }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" gutterBottom fontWeight={600}>
-                      Total Appointments
+            {/* Patient List Card */}
+            <Card sx={{ boxShadow: 4, borderRadius: 2, overflow: 'hidden' }}>
+              <Box sx={{
+                bgcolor: 'primary.main',
+                color: 'white',
+                px: 3,
+                py: 2,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <Box>
+                  <Typography variant="h6" fontWeight={700}>
+                    {selectedSlotId ? "Slot Appointments" : "Select a time slot to view patients"}
+                  </Typography>
+                  {selectedSlotId && (
+                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                      {slots.find(s => s.id === selectedSlotId)?.start_time} - {slots.find(s => s.id === selectedSlotId)?.end_time}
                     </Typography>
-                    <Typography variant="h3" fontWeight={700} color="primary.main">
-                      {dailyStats.total}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(selectedDate).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'primary.light', width: 56, height: 56 }}>
-                    <CalendarIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-                  </Avatar>
+                  )}
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+                {selectedSlotId && (
+                  <Chip
+                    label={`${filteredAppointments.length} Patients`}
+                    size="small"
+                    sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 700 }}
+                  />
+                )}
+              </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              height: '100%', 
-              borderLeft: 4, 
-              borderColor: 'success.main', 
-              boxShadow: 3,
-              borderRadius: 2,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                boxShadow: 6,
-                transform: 'translateY(-4px)',
-              },
-            }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" gutterBottom fontWeight={600}>
-                      Checked-in
-                    </Typography>
-                    <Typography variant="h3" fontWeight={700} color="success.main">
-                      {dailyStats.checkedIn}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Patients checked in
-                    </Typography>
+              {selectedSlotId ? (
+                filteredAppointments.length === 0 ? (
+                  <Box sx={{ p: 8, textAlign: 'center' }}>
+                    <ScheduleIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+                    <Typography color="text.secondary">No appointments for this slot</Typography>
                   </Box>
-                  <Avatar sx={{ bgcolor: 'success.light', width: 56, height: 56 }}>
-                    <CheckCircleIcon sx={{ fontSize: 32, color: 'success.main' }} />
-                  </Avatar>
+                ) : (
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead sx={{ bgcolor: 'grey.50' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 700 }}>No.</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Patient Name</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>NIC</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Action</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {filteredAppointments.map((apt) => (
+                          <TableRow key={apt.id} hover>
+                            <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                              {apt.appointment_no}
+                            </TableCell>
+                            <TableCell>
+                              <Typography fontWeight={600}>{apt.patient_name}</Typography>
+                              <Typography variant="caption" color="text.secondary">{apt.phone}</Typography>
+                            </TableCell>
+                            <TableCell>{maskNIC(apt.nic)}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={apt.status.replace('_', ' ')}
+                                size="small"
+                                color={getStatusColor(apt.status)}
+                                sx={{ textTransform: 'capitalize', fontWeight: 600 }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {apt.status === 'scheduled' ? (
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  onClick={() => handleCheckIn(apt)}
+                                  sx={{ borderRadius: 1.5 }}
+                                >
+                                  Check In
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  onClick={() => handleUpdateVitals(apt)}
+                                  sx={{ borderRadius: 1.5 }}
+                                >
+                                  Vitals
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )
+              ) : (
+                <Box sx={{ p: 10, textAlign: 'center' }}>
+                  <HospitalIcon sx={{ fontSize: 64, color: 'primary.light', mb: 2, opacity: 0.5 }} />
+                  <Typography variant="h6" color="text.secondary">
+                    Select a time slot from the left side to see the waiting list
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              height: '100%', 
-              borderLeft: 4, 
-              borderColor: 'warning.main', 
-              boxShadow: 3,
-              borderRadius: 2,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                boxShadow: 6,
-                transform: 'translateY(-4px)',
-              },
-            }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" gutterBottom fontWeight={600}>
-                      Waiting
-                    </Typography>
-                    <Typography variant="h3" fontWeight={700} color="warning.main">
-                      {dailyStats.waiting}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Yet to check-in
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'warning.light', width: 56, height: 56 }}>
-                    <ScheduleIcon sx={{ fontSize: 32, color: 'warning.main' }} />
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              height: '100%', 
-              borderLeft: 4, 
-              borderColor: 'info.main', 
-              boxShadow: 3,
-              borderRadius: 2,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                boxShadow: 6,
-                transform: 'translateY(-4px)',
-              },
-            }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" gutterBottom fontWeight={600}>
-                      In Selected Slot
-                    </Typography>
-                    <Typography variant="h3" fontWeight={700} color="info.main">
-                      {filteredAppointments.length}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {selectedSlot}
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'info.light', width: 56, height: 56 }}>
-                    <TimeIcon sx={{ fontSize: 32, color: 'info.main' }} />
-                  </Avatar>
-                </Box>
-              </CardContent>
+              )}
             </Card>
           </Grid>
         </Grid>
-
-        {/* Appointments in Selected Slot Table */}
-        <Card sx={{ boxShadow: 4, borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
-          <CardContent sx={{ p: 0 }}>
-            <Box sx={{ 
-              background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
-              color: 'white', 
-              p: 3,
-              borderRadius: '8px 8px 0 0',
-            }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="h5" fontWeight={700}>
-                    Appointments in {selectedSlot}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-                    Dr. Milinda Abeykoon - {new Date(selectedDate).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </Typography>
-                </Box>
-                <Chip 
-                  label={`${filteredAppointments.length} ${filteredAppointments.length === 1 ? 'Appointment' : 'Appointments'}`}
-                  sx={{ 
-                    bgcolor: 'white', 
-                    color: 'primary.main',
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                  }}
-                />
-              </Box>
-            </Box>
-
-            {filteredAppointments.length === 0 ? (
-              <Box sx={{ p: 6, textAlign: 'center' }}>
-                <ScheduleIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No Appointments in This Slot
-                </Typography>
-                <Typography variant="body2" color="text.disabled">
-                  Try selecting a different time slot or date
-                </Typography>
-              </Box>
-            ) : (
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: 'grey.100', borderBottom: 2, borderColor: 'primary.main' }}>
-                      <TableCell><Typography fontWeight={700}>Appointment Number</Typography></TableCell>
-                      <TableCell><Typography fontWeight={700}>Patient Name</Typography></TableCell>
-                      <TableCell><Typography fontWeight={700}>Phone</Typography></TableCell>
-                      <TableCell><Typography fontWeight={700}>NIC</Typography></TableCell>
-                      <TableCell><Typography fontWeight={700}>Status</Typography></TableCell>
-                      <TableCell><Typography fontWeight={700}>Action</Typography></TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredAppointments.map((appointment) => (
-                      <TableRow 
-                        key={appointment.id} 
-                        hover
-                        sx={{
-                          '&:hover': {
-                            bgcolor: 'grey.50',
-                          },
-                          transition: 'background-color 0.2s ease',
-                        }}
-                      >
-                        <TableCell>
-                          <Chip
-                            label={appointment.appointment_number}
-                            color="primary"
-                            variant="outlined"
-                            sx={{ fontWeight: 600, fontFamily: 'monospace' }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1.5}>
-                            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.light' }}>
-                              <PersonIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-                            </Avatar>
-                            <Typography fontWeight={600}>{appointment.patient_name}</Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">{appointment.phone}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={maskNIC(appointment.nic)}
-                            size="small"
-                            variant="outlined"
-                            sx={{ 
-                              fontFamily: 'monospace',
-                              fontWeight: 600,
-                              borderColor: 'grey.400',
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={appointment.status.replace('_', ' ')}
-                            color={getStatusColor(appointment.status)}
-                            size="small"
-                            sx={{ fontWeight: 600 }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {appointment.status === 'SCHEDULED' && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="success"
-                              onClick={() => handleCheckIn(appointment)}
-                              sx={{ 
-                                textTransform: 'none', 
-                                fontWeight: 600,
-                                borderRadius: 2,
-                                boxShadow: 1,
-                                '&:hover': {
-                                  boxShadow: 3,
-                                },
-                              }}
-                            >
-                              Check In & Add Vitals
-                            </Button>
-                          )}
-                          {appointment.status === 'CHECKED_IN' && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="primary"
-                              onClick={() => handleUpdateVitals(appointment)}
-                              sx={{ 
-                                textTransform: 'none', 
-                                fontWeight: 600,
-                                borderRadius: 2,
-                                borderWidth: 2,
-                                '&:hover': {
-                                  borderWidth: 2,
-                                },
-                              }}
-                            >
-                              Update Vitals
-                            </Button>
-                          )}
-                          {appointment.status === 'COMPLETED' && (
-                            <Chip 
-                              label="Completed" 
-                              color="info" 
-                              size="small" 
-                              sx={{ fontWeight: 600 }} 
-                            />
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Vitals Dialog */}
-        <Dialog 
-          open={vitalsDialogOpen} 
-          onClose={() => setVitalsDialogOpen(false)} 
-          maxWidth="sm" 
-          fullWidth
-        >
-          <DialogTitle>
-            <Typography variant="h6" fontWeight={700}>
-              Patient Vitals - {selectedAppointment?.patient_name}
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Temperature (°C)"
-                    type="number"
-                    inputProps={{ step: '0.1' }}
-                    value={vitalsForm.temperature}
-                    onChange={(e) => setVitalsForm({ ...vitalsForm, temperature: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Pulse (bpm)"
-                    type="number"
-                    value={vitalsForm.pulse}
-                    onChange={(e) => setVitalsForm({ ...vitalsForm, pulse: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Systolic BP (mmHg)"
-                    type="number"
-                    value={vitalsForm.systolic_bp}
-                    onChange={(e) => setVitalsForm({ ...vitalsForm, systolic_bp: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Diastolic BP (mmHg)"
-                    type="number"
-                    value={vitalsForm.diastolic_bp}
-                    onChange={(e) => setVitalsForm({ ...vitalsForm, diastolic_bp: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Sugar Level (mg/dL)"
-                    type="number"
-                    value={vitalsForm.sugar_level}
-                    onChange={(e) => setVitalsForm({ ...vitalsForm, sugar_level: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Notes"
-                    multiline
-                    rows={3}
-                    value={vitalsForm.notes}
-                    onChange={(e) => setVitalsForm({ ...vitalsForm, notes: e.target.value })}
-                    placeholder="Any additional observations..."
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setVitalsDialogOpen(false)}>Cancel</Button>
-            <Button variant="contained" onClick={handleSaveVitals}>
-              Save Vitals
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Register Patient Dialog */}
-        <Dialog 
-          open={registerDialogOpen} 
-          onClose={() => setRegisterDialogOpen(false)} 
-          maxWidth="md" 
-          fullWidth
-        >
-          <DialogTitle>
-            <Typography variant="h6" fontWeight={700}>
-              Register New Patient
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="NIC Number"
-                    value={patientForm.nic}
-                    onChange={(e) => setPatientForm({ ...patientForm, nic: e.target.value })}
-                    placeholder="e.g., 199012301234"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Full Name"
-                    value={patientForm.full_name}
-                    onChange={(e) => setPatientForm({ ...patientForm, full_name: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Phone Number"
-                    value={patientForm.phone}
-                    onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })}
-                    placeholder="e.g., +94 71 123 4567"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    select
-                    label="Gender"
-                    value={patientForm.gender}
-                    onChange={(e) => setPatientForm({ ...patientForm, gender: e.target.value })}
-                    SelectProps={{ 
-                      native: true,
-                      inputProps: { 'aria-label': 'Select gender', title: 'Select gender' }
-                    }}
-                  >
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                    <option value="OTHER">Other</option>
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Date of Birth"
-                    type="date"
-                    value={patientForm.date_of_birth}
-                    onChange={(e) => setPatientForm({ ...patientForm, date_of_birth: e.target.value })}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Address"
-                    multiline
-                    rows={2}
-                    value={patientForm.address}
-                    onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setRegisterDialogOpen(false)}>Cancel</Button>
-            <Button variant="contained" onClick={handleSavePatient}>
-              Register Patient
-            </Button>
-          </DialogActions>
-        </Dialog>
       </Container>
+
+      {/* Vitals Dialog */}
+      <Dialog
+        open={vitalsDialogOpen}
+        onClose={() => setVitalsDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" fontWeight={700} component="div">
+            Patient Vitals - {selectedAppointment?.patient_name}
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Temperature (°C)"
+                  type="number"
+                  value={vitalsForm.temperature}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, temperature: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Weight (kg)"
+                  type="number"
+                  value={vitalsForm.weight}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, weight: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Pulse (bpm)"
+                  type="number"
+                  value={vitalsForm.pulse}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, pulse: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Systolic BP (mmHg)"
+                  type="number"
+                  value={vitalsForm.systolic_bp}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, systolic_bp: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Diastolic BP (mmHg)"
+                  type="number"
+                  value={vitalsForm.diastolic_bp}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, diastolic_bp: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Sugar Level (mg/dL)"
+                  type="number"
+                  value={vitalsForm.sugar_level}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, sugar_level: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Notes"
+                  multiline
+                  rows={3}
+                  value={vitalsForm.notes}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, notes: e.target.value })}
+                  placeholder="Any additional observations..."
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setVitalsDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSaveVitals}>
+            Save Vitals
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Register Patient Dialog */}
+      <Dialog
+        open={registerDialogOpen}
+        onClose={() => setRegisterDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" fontWeight={700} component="div">
+            Register New Patient
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  label="NIC Number"
+                  value={patientForm.nic}
+                  onChange={(e) => setPatientForm({ ...patientForm, nic: e.target.value })}
+                  placeholder="e.g., 199012301234"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Full Name"
+                  value={patientForm.full_name}
+                  onChange={(e) => setPatientForm({ ...patientForm, full_name: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Phone Number"
+                  value={patientForm.phone}
+                  onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })}
+                  placeholder="e.g., +94 71 123 4567"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  select
+                  label="Gender"
+                  value={patientForm.gender}
+                  onChange={(e) => setPatientForm({ ...patientForm, gender: e.target.value })}
+                  SelectProps={{
+                    native: true,
+                    inputProps: { 'aria-label': 'Select gender', title: 'Select gender' }
+                  }}
+                >
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <DatePicker
+                  label="Date of Birth"
+                  format="dd/MM/yyyy"
+                  value={patientForm.date_of_birth ? parseISO(patientForm.date_of_birth) : null}
+                  onChange={(newValue) => {
+                    if (newValue) {
+                      setPatientForm({ ...patientForm, date_of_birth: format(newValue, 'yyyy-MM-dd') });
+                    }
+                  }}
+                  slotProps={{ textField: { fullWidth: true, required: true } }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Email (Optional)"
+                  type="email"
+                  value={patientForm.email}
+                  onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Address"
+                  multiline
+                  rows={2}
+                  value={patientForm.address}
+                  onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRegisterDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSavePatient}>
+            Register Patient
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

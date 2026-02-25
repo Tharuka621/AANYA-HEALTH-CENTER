@@ -1,12 +1,12 @@
 import axios from 'axios';
-import { 
-  User, 
-  Patient, 
-  Appointment, 
-  Prescription, 
-  LabTest, 
-  Medicine, 
-  VitalSigns, 
+import {
+  User,
+  Patient,
+  Appointment,
+  Prescription,
+  LabTest,
+  Medicine,
+  VitalSigns,
   Bill,
   ApiResponse,
   PaginatedResponse,
@@ -299,7 +299,7 @@ export const patientsApi = {
     const start = (page - 1) * limit;
     const end = start + limit;
     const data = mockPatients.slice(start, end);
-    
+
     return {
       data,
       total: mockPatients.length,
@@ -336,10 +336,10 @@ export const patientsApi = {
     if (index === -1) {
       throw new Error('Patient not found');
     }
-    mockPatients[index] = { 
-      ...mockPatients[index], 
-      ...updates, 
-      updated_at: new Date().toISOString() 
+    mockPatients[index] = {
+      ...mockPatients[index],
+      ...updates,
+      updated_at: new Date().toISOString()
     };
     return createResponse(mockPatients[index]);
   }
@@ -352,7 +352,7 @@ export const appointmentsApi = {
     const start = (page - 1) * limit;
     const end = start + limit;
     const data = mockAppointments.slice(start, end);
-    
+
     return {
       data,
       total: mockAppointments.length,
@@ -411,6 +411,77 @@ export const appointmentsApi = {
     }
     mockAppointments[index] = { ...mockAppointments[index], ...updates };
     return createResponse(mockAppointments[index]);
+  },
+
+  // Receptionist methods
+  getReceptionistSlots: async (date: string): Promise<ApiResponse<any[]>> => {
+    try {
+      const response = await axiosInstance.get(`/appointments/receptionist/slots?date=${date}`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Slots fetched successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: [],
+        message: error.response?.data?.message || 'Failed to fetch slots'
+      };
+    }
+  },
+
+  getSlotAppointments: async (slotId: string): Promise<ApiResponse<any[]>> => {
+    try {
+      const response = await axiosInstance.get(`/appointments/receptionist/slots/${slotId}/appointments`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Appointments fetched successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: [],
+        message: error.response?.data?.message || 'Failed to fetch appointments'
+      };
+    }
+  },
+
+  checkIn: async (appointmentId: string, vitals: any): Promise<ApiResponse<any>> => {
+    try {
+      const response = await axiosInstance.post(`/appointments/receptionist/appointments/${appointmentId}/check-in`, {
+        vitals
+      });
+      return {
+        success: true,
+        data: response.data,
+        message: 'Patient checked in successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: null,
+        message: error.response?.data?.message || 'Failed to check in'
+      };
+    }
+  },
+
+  registerWalkIn: async (data: any): Promise<ApiResponse<any>> => {
+    try {
+      const response = await axiosInstance.post('/appointments/receptionist/register-walk-in', data);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Walk-in registered successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: null,
+        message: error.response?.data?.message || 'Failed to register walk-in'
+      };
+    }
   }
 };
 

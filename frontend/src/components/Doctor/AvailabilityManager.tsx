@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Typography,
   Table,
   TableBody,
@@ -21,7 +19,6 @@ import {
   FormControlLabel,
   IconButton,
   Chip,
-  Alert,
   CircularProgress,
 } from '@mui/material';
 import {
@@ -147,7 +144,7 @@ const AvailabilityManager: React.FC = () => {
       setLoading(true);
       await axiosInstance.delete(`/appointments/doctor/slots/${slotId}`);
       showSuccess('Availability slot deleted successfully');
-      
+
       // Refresh slots list
       await fetchSlots();
     } catch (error: any) {
@@ -166,7 +163,7 @@ const AvailabilityManager: React.FC = () => {
         is_active: !slot.is_active,
       });
       showSuccess(`Slot ${!slot.is_active ? 'activated' : 'deactivated'} successfully`);
-      
+
       // Refresh slots list
       await fetchSlots();
     } catch (error: any) {
@@ -208,7 +205,7 @@ const AvailabilityManager: React.FC = () => {
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog()}
           size="large"
-          sx={{ 
+          sx={{
             fontWeight: 600,
             px: 3,
             boxShadow: 2,
@@ -256,8 +253,8 @@ const AvailabilityManager: React.FC = () => {
             </TableHead>
             <TableBody>
               {slots.map((slot) => (
-                <TableRow 
-                  key={slot.id} 
+                <TableRow
+                  key={slot.id}
                   hover
                   sx={{
                     '&:hover': {
@@ -298,9 +295,9 @@ const AvailabilityManager: React.FC = () => {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Chip 
-                      label={`${slot.max_appointments} patients`} 
-                      size="small" 
+                    <Chip
+                      label={`${slot.max_appointments} patients`}
+                      size="small"
                       sx={{
                         bgcolor: 'primary.light',
                         color: 'primary.main',
@@ -317,44 +314,24 @@ const AvailabilityManager: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <Box display="flex" gap={0.5} justifyContent="flex-end">
+                    <Box display="flex" gap={0.5} justifyContent="flex-end" alignItems="center">
+                      <Switch
+                        checked={!!slot.is_active}
+                        size="small"
+                        onChange={() => handleToggleActive(slot)}
+                        color={slot.is_active ? 'warning' : 'success'}
+                      />
                       <IconButton
                         size="small"
                         onClick={() => handleOpenDialog(slot)}
-                        sx={{
-                          color: 'primary.main',
-                          '&:hover': {
-                            bgcolor: 'primary.light'
-                          }
-                        }}
+                        sx={{ color: 'primary.main', '&:hover': { bgcolor: 'primary.light' } }}
                       >
                         <EditIcon fontSize="small" />
                       </IconButton>
                       <IconButton
                         size="small"
-                        onClick={() => handleToggleActive(slot)}
-                        sx={{
-                          color: slot.is_active ? 'warning.main' : 'success.main',
-                          '&:hover': {
-                            bgcolor: slot.is_active ? 'warning.light' : 'success.light'
-                          }
-                        }}
-                      >
-                        <Switch 
-                          checked={slot.is_active} 
-                          size="small"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </IconButton>
-                      <IconButton
-                        size="small"
                         onClick={() => handleDelete(slot.id)}
-                        sx={{
-                          color: 'error.main',
-                          '&:hover': {
-                            bgcolor: 'error.light'
-                          }
-                        }}
+                        sx={{ color: 'error.main', '&:hover': { bgcolor: 'error.light' } }}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -372,70 +349,70 @@ const AvailabilityManager: React.FC = () => {
         <DialogTitle sx={{ pb: 1 }}>
           {editingSlot ? 'Edit Availability Slot' : 'Add New Availability Slot'}
         </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <TextField
+              fullWidth
+              label="Date"
+              type="date"
+              value={formData.slot_date}
+              onChange={(e) => setFormData({ ...formData, slot_date: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              margin="normal"
+              required
+            />
+            <Box display="flex" gap={2}>
               <TextField
                 fullWidth
-                label="Date"
-                type="date"
-                value={formData.slot_date}
-                onChange={(e) => setFormData({ ...formData, slot_date: e.target.value })}
+                label="Start Time"
+                type="time"
+                value={formData.start_time}
+                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                 InputLabelProps={{ shrink: true }}
                 margin="normal"
                 required
               />
-              <Box display="flex" gap={2}>
-                <TextField
-                  fullWidth
-                  label="Start Time"
-                  type="time"
-                  value={formData.start_time}
-                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  margin="normal"
-                  required
-                />
-                <TextField
-                  fullWidth
-                  label="End Time"
-                  type="time"
-                  value={formData.end_time}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  margin="normal"
-                  required
-                />
-              </Box>
               <TextField
                 fullWidth
-                label="Maximum Appointments"
-                type="number"
-                value={formData.max_appointments}
-                onChange={(e) => setFormData({ ...formData, max_appointments: parseInt(e.target.value) })}
+                label="End Time"
+                type="time"
+                value={formData.end_time}
+                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                InputLabelProps={{ shrink: true }}
                 margin="normal"
-                inputProps={{ min: 1 }}
                 required
               />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  />
-                }
-                label="Active"
-                sx={{ mt: 2 }}
-              />
             </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button onClick={handleSave} variant="contained" size="large" sx={{ px: 4, fontWeight: 600 }}>
-              {editingSlot ? 'Update Slot' : 'Create Slot'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
+            <TextField
+              fullWidth
+              label="Maximum Appointments"
+              type="number"
+              value={formData.max_appointments}
+              onChange={(e) => setFormData({ ...formData, max_appointments: parseInt(e.target.value) })}
+              margin="normal"
+              inputProps={{ min: 1 }}
+              required
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                />
+              }
+              label="Active"
+              sx={{ mt: 2 }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleSave} variant="contained" size="large" sx={{ px: 4, fontWeight: 600 }}>
+            {editingSlot ? 'Update Slot' : 'Create Slot'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 

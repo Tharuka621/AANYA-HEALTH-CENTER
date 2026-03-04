@@ -5,7 +5,7 @@ import {
   TableBody, TableCell, TableContainer, TableRow, TableHead, Paper, Alert,
   IconButton, MenuItem, FormGroup, FormControlLabel, Checkbox, Tabs, Tab,
   Avatar, Stack, Badge, CircularProgress, List, ListItem, ListItemText,
-  LinearProgress, Tooltip, Fade,
+  LinearProgress, Tooltip, Fade, Autocomplete
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, parseISO } from 'date-fns';
@@ -898,12 +898,17 @@ export default function DoctorDashboard() {
                       <Box sx={{ p: 2 }}>
                         <Grid container spacing={2} alignItems="center">
                           <Grid item xs={12} sm={4}>
-                            <TextField fullWidth select label="Medicine" size="small"
-                              value={med.medicine_id}
-                              onChange={e => updateMed(i, 'medicine_id', Number(e.target.value))}>
-                              <MenuItem value={0} disabled>Select medicine...</MenuItem>
-                              {medicines.map(m => <MenuItem key={m.id} value={m.id}>{m.name} ({m.unit})</MenuItem>)}
-                            </TextField>
+                            <Autocomplete
+                              options={medicines}
+                              getOptionLabel={(option) => `${option.name} (${option.unit})`}
+                              value={medicines.find(m => m.id === med.medicine_id) || null}
+                              onChange={(event, newValue) => {
+                                updateMed(i, 'medicine_id', newValue ? newValue.id : 0);
+                              }}
+                              renderInput={(params) => (
+                                <TextField {...params} label="Search Medicine" size="small" />
+                              )}
+                            />
                           </Grid>
                           <Grid item xs={12} sm={3}>
                             <TextField fullWidth label="Dosage" size="small"

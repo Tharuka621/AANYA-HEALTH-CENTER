@@ -1,319 +1,287 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Box,
-  Container,
-  Typography,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Avatar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  Select,
-  MenuItem,
-  Alert,
-  Card,
-  CardContent,
-  Grid,
+  Box, Container, Typography, Button, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Chip, Avatar, Dialog,
+  DialogTitle, DialogContent, DialogActions, TextField, Grid, Card,
+  CardContent, CircularProgress, InputAdornment, Stack,
 } from '@mui/material';
 import {
-  CheckCircle as CheckIcon,
-  Cancel as CancelIcon,
   Visibility as ViewIcon,
   CalendarToday as CalendarIcon,
-  Schedule as ScheduleIcon,
+  Search as SearchIcon,
+  Person as PersonIcon,
+  Phone as PhoneIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { getAppointmentsWithDetails, mockSlots } from '../../mock/doctorMock';
-import { appointmentStatusLabels, appointmentStatusColors, formatTime, formatDate } from '../../utils/doctorUtils';
+import { axiosInstance } from '../../services/api';
+import { useToast } from '../../components/common/Toast';
+
+interface Appointment {
+  id: string;
+  appointment_no: string;
+  patient_name: string;
+  patient_phone: string;
+  patient_email: string;
+  reason: string;
+  status: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  has_visit?: boolean;
+}
+
+const statusColors: Record<string, any> = {
+  scheduled: 'warning',
+  checked_in: 'info',
+  completed: 'success',
+  cancelled: 'error',
+};
+
+const statusLabels: Record<string, string> = {
+  scheduled: 'Scheduled',
+  checked_in: 'Checked In',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+const fmtTime = (t: string) => {
+  if (!t) return '';
+  try { return new Date(`2000-01-01T${t}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }); }
+  catch { return t; }
+};
 
 const AppointmentList: React.FC = () => {
+  const { showError } = useToast();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [selectedSlot, setSelectedSlot] = useState<string>('');
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedDate, setSelectedDate] = useState('');
 
-  // Get appointments with details using mock data
-  const allAppointments = getAppointmentsWithDetails();
-  
-  // Filter appointments by selected date
-  const appointmentsByDate = selectedDate 
-    ? allAppointments.filter(app => app.slot_date === selectedDate)
-    : allAppointments;
-
-  // Further filter by slot if selected
-  const filteredAppointments = selectedSlot
-    ? appointmentsByDate.filter(app => app.slot_id === selectedSlot)
-    : appointmentsByDate;
-
-  // Get slots for selected date
-  const slotsForDate = mockSlots.filter(slot => slot.slot_date === selectedDate);
-
-  const handleViewAppointment = (appointment: any) => {
-    setSelectedAppointment(appointment);
-    setOpenDialog(true);
+  const fetchAppointments = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get('/appointments/doctor/appointments');
+      setAppointments(response.data);
+    } catch (error: any) {
+      showError(error.response?.data?.message || 'Failed to load appointments');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCompleteAppointment = (appointmentId: string) => {
-    console.log('Complete appointment:', appointmentId);
-    alert('Appointment marked as completed!');
-  };
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
-  const handleCancelAppointment = (appointmentId: string) => {
-    console.log('Cancel appointment:', appointmentId);
-    alert('Appointment cancelled!');
-  };
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter(apt => {
+      const matchesSearch = !searchQuery ||
+        apt.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        apt.appointment_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        apt.patient_phone?.includes(searchQuery);
+      const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
+      const matchesDate = !selectedDate || apt.slot_date === selectedDate;
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [appointments, searchQuery, statusFilter, selectedDate]);
+
+  // Aggregate stats
+  const stats = useMemo(() => ({
+    total: appointments.length,
+    scheduled: appointments.filter(a => a.status === 'scheduled').length,
+    checkedIn: appointments.filter(a => a.status === 'checked_in').length,
+    completed: appointments.filter(a => a.status === 'completed').length,
+  }), [appointments]);
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="xl">
       <Box sx={{ py: 3 }}>
-        <Box mb={4}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            My Appointments
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            View and manage your appointment schedule
-          </Typography>
+
+        {/* Header */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Box>
+            <Typography variant="h4" fontWeight={800}>My Appointments</Typography>
+            <Typography variant="body2" color="text.secondary">All scheduled appointments for your practice</Typography>
+          </Box>
+          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchAppointments} disabled={loading}>
+            Refresh
+          </Button>
         </Box>
 
-        {/* Date and Slot Filters */}
-        <Grid container spacing={3} mb={3}>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={2}>
-                  <CalendarIcon color="primary" />
-                  <Typography variant="h6" fontWeight={600}>
-                    Select Date
-                  </Typography>
-                </Box>
-                <TextField
-                  fullWidth
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    setSelectedSlot(''); // Reset slot when date changes
-                  }}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={2}>
-                  <ScheduleIcon color="primary" />
-                  <Typography variant="h6" fontWeight={600}>
-                    Select Time Slot
-                  </Typography>
-                </Box>
-                <FormControl fullWidth>
-                  <Select
-                    value={selectedSlot}
-                    onChange={(e) => setSelectedSlot(e.target.value)}
-                    displayEmpty
-                  >
-                    <MenuItem value="">All Slots</MenuItem>
-                    {slotsForDate.map((slot) => (
-                      <MenuItem key={slot.id} value={slot.id}>
-                        {formatTime(slot.start_time)} - {formatTime(slot.end_time)} 
-                        {!slot.is_active && ' (Inactive)'}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </CardContent>
-            </Card>
-          </Grid>
+        {/* Stats row */}
+        <Grid container spacing={2} mb={3}>
+          {[
+            { label: 'Total', value: stats.total, color: '#1a237e' },
+            { label: 'Scheduled', value: stats.scheduled, color: '#e65100' },
+            { label: 'Checked In', value: stats.checkedIn, color: '#0277bd' },
+            { label: 'Completed', value: stats.completed, color: '#2e7d32' },
+          ].map(s => (
+            <Grid item xs={6} sm={3} key={s.label}>
+              <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
+                  <Typography variant="caption" fontWeight={700} sx={{ color: s.color, textTransform: 'uppercase' }}>{s.label}</Typography>
+                  <Typography variant="h4" fontWeight={800} sx={{ color: s.color }}>{s.value}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
         </Grid>
 
-        {/* Summary Cards */}
-        <Box display="flex" gap={2} mb={4}>
-          <Alert severity="info" sx={{ flex: 1 }}>
-            <Typography variant="body2">
-              Total Appointments: {filteredAppointments.length}
-            </Typography>
-          </Alert>
-          <Alert severity="warning" sx={{ flex: 1 }}>
-            <Typography variant="body2">
-              Pending: {filteredAppointments.filter(a => a.status === 'PENDING').length}
-            </Typography>
-          </Alert>
-          <Alert severity="success" sx={{ flex: 1 }}>
-            <Typography variant="body2">
-              Confirmed: {filteredAppointments.filter(a => a.status === 'CONFIRMED').length}
-            </Typography>
-          </Alert>
-        </Box>
+        {/* Filters */}
+        <Card elevation={0} sx={{ mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+          <CardContent sx={{ p: 2 }}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} sm={4}>
+                <TextField fullWidth size="small" placeholder="Search by name, phone, appointment no..."
+                  value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                  InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} /></InputAdornment> }} />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <TextField fullWidth size="small" type="date" label="Filter by date"
+                  value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }} />
+              </Grid>
+              <Grid item xs={12} sm={5}>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {['all', 'scheduled', 'checked_in', 'completed', 'cancelled'].map(s => (
+                    <Chip key={s} label={s === 'all' ? 'All' : statusLabels[s] || s}
+                      variant={statusFilter === s ? 'filled' : 'outlined'}
+                      color={statusFilter === s ? 'primary' : 'default'}
+                      size="small"
+                      onClick={() => setStatusFilter(s)}
+                      sx={{ cursor: 'pointer', fontWeight: 600 }} />
+                  ))}
+                </Stack>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-        <TableContainer component={Paper} elevation={0}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Patient</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Time Slot</TableCell>
-                <TableCell>Reason</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredAppointments.length > 0 ? (
-                filteredAppointments.map((appointment) => (
-                  <TableRow key={appointment.id}>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={2}>
-                        <Avatar sx={{ width: 32, height: 32 }}>
-                          {appointment.patient_name.split(' ').map(n => n[0]).join('')}
-                        </Avatar>
-                        <Typography variant="body2" fontWeight={600}>
-                          {appointment.patient_name}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{formatDate(appointment.slot_date)}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {appointment.reason || 'N/A'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={1} alignItems="center">
-                        <Chip
-                          label={appointmentStatusLabels[appointment.status]}
-                          color={appointmentStatusColors[appointment.status]}
-                          size="small"
-                        />
-                        {appointment.has_visit && (
-                          <Chip label="Checked In" size="small" color="success" variant="outlined" />
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{appointment.patient_phone}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={1}>
-                        {appointment.status === 'PENDING' && (
-                          <>
-                            <IconButton
-                              size="small"
-                              color="success"
-                              onClick={() => handleCompleteAppointment(appointment.id)}
-                              title="Mark as Confirmed"
-                            >
-                              <CheckIcon />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleCancelAppointment(appointment.id)}
-                              title="Cancel"
-                            >
-                              <CancelIcon />
-                            </IconButton>
-                          </>
-                        )}
-                        <IconButton
-                          size="small"
-                          color="info"
-                          onClick={() => handleViewAppointment(appointment)}
-                          title="View Details"
-                        >
-                          <ViewIcon />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
+        {/* Table */}
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
+          ) : filteredAppointments.length === 0 ? (
+            <Box py={8} textAlign="center">
+              <CalendarIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">No appointments found</Typography>
+              <Typography variant="body2" color="text.disabled">Try adjusting your filters</Typography>
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'grey.50' }}>
+                    <TableCell sx={{ fontWeight: 700 }}>Patient</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Date & Time</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Reason</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Appt No.</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }} align="right">Actions</TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    <Box py={4}>
-                      <Typography variant="body1" color="text.secondary">
-                        No appointments found for the selected date and slot
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {filteredAppointments.map((apt) => (
+                    <TableRow key={apt.id} hover>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1.5}>
+                          <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.light', fontSize: '0.85rem', fontWeight: 700 }}>
+                            {apt.patient_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>{apt.patient_name}</Typography>
+                            {apt.patient_phone && (
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                <PhoneIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
+                                <Typography variant="caption" color="text.secondary">{apt.patient_phone}</Typography>
+                              </Box>
+                            )}
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>{apt.slot_date}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {fmtTime(apt.start_time)} – {fmtTime(apt.end_time)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {apt.reason || '—'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={statusLabels[apt.status] || apt.status}
+                          size="small"
+                          color={statusColors[apt.status] || 'default'}
+                          sx={{ fontWeight: 700 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'text.secondary' }}>
+                          {apt.appointment_no || `APT-${String(apt.id).padStart(6, '0')}`}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button size="small" variant="outlined" startIcon={<ViewIcon />}
+                          onClick={() => { setSelectedAppointment(apt); setOpenDialog(true); }}>
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Card>
 
-        {/* Appointment Details Dialog */}
+        {/* Detail Dialog */}
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            Appointment Details
+          <DialogTitle sx={{ borderBottom: '1px solid', borderColor: 'divider', pb: 2 }}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Avatar sx={{ bgcolor: 'primary.main' }}>
+                <PersonIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{selectedAppointment?.patient_name}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {selectedAppointment?.appointment_no || `APT-${String(selectedAppointment?.id).padStart(6, '0')}`}
+                </Typography>
+              </Box>
+            </Box>
           </DialogTitle>
           <DialogContent>
             {selectedAppointment && (
-              <Box sx={{ pt: 2 }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Patient Name</Typography>
-                    <Typography variant="body1" fontWeight={600}>{selectedAppointment.patient_name}</Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Phone</Typography>
-                    <Typography variant="body1" fontWeight={600}>{selectedAppointment.patient_phone}</Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Date</Typography>
-                    <Typography variant="body1" fontWeight={600}>{formatDate(selectedAppointment.slot_date)}</Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Time Slot</Typography>
-                    <Typography variant="body1" fontWeight={600}>
-                      {formatTime(selectedAppointment.start_time)} - {formatTime(selectedAppointment.end_time)}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Status</Typography>
-                    <Chip
-                      label={appointmentStatusLabels[selectedAppointment.status as keyof typeof appointmentStatusLabels]}
-                      color={appointmentStatusColors[selectedAppointment.status as keyof typeof appointmentStatusColors]}
-                      size="small"
-                      sx={{ mt: 0.5 }}
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Check-In Status</Typography>
-                    <Chip
-                      label={selectedAppointment.has_visit ? 'Checked In' : 'Not Checked In'}
-                      color={selectedAppointment.has_visit ? 'success' : 'default'}
-                      size="small"
-                      sx={{ mt: 0.5 }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary">Reason for Visit</Typography>
-                    <Typography variant="body1">{selectedAppointment.reason || 'N/A'}</Typography>
-                  </Grid>
+              <Grid container spacing={2} sx={{ pt: 2 }}>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">Date</Typography>
+                  <Typography fontWeight={600}>{selectedAppointment.slot_date}</Typography>
                 </Grid>
-              </Box>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">Time</Typography>
+                  <Typography fontWeight={600}>{fmtTime(selectedAppointment.start_time)} – {fmtTime(selectedAppointment.end_time)}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">Phone</Typography>
+                  <Typography fontWeight={600}>{selectedAppointment.patient_phone || '—'}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">Status</Typography>
+                  <Box mt={0.5}>
+                    <Chip label={statusLabels[selectedAppointment.status] || selectedAppointment.status}
+                      size="small" color={statusColors[selectedAppointment.status] || 'default'} />
+                  </Box>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="caption" color="text.secondary">Reason for Visit</Typography>
+                  <Typography fontWeight={600}>{selectedAppointment.reason || 'Not specified'}</Typography>
+                </Grid>
+              </Grid>
             )}
           </DialogContent>
           <DialogActions>
@@ -326,4 +294,3 @@ const AppointmentList: React.FC = () => {
 };
 
 export default AppointmentList;
-

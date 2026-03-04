@@ -288,12 +288,7 @@ const ReceptionistDashboard: React.FC = () => {
                   AANYA Health - Receptionist
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {new Date().toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
+                  {new Date().toLocaleDateString('en-GB')}
                 </Typography>
               </Box>
             </Box>

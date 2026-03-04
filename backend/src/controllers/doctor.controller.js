@@ -10,11 +10,12 @@ const getDoctorId = async (userId) => {
 // GET /api/doctor/queue?slot_id=X — today's patient queue, optionally filtered by slot
 exports.getDoctorQueue = async (req, res) => {
     try {
+        const userId = req.user.id;
         const doctorId = await getDoctorId(req.user.id);
         const today = new Date().toISOString().split('T')[0];
         const { slot_id } = req.query;
 
-        const params = [doctorId, today];
+        const params = [userId, doctorId, today];
         let slotFilter = '';
         if (slot_id) {
             slotFilter = 'AND ds.id = ?';
@@ -55,10 +56,10 @@ exports.getDoctorQueue = async (req, res) => {
       INNER JOIN patients p ON v.patient_id = p.id
       INNER JOIN users u ON p.user_id = u.id
       LEFT JOIN vitals vt ON vt.visit_id = v.id
-      WHERE v.doctor_id = ?
+      WHERE ds.doctor_id IN (?, ?)
         AND ds.slot_date = ?
         ${slotFilter}
-      ORDER BY v.check_in_time ASC`,
+      ORDER BY ds.start_time ASC, v.check_in_time ASC`,
             params
         );
 
@@ -69,9 +70,71 @@ exports.getDoctorQueue = async (req, res) => {
     }
 };
 
+// GET /api/doctor/today-queue — all active (checked-in) patients for this doctor's slots
+exports.getTodayQueue = async (req, res) => {
+    try {
+        const userId = req.user.id;       // users.id — what doctor_slots.doctor_id stores
+        const doctorId = await getDoctorId(userId); // doctors.id — what visits.doctor_id stores
+
+        const [visits] = await pool.query(
+            `SELECT
+        v.id as visit_id,
+        v.appointment_id,
+        v.patient_id,
+        v.status as visit_status,
+        v.doctor_notes,
+        v.diagnosis,
+        v.check_in_time,
+        a.appointment_no,
+        a.reason as appointment_reason,
+        ds.id as slot_id,
+        TIME_FORMAT(ds.start_time, '%H:%i') as appointment_time,
+        TIME_FORMAT(ds.end_time, '%H:%i') as slot_end_time,
+        ds.slot_date,
+        u.full_name as patient_name,
+        u.phone as patient_phone,
+        u.email as patient_email,
+        p.nic,
+        p.dob as date_of_birth,
+        p.gender,
+        vt.id as vital_id,
+        vt.temperature,
+        vt.systolic_bp,
+        vt.diastolic_bp,
+        vt.pulse,
+        vt.weight,
+        vt.sugar_level,
+        vt.notes as vital_notes
+      FROM visits v
+      INNER JOIN appointments a ON v.appointment_id = a.id
+      INNER JOIN doctor_slots ds ON a.slot_id = ds.id
+      INNER JOIN patients p ON v.patient_id = p.id
+      INNER JOIN users u ON p.user_id = u.id
+      LEFT JOIN vitals vt ON vt.visit_id = v.id
+      WHERE ds.doctor_id IN (?, ?)
+        AND v.status IN ('WAITING', 'IN_CONSULTATION', 'DONE')
+        AND ds.id IN (
+          SELECT DISTINCT ds2.id FROM doctor_slots ds2
+          INNER JOIN appointments a2 ON a2.slot_id = ds2.id
+          INNER JOIN visits v2 ON v2.appointment_id = a2.id
+          WHERE ds2.doctor_id IN (?, ?) AND v2.status IN ('WAITING','IN_CONSULTATION')
+        )
+      ORDER BY ds.slot_date ASC, ds.start_time ASC, v.check_in_time ASC`,
+            [userId, doctorId, userId, doctorId]
+        );
+
+        res.json(visits);
+    } catch (err) {
+        console.error('getTodayQueue error:', err);
+        res.status(500).json({ message: err.message || 'Server error' });
+    }
+};
+
+
 // GET /api/doctor/today-slots — today's slots with appointment + checked-in counts
 exports.getDoctorTodaySlots = async (req, res) => {
     try {
+        const userId = req.user.id;
         const doctorId = await getDoctorId(req.user.id);
         const date = req.query.date || new Date().toISOString().split('T')[0];
 
@@ -88,15 +151,35 @@ exports.getDoctorTodaySlots = async (req, res) => {
       FROM doctor_slots ds
       LEFT JOIN appointments a ON a.slot_id = ds.id AND a.status != 'cancelled'
       LEFT JOIN visits v ON v.appointment_id = a.id
-      WHERE ds.doctor_id = ? AND ds.slot_date = ? AND ds.is_active = 1
+      WHERE ds.doctor_id IN (?, ?) AND ds.slot_date = ? AND ds.is_active = 1
       GROUP BY ds.id
       ORDER BY ds.start_time ASC`,
-            [req.user.id, date]
+            [userId, doctorId, date]
         );
 
         res.json(slots);
     } catch (err) {
         console.error('getDoctorTodaySlots error:', err);
+        res.status(500).json({ message: err.message || 'Server error' });
+    }
+};
+
+// POST /api/doctor/visits/:visitId/start — change WAITING -> IN_CONSULTATION
+exports.startConsultation = async (req, res) => {
+    try {
+        const doctorId = await getDoctorId(req.user.id);
+        const { visitId } = req.params;
+
+        const [result] = await pool.query(
+            `UPDATE visits SET status = 'IN_CONSULTATION'
+       WHERE id = ? AND doctor_id = ? AND status = 'WAITING'`,
+            [visitId, doctorId]
+        );
+
+        // Also works if already IN_CONSULTATION — just respond OK
+        res.json({ message: 'Consultation started' });
+    } catch (err) {
+        console.error('startConsultation error:', err);
         res.status(500).json({ message: err.message || 'Server error' });
     }
 };

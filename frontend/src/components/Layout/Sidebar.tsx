@@ -58,8 +58,8 @@ const Sidebar: React.FC = () => {
   };
 
   const toggleItem = (path: string) => {
-    setOpenItems(prev => 
-      prev.includes(path) 
+    setOpenItems(prev =>
+      prev.includes(path)
         ? prev.filter(item => item !== path)
         : [...prev, path]
     );
@@ -83,7 +83,7 @@ const Sidebar: React.FC = () => {
           { icon: ReportsIcon, label: 'Reports', path: '/dashboard/admin/reports' },
           { icon: SettingsIcon, label: 'Settings', path: '/dashboard/admin/settings' }
         ];
-      
+
       case 'doctor':
         return [
           ...baseItems,
@@ -91,7 +91,7 @@ const Sidebar: React.FC = () => {
           { icon: CalendarIcon, label: 'Appointments', path: '/dashboard/doctor/appointments' },
           { icon: LabIcon, label: 'Lab Tests', path: '/dashboard/doctor/lab-tests' }
         ];
-      
+
       case 'receptionist':
         return [
           ...baseItems,
@@ -99,7 +99,7 @@ const Sidebar: React.FC = () => {
           { icon: CalendarIcon, label: 'Appointments', path: '/dashboard/receptionist/appointments' },
           { icon: PaymentIcon, label: 'Billing', path: '/dashboard/receptionist/billing' }
         ];
-      
+
       case 'pharmacist':
         return [
           ...baseItems,
@@ -107,14 +107,14 @@ const Sidebar: React.FC = () => {
           { icon: DescriptionIcon, label: 'Prescriptions', path: '/dashboard/pharmacist/prescriptions' },
           { icon: ReportsIcon, label: 'Inventory Reports', path: '/dashboard/pharmacist/reports' }
         ];
-      
+
       case 'lab':
         return [
           ...baseItems,
           { icon: LabIcon, label: 'Lab Tests', path: '/dashboard/lab/lab-tests' },
           { icon: ReportsIcon, label: 'Lab Reports', path: '/dashboard/lab/reports' }
         ];
-      
+
       case 'patient':
         return [
           ...baseItems,
@@ -123,7 +123,7 @@ const Sidebar: React.FC = () => {
           { icon: LabIcon, label: 'Lab Reports', path: '/dashboard/patient/lab-reports' },
           { icon: PersonIcon, label: 'My Profile', path: '/dashboard/patient/profile' }
         ];
-      
+
       default:
         return baseItems;
     }
@@ -204,14 +204,12 @@ const Sidebar: React.FC = () => {
       {/* User Info */}
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Box display="flex" alignItems="center" gap={2}>
-          <Avatar sx={{ bgcolor: 'primary.light' }}>
-            {user.role === 'doctor' 
-              ? 'MA' 
-              : user.full_name.split(' ').map(n => n[0]).join('')}
+          <Avatar sx={{ bgcolor: 'primary.light', fontWeight: 700 }}>
+            {user.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
           </Avatar>
           <Box>
             <Typography variant="body2" fontWeight={600}>
-              {user.role === 'doctor' ? 'Dr. Milinda Abeykoon' : user.full_name}
+              {user.role === 'doctor' ? `Dr. ${user.full_name}` : user.full_name}
             </Typography>
             <Typography variant="caption" color="text.secondary" textTransform="capitalize">
               {user.role.replace('_', ' ')}

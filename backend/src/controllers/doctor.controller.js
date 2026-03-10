@@ -287,13 +287,31 @@ exports.createPrescription = async (req, res) => {
             return res.status(404).json({ message: 'Visit not found or not authorized' });
         }
 
-        // Create prescription header
-        const [prescResult] = await connection.query(
-            `INSERT INTO prescriptions (visit_id, doctor_id, patient_id, instructions, status)
-       VALUES (?, ?, ?, ?, 'ACTIVE')`,
-            [visitId, doctorId, visit.patient_id, instructions || null]
+        // Create or get prescription
+        const [existing] = await connection.query(
+            'SELECT id FROM prescriptions WHERE visit_id = ? FOR UPDATE',
+            [visitId]
         );
-        const prescriptionId = prescResult.insertId;
+        let prescriptionId;
+
+        if (existing.length > 0) {
+            prescriptionId = existing[0].id;
+            await connection.query(
+                `UPDATE prescriptions SET instructions = ?, status = 'ACTIVE' WHERE id = ?`,
+                [instructions || null, prescriptionId]
+            );
+            await connection.query(
+                `DELETE FROM prescription_items WHERE prescription_id = ?`,
+                [prescriptionId]
+            );
+        } else {
+            const [prescResult] = await connection.query(
+                `INSERT INTO prescriptions (visit_id, doctor_id, patient_id, instructions, status)
+                 VALUES (?, ?, ?, ?, 'ACTIVE')`,
+                [visitId, doctorId, visit.patient_id, instructions || null]
+            );
+            prescriptionId = prescResult.insertId;
+        }
 
         // Insert items
         for (const med of medicines) {
@@ -346,13 +364,31 @@ exports.createLabOrder = async (req, res) => {
             return res.status(404).json({ message: 'Visit not found or not authorized' });
         }
 
-        // Create lab order
-        const [orderResult] = await connection.query(
-            `INSERT INTO lab_orders (visit_id, doctor_id, patient_id, status)
-       VALUES (?, ?, ?, 'ORDERED')`,
-            [visitId, doctorId, visit.patient_id]
+        // Create or get lab order
+        const [existing] = await connection.query(
+            'SELECT id FROM lab_orders WHERE visit_id = ? FOR UPDATE',
+            [visitId]
         );
-        const labOrderId = orderResult.insertId;
+        let labOrderId;
+
+        if (existing.length > 0) {
+            labOrderId = existing[0].id;
+            await connection.query(
+                `UPDATE lab_orders SET status = 'ORDERED' WHERE id = ?`,
+                [labOrderId]
+            );
+            await connection.query(
+                `DELETE FROM lab_order_items WHERE lab_order_id = ?`,
+                [labOrderId]
+            );
+        } else {
+            const [orderResult] = await connection.query(
+                `INSERT INTO lab_orders (visit_id, doctor_id, patient_id, status)
+                 VALUES (?, ?, ?, 'ORDERED')`,
+                [visitId, doctorId, visit.patient_id]
+            );
+            labOrderId = orderResult.insertId;
+        }
 
         // Insert items
         for (const testId of test_ids) {

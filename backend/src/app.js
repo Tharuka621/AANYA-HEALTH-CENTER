@@ -5,6 +5,7 @@ const authRoutes = require("./routes/auth.routes");
 const userRoutes = require("./routes/user.routes");
 const appointmentRoutes = require("./routes/appointment.routes");
 const doctorRoutes = require("./routes/doctor.routes");
+const pharmacistRoutes = require("./routes/pharmacist.routes");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", userRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/doctor", doctorRoutes);
+app.use("/api/pharmacist", pharmacistRoutes);
 
 app.get("/", (req, res) => res.send("Aanya backend is running ✅"));
 

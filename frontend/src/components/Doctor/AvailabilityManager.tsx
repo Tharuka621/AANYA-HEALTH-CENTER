@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { format, parseISO } from 'date-fns';
 import {
   Box,
   Button,
@@ -175,11 +177,10 @@ const AvailabilityManager: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
     });
   };
 
@@ -351,15 +352,22 @@ const AvailabilityManager: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
-            <TextField
-              fullWidth
-              label="Date"
-              type="date"
-              value={formData.slot_date}
-              onChange={(e) => setFormData({ ...formData, slot_date: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-              margin="normal"
-              required
+            <DatePicker
+              label="Date *"
+              format="dd/MM/yyyy"
+              value={formData.slot_date ? parseISO(formData.slot_date) : null}
+              onChange={(newDate: any) => {
+                if (newDate) {
+                  setFormData({ ...formData, slot_date: format(newDate, 'yyyy-MM-dd') });
+                }
+              }}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  margin: 'normal',
+                  required: true
+                }
+              }}
             />
             <Box display="flex" gap={2}>
               <TextField

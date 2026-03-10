@@ -38,6 +38,7 @@ import Modal from '../../components/common/Modal';
 import AppointmentModal from '../../components/common/AppointmentModal';
 import PaymentModal from '../../components/common/PaymentModal';
 import { User } from '../../types';
+import { axiosInstance } from '../../services/api';
 
 const PatientDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -56,6 +57,10 @@ const PatientDashboard: React.FC = () => {
     severity: 'success',
   });
 
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [labReports, setLabReports] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
   // Fetch real appointments from the backend
   const { data: appointmentsData, isLoading: loadingAppointments, refetch: refetchAppointments } = useAppointmentsByPatient(user?.id || '');
   const appointments = appointmentsData?.data || [];
@@ -68,52 +73,30 @@ const PatientDashboard: React.FC = () => {
     return apt.status === 'scheduled' && aptDate >= today;
   });
 
+  const fetchPatientData = async () => {
+    setLoadingData(true);
+    try {
+      const [prescRes, labRes] = await Promise.all([
+        axiosInstance.get('/prescriptions/patient/prescriptions').catch(() => ({ data: { prescriptions: [] } })),
+        axiosInstance.get('/lab/patient/lab-orders').catch(() => ({ data: { labOrders: [] } }))
+      ]);
+      setPrescriptions(prescRes.data?.prescriptions || []);
+      setLabReports(labRes.data?.labOrders || []);
+    } catch (error) {
+      console.error('Failed to fetch patient data', error);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
   // Refetch appointments when component mounts or user changes
   useEffect(() => {
     if (user?.id) {
       refetchAppointments();
+      fetchPatientData();
     }
   }, [user?.id, refetchAppointments]);
 
-  // Mock prescriptions - in a real app, these would come from the API
-  const mockPrescriptions = [
-    {
-      id: '1',
-      appointment_no: 'APT-2024-001',
-      issued_date: '2024-12-15',
-      doctor: { full_name: 'Dr. Milinda Abeykoon' },
-      medicines: [
-        { medicine_name: 'Metformin', dosage: '500mg', frequency: 'Twice daily' },
-        { medicine_name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily' },
-      ],
-    },
-    {
-      id: '2',
-      appointment_no: 'APT-2024-002',
-      issued_date: '2024-12-10',
-      doctor: { full_name: 'Dr. Milinda Abeykoon' },
-      medicines: [
-        { medicine_name: 'Aspirin', dosage: '81mg', frequency: 'Once daily' },
-      ],
-    },
-  ];
-
-  const mockLabReports = [
-    {
-      id: '1',
-      test_name: 'Complete Blood Count',
-      completed_date: '2024-12-16',
-      status: 'completed',
-      report_url: '/reports/cbc-report-001.pdf',
-    },
-    {
-      id: '2',
-      test_name: 'Lipid Profile',
-      completed_date: '2024-12-14',
-      status: 'completed',
-      report_url: '/reports/lipid-report-001.pdf',
-    },
-  ];
 
   const handleBookAppointment = () => {
     // Mock doctor for booking
@@ -138,10 +121,10 @@ const PatientDashboard: React.FC = () => {
 
   const handleAppointmentConfirm = (appointmentData: any) => {
     console.log('Checking availability for:', appointmentData);
-    
+
     // Check if doctor is available
     const isAvailable = checkDoctorAvailability(appointmentData);
-    
+
     if (isAvailable) {
       // Doctor is available, proceed to payment
       setPendingAppointment(appointmentData);
@@ -160,13 +143,13 @@ const PatientDashboard: React.FC = () => {
   const handlePaymentSuccess = () => {
     // In a real app, this would call the API to create the appointment
     console.log('Appointment booked and paid:', pendingAppointment);
-    
+
     setSnackbar({
       open: true,
       message: 'Appointment booked successfully! Payment confirmed.',
       severity: 'success',
     });
-    
+
     setPendingAppointment(null);
     setSelectedDoctor(null);
   };
@@ -187,6 +170,7 @@ const PatientDashboard: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'default';
     switch (status.toLowerCase()) {
       case 'scheduled':
         return 'primary';
@@ -204,20 +188,30 @@ const PatientDashboard: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    if (!dateString) return 'TBD';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch (e) {
+      return 'Invalid Date';
+    }
   };
 
   const formatTime = (timeString: string) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+    if (!timeString) return 'TBD';
+    try {
+      return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch (e) {
+      return 'Invalid Time';
+    }
   };
 
   return (
@@ -250,7 +244,7 @@ const PatientDashboard: React.FC = () => {
                   <CalendarIcon color="primary" />
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                
+
                 {loadingAppointments ? (
                   <Box display="flex" justifyContent="center" py={3}>
                     <CircularProgress />
@@ -267,7 +261,7 @@ const PatientDashboard: React.FC = () => {
                             primary={
                               <Box display="flex" alignItems="center" gap={1}>
                                 <Typography variant="subtitle1" fontWeight={600}>
-                                  {appointment.doctor_name || 'Doctor'}
+                                  {appointment.doctor_name || 'System Admin'}
                                 </Typography>
                                 <Chip
                                   label={appointment.status}
@@ -303,7 +297,7 @@ const PatientDashboard: React.FC = () => {
 
           {/* Recent Prescriptions */}
           <Grid item xs={12} md={6}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                   <Typography variant="h6" fontWeight={600}>
@@ -312,10 +306,14 @@ const PatientDashboard: React.FC = () => {
                   <PrescriptionIcon color="primary" />
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                
-                {mockPrescriptions.length > 0 ? (
+
+                {loadingData ? (
+                  <Box display="flex" justifyContent="center" py={3}>
+                    <CircularProgress />
+                  </Box>
+                ) : prescriptions.length > 0 ? (
                   <List>
-                    {mockPrescriptions.map((prescription, index) => (
+                    {prescriptions.map((prescription, index) => (
                       <React.Fragment key={prescription.id}>
                         <ListItem>
                           <ListItemIcon>
@@ -325,10 +323,10 @@ const PatientDashboard: React.FC = () => {
                             primary={
                               <Box display="flex" alignItems="center" gap={1}>
                                 <Typography variant="subtitle1" fontWeight={600}>
-                                  {prescription.doctor.full_name}
+                                  {prescription.doctor_name}
                                 </Typography>
                                 <Chip
-                                  label={prescription.appointment_no}
+                                  label={`APT-${String(prescription.visit_id || 0).padStart(4, '0')}`}
                                   size="small"
                                   color="primary"
                                   variant="outlined"
@@ -338,10 +336,10 @@ const PatientDashboard: React.FC = () => {
                             secondary={
                               <>
                                 <Typography variant="body2" color="text.secondary" component="span" display="block">
-                                  Issued: {formatDate(prescription.issued_date)}
+                                  Issued: {formatDate(prescription.created_at)}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" component="span" display="block">
-                                  {prescription.medicines.length} medicine(s) prescribed
+                                  {prescription.items?.length || 1} medicine(s) prescribed
                                 </Typography>
                               </>
                             }
@@ -350,7 +348,7 @@ const PatientDashboard: React.FC = () => {
                             <DownloadIcon />
                           </IconButton>
                         </ListItem>
-                        {index < mockPrescriptions.length - 1 && <Divider />}
+                        {index < prescriptions.length - 1 && <Divider />}
                       </React.Fragment>
                     ))}
                   </List>
@@ -374,10 +372,14 @@ const PatientDashboard: React.FC = () => {
                   <LabIcon color="primary" />
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                
-                {mockLabReports.length > 0 ? (
+
+                {loadingData ? (
+                  <Box display="flex" justifyContent="center" py={3}>
+                    <CircularProgress />
+                  </Box>
+                ) : labReports.length > 0 ? (
                   <List>
-                    {mockLabReports.map((report, index) => (
+                    {labReports.map((report, index) => (
                       <React.Fragment key={report.id}>
                         <ListItem>
                           <ListItemIcon>
@@ -387,7 +389,7 @@ const PatientDashboard: React.FC = () => {
                             primary={
                               <Box display="flex" alignItems="center" gap={1}>
                                 <Typography variant="subtitle1" fontWeight={600}>
-                                  {report.test_name}
+                                  {report.test_names || 'General Lab Test'}
                                 </Typography>
                                 <Chip
                                   label={report.status}
@@ -398,7 +400,7 @@ const PatientDashboard: React.FC = () => {
                             }
                             secondary={
                               <Typography variant="body2" color="text.secondary">
-                                Completed: {formatDate(report.completed_date)}
+                                Ordered: {formatDate(report.created_at)}
                               </Typography>
                             }
                           />
@@ -411,7 +413,7 @@ const PatientDashboard: React.FC = () => {
                             </IconButton>
                           </Box>
                         </ListItem>
-                        {index < mockLabReports.length - 1 && <Divider />}
+                        {index < labReports.length - 1 && <Divider />}
                       </React.Fragment>
                     ))}
                   </List>

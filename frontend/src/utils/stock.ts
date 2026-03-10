@@ -9,7 +9,7 @@ export const getTotalAvailable = (
   dosage: string
 ): number => {
   return batches
-    .filter(batch => batch.medicine_id === medicineId && batch.dosage === dosage)
+    .filter(batch => String(batch.medicine_id) === String(medicineId) && String(batch.dosage).toLowerCase() === String(dosage).toLowerCase())
     .reduce((sum, batch) => sum + batch.qty_available, 0);
 };
 
@@ -25,7 +25,7 @@ export const planBatchDeductionsFEFO = (
 ): BatchDeductionPlan => {
   // Filter batches for this specific medicine and dosage
   const relevantBatches = batches.filter(
-    batch => batch.medicine_id === medicineId && batch.dosage === dosage
+    batch => String(batch.medicine_id) === String(medicineId) && String(batch.dosage).toLowerCase() === String(dosage).toLowerCase()
   );
 
   // Sort by expiry date (FEFO): earliest expiry first, null expiry goes last

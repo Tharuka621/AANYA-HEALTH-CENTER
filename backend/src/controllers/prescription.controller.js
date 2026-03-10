@@ -30,7 +30,8 @@ exports.getPatientPrescriptions = async (req, res) => {
         p.created_at,
         u.full_name as doctor_name
        FROM prescriptions p
-       LEFT JOIN users u ON u.id = p.doctor_id
+       LEFT JOIN doctors d ON p.doctor_id = d.id
+       LEFT JOIN users u ON d.user_id = u.id
        WHERE p.patient_id = ?
        ORDER BY p.created_at DESC`,
       [patientId]

@@ -20,6 +20,7 @@ import {
 } from '@mui/icons-material';
 import { axiosInstance } from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { format } from 'date-fns';
 
 interface PatientRecord {
   patient_id: number;
@@ -267,7 +268,7 @@ const PatientList: React.FC = () => {
                       {history.visits.map(v => (
                         <ListItem key={v.id} disableGutters sx={{ borderBottom: '1px solid', borderColor: 'divider', py: 1 }}>
                           <ListItemText
-                            primary={<Typography variant="body2" fontWeight={600}>{v.slot_date}</Typography>}
+                            primary={<Typography variant="body2" fontWeight={600}>{v.slot_date ? format(new Date(v.slot_date), 'dd/MM/yyyy @ h:mm a') : 'Unknown Date'}</Typography>}
                             secondary={
                               <Box>
                                 <Typography variant="caption" color="text.secondary">{v.doctor_name}</Typography>

@@ -1043,7 +1043,7 @@ export default function DoctorDashboard() {
                             {history.visits.map(v => (
                               <ListItem key={v.id} disableGutters sx={{ borderBottom: '1px solid', borderColor: 'divider', py: 1 }}>
                                 <ListItemText
-                                  primary={<Typography variant="body2" fontWeight={600}>{v.slot_date} {v.start_time && `@ ${fmtTime(v.start_time)}`}</Typography>}
+                                  primary={<Typography variant="body2" fontWeight={600}>{v.slot_date ? format(new Date(v.slot_date), 'dd/MM/yyyy') : 'Unknown Date'} {v.start_time && `@ ${fmtTime(v.start_time)}`}</Typography>}
                                   secondary={
                                     <Box>
                                       <Typography variant="caption" color="text.secondary">{v.doctor_name}</Typography>

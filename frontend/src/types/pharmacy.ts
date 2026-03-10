@@ -1,8 +1,10 @@
 // Pharmacy-related type definitions
 
 export interface Medicine {
+  medicine_id?: string;
   name: string;
   dosage: string;
+  unit?: string;
   quantity: number;
 }
 

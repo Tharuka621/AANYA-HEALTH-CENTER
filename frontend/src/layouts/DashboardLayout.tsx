@@ -18,16 +18,17 @@ const DashboardLayout: React.FC<{ children?: React.ReactNode }> = ({ children })
         flexGrow: 1, 
         display: 'flex', 
         flexDirection: 'column',
-        overflow: 'hidden', // Prevent content overflow
+        overflow: 'hidden',
       }}>
-        {showSidebar && <Header />}
+        {/* Header is shown for ALL roles */}
+        <Header />
         <Box
           component="main"
           sx={{
             flexGrow: 1,
             p: showSidebar ? 3 : 0,
             backgroundColor: 'background.default',
-            overflow: 'auto', // Allow scrolling for content
+            overflow: 'auto',
           }}
           role="main"
           aria-label="Dashboard main content"

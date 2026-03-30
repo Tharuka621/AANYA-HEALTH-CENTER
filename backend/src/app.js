@@ -10,6 +10,7 @@ const pharmacistRoutes = require("./routes/pharmacist.routes");
 const labRoutes = require("./routes/lab.routes");
 const prescriptionRoutes = require("./routes/prescription.routes");
 const patientRoutes = require("./routes/patient.routes");
+const notificationRoutes = require("./routes/notification.routes");
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use("/api/pharmacist", pharmacistRoutes);
 app.use("/api/lab", labRoutes);
 app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/patient", patientRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => res.send("Aanya backend is running ✅"));
 

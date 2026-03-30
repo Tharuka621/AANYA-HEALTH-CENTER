@@ -63,9 +63,12 @@ const LabReports: React.FC = () => {
     setOpenDialog(true);
   };
 
-  const handleDownloadReport = (reportId: string) => {
-    console.log("Download report:", reportId);
-    // In a real app, this would download the report
+  const handleDownloadReport = (resultUrl: string) => {
+    if (!resultUrl) return;
+    // Construct the full URL — result_url is relative like /uploads/lab-reports/filename.pdf
+    const baseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
+    const fullUrl = resultUrl.startsWith('http') ? resultUrl : `${baseUrl}${resultUrl}`;
+    window.open(fullUrl, '_blank', 'noopener,noreferrer');
   };
 
   const completedReports = labReports.filter(
@@ -164,7 +167,8 @@ const LabReports: React.FC = () => {
                           <IconButton
                             size="small"
                             color="success"
-                            onClick={() => handleDownloadReport(report.id)}
+                            title="Download PDF"
+                            onClick={() => handleDownloadReport(report.result_url)}
                           >
                             <DownloadIcon />
                           </IconButton>
@@ -278,9 +282,10 @@ const LabReports: React.FC = () => {
               selectedReport?.result_url && (
                 <Button
                   variant="contained"
-                  onClick={() => handleDownloadReport(selectedReport.id)}
+                  startIcon={<DownloadIcon />}
+                  onClick={() => handleDownloadReport(selectedReport.result_url)}
                 >
-                  Download Report
+                  Download PDF Report
                 </Button>
               )}
           </DialogActions>

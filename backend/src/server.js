@@ -1,6 +1,7 @@
 require("dotenv").config();
 const app = require("./app");
 const { testDbConnection } = require("./config/db");
+const { startReminderJob } = require("./jobs/appointmentReminder");
 
 // Global error handlers
 process.on('uncaughtException', (error) => {
@@ -25,6 +26,9 @@ async function startServer() {
 
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);
+
+      // Start the appointment reminder scheduler
+      startReminderJob();
     });
   } catch (err) {
     console.error("❌ Database connection failed (full error):", err);

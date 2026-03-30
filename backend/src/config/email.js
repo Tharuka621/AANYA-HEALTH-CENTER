@@ -141,4 +141,113 @@ const sendVerificationEmail = async (email, otp) => {
   }
 };
 
-module.exports = { sendOTPEmail, sendVerificationEmail };
+const sendLabReportReadyEmail = async (email, patientName, testName) => {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: `Lab Report Ready - ${testName} | AANYA Health`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+          .header { background-color: #1976d2; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+          .content { background-color: white; padding: 30px; border-radius: 0 0 5px 5px; }
+          .highlight-box { background-color: #e8f5e9; border-left: 4px solid #4caf50; padding: 16px; margin: 20px 0; border-radius: 4px; }
+          .footer { margin-top: 20px; padding: 15px; text-align: center; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🧪 Lab Report Ready</h1>
+          </div>
+          <div class="content">
+            <p>Dear <strong>${patientName}</strong>,</p>
+            <p>Your lab test result is now available on the AANYA Health patient portal.</p>
+            <div class="highlight-box">
+              <strong>Test:</strong> ${testName}<br/>
+              <strong>Status:</strong> ✅ Completed
+            </div>
+            <p>Please log in to your patient portal to view and download your report.</p>
+            <p>If you have any questions about your results, please consult your doctor.</p>
+            <p>Best regards,<br/>AANYA Health Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} AANYA Health. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `Dear ${patientName}, your lab test result for "${testName}" is now ready. Please log in to the AANYA Health portal to view your report.`,
+  };
+
+  try {
+    console.log(`📧 Sending lab report ready email to: ${email}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Lab report notification sent to ${email}`);
+    return info;
+  } catch (error) {
+    console.error('❌ Error sending lab report email:', error);
+    // Don't throw — notification failure should not break the upload flow
+  }
+};
+
+const sendAppointmentReminderEmail = async (email, patientName, doctorName, appointmentDate, appointmentTime) => {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: `Appointment Reminder Tomorrow - AANYA Health`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+          .header { background-color: #1976d2; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+          .content { background-color: white; padding: 30px; border-radius: 0 0 5px 5px; }
+          .info-box { background-color: #e3f2fd; border-left: 4px solid #1976d2; padding: 16px; margin: 20px 0; border-radius: 4px; }
+          .footer { margin-top: 20px; padding: 15px; text-align: center; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📅 Appointment Reminder</h1>
+          </div>
+          <div class="content">
+            <p>Dear <strong>${patientName}</strong>,</p>
+            <p>This is a friendly reminder that you have a medical appointment <strong>tomorrow</strong>.</p>
+            <div class="info-box">
+              <strong>👨‍⚕️ Doctor:</strong> ${doctorName}<br/>
+              <strong>📅 Date:</strong> ${appointmentDate}<br/>
+              <strong>🕐 Time:</strong> ${appointmentTime}
+            </div>
+            <p>Please arrive 10 minutes before your scheduled time. If you need to reschedule, please contact us in advance.</p>
+            <p>Best regards,<br/>AANYA Health Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} AANYA Health. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `Dear ${patientName}, your appointment with ${doctorName} is tomorrow (${appointmentDate}) at ${appointmentTime}. Please arrive 10 minutes early.`,
+  };
+
+  try {
+    console.log(`📧 Sending appointment reminder to: ${email}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Appointment reminder sent to ${email}`);
+    return info;
+  } catch (error) {
+    console.error('❌ Error sending appointment reminder email:', error);
+  }
+};
+
+module.exports = { sendOTPEmail, sendVerificationEmail, sendLabReportReadyEmail, sendAppointmentReminderEmail };

@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const authRoutes = require("./routes/auth.routes");
 const userRoutes = require("./routes/user.routes");
@@ -17,6 +18,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Serve uploaded files (lab report PDFs, etc.)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 

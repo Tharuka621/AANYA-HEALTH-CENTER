@@ -1,4 +1,7 @@
 const { pool } = require("../config/db");
+const path = require('path');
+const { sendLabReportReadyEmail } = require('../config/email');
+
 
 exports.getPatientLabOrders = async (req, res) => {
     try {
@@ -171,12 +174,21 @@ exports.addLabResult = async (req, res) => {
     try {
         await conn.beginTransaction();
         const { itemId } = req.params;
-        const { resultText, fileUrl } = req.body;
+        const { resultText } = req.body;
+
+        // fileUrl from uploaded PDF (via multer) or from body if no file sent
+        let fileUrl = null;
+        if (req.file) {
+            // Store relative URL that can be served by /uploads static route
+            fileUrl = `/uploads/lab-reports/${req.file.filename}`;
+        } else if (req.body.fileUrl) {
+            fileUrl = req.body.fileUrl;
+        }
 
         // 1. Insert into lab_results
         await conn.query(
             "INSERT INTO lab_results (lab_order_item_id, result_text, file_url, completed_at) VALUES (?, ?, ?, NOW())",
-            [itemId, resultText, fileUrl || null]
+            [itemId, resultText, fileUrl]
         );
 
         // 2. Update lab_order_items status to DONE
@@ -191,8 +203,9 @@ exports.addLabResult = async (req, res) => {
             [itemId]
         );
 
+        let labOrderId = null;
         if (itemRows.length > 0) {
-            const labOrderId = itemRows[0].lab_order_id;
+            labOrderId = itemRows[0].lab_order_id;
 
             const [pendingItems] = await conn.query(
                 "SELECT id FROM lab_order_items WHERE lab_order_id = ? AND status = 'PENDING'",
@@ -209,7 +222,34 @@ exports.addLabResult = async (req, res) => {
         }
 
         await conn.commit();
-        return res.json({ ok: true, message: "Lab result added successfully" });
+
+        // 4. Send notification email to patient (after commit, non-blocking)
+        if (labOrderId) {
+            try {
+                const [notifRows] = await pool.query(
+                    `SELECT pu.email, pu.full_name, lt.name as test_name
+                     FROM lab_orders lo
+                     JOIN patients p ON lo.patient_id = p.id
+                     JOIN users pu ON p.user_id = pu.id
+                     JOIN lab_order_items loi ON loi.lab_order_id = lo.id
+                     JOIN lab_tests lt ON lt.id = loi.lab_test_id
+                     WHERE loi.id = ?
+                     LIMIT 1`,
+                    [itemId]
+                );
+                if (notifRows.length > 0) {
+                    const { email, full_name, test_name } = notifRows[0];
+                    // Fire-and-forget — don't await to keep response fast
+                    sendLabReportReadyEmail(email, full_name, test_name).catch(err =>
+                        console.error('Lab report email failed:', err)
+                    );
+                }
+            } catch (emailErr) {
+                console.error('Failed to look up patient for lab email:', emailErr);
+            }
+        }
+
+        return res.json({ ok: true, message: "Lab result added successfully", fileUrl });
     } catch (err) {
         await conn.rollback();
         console.error("Add lab result error:", err);

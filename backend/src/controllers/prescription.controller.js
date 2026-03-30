@@ -19,23 +19,44 @@ exports.getPatientPrescriptions = async (req, res) => {
 
     const patientId = patientRows[0].id;
 
-    // Get prescriptions for this patient
-    const [prescriptions] = await pool.query(
+    // Get prescriptions for this patient with their items
+    const [prescriptionsRows] = await pool.query(
       `SELECT 
         p.id,
         p.visit_id,
         p.doctor_id,
         p.patient_id,
-        p.instructions,
+        p.instructions as notes,
         p.created_at,
-        u.full_name as doctor_name
+        u.full_name as doctor_name,
+        'ACTIVE' as status,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', pi.id,
+            'medicine_id', pi.medicine_id,
+            'medicine_name', m.name,
+            'dosage', pi.dosage,
+            'duration_days', pi.duration_days,
+            'qty', pi.qty,
+            'note', pi.note
+          )
+        ) as items
        FROM prescriptions p
        LEFT JOIN doctors d ON p.doctor_id = d.id
        LEFT JOIN users u ON d.user_id = u.id
+       LEFT JOIN prescription_items pi ON p.id = pi.prescription_id
+       LEFT JOIN medicines m ON pi.medicine_id = m.id
        WHERE p.patient_id = ?
+       GROUP BY p.id
        ORDER BY p.created_at DESC`,
       [patientId]
     );
+
+    // Format the items properly
+    const prescriptions = prescriptionsRows.map(p => ({
+      ...p,
+      items: typeof p.items === 'string' ? JSON.parse(p.items) : p.items
+    }));
 
     return res.json({
       ok: true,

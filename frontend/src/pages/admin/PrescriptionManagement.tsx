@@ -1,296 +1,149 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import {
+  Alert,
+  Avatar,
   Box,
-  Container,
-  Typography,
   Button,
+  Card,
+  Chip,
+  CircularProgress,
+  Container,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Avatar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Typography,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
-} from '@mui/icons-material';
+import { Description as PrescriptionIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { axiosInstance } from '../../services/api';
+
+interface PrescriptionItem {
+  medicine_name?: string;
+  dosage?: string;
+}
+
+interface AdminPrescription {
+  id: number;
+  patient_name: string;
+  doctor_name: string;
+  items: PrescriptionItem[];
+  created_at: string;
+  status: string;
+  notes: string | null;
+}
+
+const getStatusColor = (status: string): 'primary' | 'success' | 'error' | 'warning' | 'default' => {
+  switch (status.toUpperCase()) {
+    case 'ACTIVE':
+      return 'primary';
+    case 'DISPENSED':
+      return 'success';
+    case 'CANCELLED':
+      return 'error';
+    case 'EXPIRED':
+      return 'warning';
+    default:
+      return 'default';
+  }
+};
 
 const PrescriptionManagement: React.FC = () => {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingPrescription, setEditingPrescription] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    patient_name: '',
-    doctor_name: 'Dr. Milinda Abeykoon',
-    medicines: '',
-    status: 'active',
-    notes: '',
-  });
+  const [prescriptions, setPrescriptions] = useState<AdminPrescription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock prescriptions data
-  const prescriptions = [
-    {
-      id: '1',
-      patient: 'Kasun Bandara',
-      doctor: 'Dr. Milinda Abeykoon',
-      medicines: ['Metformin 500mg', 'Lisinopril 10mg'],
-      issued_date: '2024-12-15',
-      status: 'dispensed',
-      notes: 'Monitor blood sugar levels',
-    },
-    {
-      id: '2',
-      patient: 'Nimal Perera',
-      doctor: 'Dr. Milinda Abeykoon',
-      medicines: ['Aspirin 81mg', 'Vitamin D3'],
-      issued_date: '2024-12-16',
-      status: 'active',
-      notes: 'Take with food',
-    },
-    {
-      id: '3',
-      patient: 'Ishara Silva',
-      doctor: 'Dr. Milinda Abeykoon',
-      medicines: ['Atorvastatin 20mg'],
-      issued_date: '2024-12-17',
-      status: 'active',
-      notes: 'Cholesterol management',
-    },
-    {
-      id: '4',
-      patient: 'Amaya Fernando',
-      doctor: 'Dr. Milinda Abeykoon',
-      medicines: ['Levothyroxine 50mcg'],
-      issued_date: '2024-12-18',
-      status: 'cancelled',
-      notes: 'Patient requested cancellation',
-    },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'primary';
-      case 'dispensed': return 'success';
-      case 'cancelled': return 'error';
-      case 'expired': return 'warning';
-      default: return 'default';
+  const fetchPrescriptions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosInstance.get('/admin/prescriptions');
+      setPrescriptions(response.data.prescriptions || []);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load prescriptions');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddPrescription = () => {
-    setEditingPrescription(null);
-    setFormData({
-      patient_name: '',
-  doctor_name: 'Dr. Milinda Abeykoon',
-      medicines: '',
-      status: 'active',
-      notes: '',
-    });
-    setOpenDialog(true);
-  };
-
-  const handleEditPrescription = (prescription: any) => {
-    setEditingPrescription(prescription);
-    setFormData({
-      patient_name: prescription.patient,
-      doctor_name: prescription.doctor,
-      medicines: prescription.medicines.join(', '),
-      status: prescription.status,
-      notes: prescription.notes,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleDeletePrescription = (prescriptionId: string) => {
-    console.log('Delete prescription:', prescriptionId);
-    // In a real app, this would call the API
-  };
-
-  const handleViewPrescription = (prescriptionId: string) => {
-    console.log('View prescription:', prescriptionId);
-    // In a real app, this would open prescription details
-  };
-
-  const handleSavePrescription = () => {
-    console.log('Save prescription:', formData);
-    setOpenDialog(false);
-    // In a real app, this would call the API
-  };
+  useEffect(() => {
+    fetchPrescriptions();
+  }, []);
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="xl">
       <Box sx={{ py: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" fontWeight={700}>
-            Prescription Management
-          </Typography>
+          <Box>
+            <Typography variant="h4" fontWeight={700}>Prescription Management</Typography>
+            <Typography variant="body2" color="text.secondary">Live prescription data from the database</Typography>
+          </Box>
+          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchPrescriptions} disabled={loading}>
+            Refresh
+          </Button>
         </Box>
 
-        <TableContainer component={Paper} elevation={0}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Patient</TableCell>
-                <TableCell>Doctor</TableCell>
-                <TableCell>Medicines</TableCell>
-                <TableCell>Issued Date</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Notes</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {prescriptions.map((prescription) => (
-                <TableRow key={prescription.id}>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        {prescription.patient.split(' ').map(n => n[0]).join('')}
-                      </Avatar>
-                      <Typography variant="body2" fontWeight={600}>
-                        {prescription.patient}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{prescription.doctor}</TableCell>
-                  <TableCell>
-                    <Box>
-                      {prescription.medicines.map((medicine: string, index: number) => (
-                        <Chip
-                          key={index}
-                          label={medicine}
-                          size="small"
-                          sx={{ mr: 0.5, mb: 0.5 }}
-                        />
-                      ))}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(prescription.issued_date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={prescription.status}
-                      color={getStatusColor(prescription.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {prescription.notes}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={1}>
-                      <IconButton
-                        size="small"
-                        color="info"
-                        onClick={() => handleViewPrescription(prescription.id)}
-                      >
-                        <ViewIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleEditPrescription(prescription)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeletePrescription(prescription.id)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-        {/* Add/Edit Prescription Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            {editingPrescription ? 'Edit Prescription' : 'Create New Prescription'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <TextField
-                fullWidth
-                label="Patient Name"
-                value={formData.patient_name}
-                onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
-                margin="normal"
-              />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Doctor</InputLabel>
-                <Select
-                  value={formData.doctor_name}
-                  label="Doctor"
-                  onChange={(e) => setFormData({ ...formData, doctor_name: e.target.value })}
-                >
-                  <MenuItem value="Dr. Milinda Abeykoon">Dr. Milinda Abeykoon</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                fullWidth
-                label="Medicines (comma-separated)"
-                multiline
-                rows={3}
-                value={formData.medicines}
-                onChange={(e) => setFormData({ ...formData, medicines: e.target.value })}
-                margin="normal"
-                placeholder="Metformin 500mg, Lisinopril 10mg"
-              />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  label="Status"
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                >
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="dispensed">Dispensed</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                  <MenuItem value="expired">Expired</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                fullWidth
-                label="Notes"
-                multiline
-                rows={2}
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                margin="normal"
-              />
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
+          ) : prescriptions.length === 0 ? (
+            <Box py={8} textAlign="center">
+              <PrescriptionIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">No prescriptions found</Typography>
             </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSavePrescription} variant="contained">
-              {editingPrescription ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Patient</TableCell>
+                    <TableCell>Doctor</TableCell>
+                    <TableCell>Medicines</TableCell>
+                    <TableCell>Issued Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Notes</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {prescriptions.map((prescription) => (
+                    <TableRow key={prescription.id} hover>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Avatar sx={{ width: 32, height: 32 }}>
+                            {prescription.patient_name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
+                          </Avatar>
+                          <Typography variant="body2" fontWeight={600}>{prescription.patient_name}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>{`Dr. ${prescription.doctor_name}`}</TableCell>
+                      <TableCell>
+                        <Box display="flex" flexWrap="wrap" gap={0.5}>
+                          {prescription.items.filter((item) => item && item.medicine_name).map((item, index) => (
+                            <Chip
+                              key={`${prescription.id}-${index}`}
+                              label={`${item.medicine_name}${item.dosage ? ` ${item.dosage}` : ''}`}
+                              size="small"
+                            />
+                          ))}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{format(new Date(prescription.created_at), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell>
+                        <Chip label={prescription.status} color={getStatusColor(prescription.status)} size="small" />
+                      </TableCell>
+                      <TableCell>{prescription.notes || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Card>
       </Box>
     </Container>
   );

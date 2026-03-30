@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import {
+  Alert,
+  Avatar,
   Box,
-  Container,
-  Typography,
   Button,
+  Card,
+  CircularProgress,
+  Container,
   Table,
   TableBody,
   TableCell,
@@ -12,328 +16,120 @@ import {
   TableRow,
   Paper,
   Chip,
-  IconButton,
-  Avatar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Typography,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Upload as UploadIcon,
-  Download as DownloadIcon,
-} from '@mui/icons-material';
+import { Refresh as RefreshIcon, Science as ScienceIcon } from '@mui/icons-material';
+import { axiosInstance } from '../../services/api';
+
+interface AdminLabTest {
+  id: number;
+  patient_name: string;
+  doctor_name: string;
+  test_name: string;
+  test_type: string;
+  requested_date: string;
+  item_status: string;
+  result_text: string | null;
+}
+
+const getStatusColor = (status: string): 'primary' | 'warning' | 'success' | 'error' | 'default' => {
+  switch (status.toUpperCase()) {
+    case 'PENDING':
+      return 'warning';
+    case 'DONE':
+      return 'success';
+    case 'CANCELLED':
+      return 'error';
+    default:
+      return 'primary';
+  }
+};
 
 const LabTestManagement: React.FC = () => {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingTest, setEditingTest] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    patient_name: '',
-    test_name: '',
-    test_type: '',
-    doctor_name: 'Dr. Milinda Abeykoon',
-    requested_date: '',
-    status: 'ORDERED',
-    notes: '',
-  });
+  const [labTests, setLabTests] = useState<AdminLabTest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock lab tests data
-  const labTests = [
-    {
-      id: '1',
-      patient: 'Kasun Bandara',
-      test_name: 'Complete Blood Count',
-      test_type: 'Blood Test',
-      doctor: 'Dr. Milinda Abeykoon',
-      requested_date: '2024-12-15',
-      status: 'IN_PROGRESS',
-      notes: 'Routine checkup',
-      result_url: '/reports/cbc_kasun_bandara.pdf',
-    },
-    {
-      id: '2',
-      patient: 'Nimal Perera',
-      test_name: 'Lipid Profile',
-      test_type: 'Blood Test',
-      doctor: 'Dr. Milinda Abeykoon',
-      requested_date: '2024-12-16',
-      status: 'COMPLETED',
-      notes: 'Cholesterol monitoring',
-      result_url: null,
-    },
-    {
-      id: '3',
-      patient: 'Ishara Silva',
-      test_name: 'Urine Analysis',
-      test_type: 'Urine Test',
-      doctor: 'Dr. Milinda Abeykoon',
-      requested_date: '2024-12-17',
-      status: 'ORDERED',
-      notes: 'Diabetes screening',
-      result_url: null,
-    },
-    {
-      id: '4',
-      patient: 'Amaya Fernando',
-      test_name: 'Thyroid Function Test',
-      test_type: 'Blood Test',
-      doctor: 'Dr. Milinda Abeykoon',
-      requested_date: '2024-12-18',
-      status: 'cancelled',
-      notes: 'Patient did not show up',
-      result_url: null,
-    },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ORDERED': return 'primary';
-      case 'IN_PROGRESS': return 'warning';
-      case 'COMPLETED': return 'success';
-      case 'CANCELLED': return 'error';
-      default: return 'default';
+  const fetchLabTests = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosInstance.get('/admin/lab-tests');
+      setLabTests(response.data.labTests || []);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load lab tests');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddTest = () => {
-    setEditingTest(null);
-    setFormData({
-      patient_name: '',
-      test_name: '',
-      test_type: '',
-  doctor_name: 'Dr. Milinda Abeykoon',
-      requested_date: '',
-      status: 'ORDERED',
-      notes: '',
-    });
-    setOpenDialog(true);
-  };
-
-  const handleEditTest = (test: any) => {
-    setEditingTest(test);
-    setFormData({
-      patient_name: test.patient,
-      test_name: test.test_name,
-      test_type: test.test_type,
-      doctor_name: test.doctor,
-      requested_date: test.requested_date,
-      status: test.status,
-      notes: test.notes,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleDeleteTest = (testId: string) => {
-    console.log('Delete test:', testId);
-    // In a real app, this would call the API
-  };
-
-  const handleUploadResult = (testId: string) => {
-    console.log('Upload result for test:', testId);
-    // In a real app, this would open file upload dialog
-  };
-
-  const handleDownloadResult = (testId: string) => {
-    console.log('Download result for test:', testId);
-    // In a real app, this would download the file
-  };
-
-  const handleSaveTest = () => {
-    console.log('Save test:', formData);
-    setOpenDialog(false);
-    // In a real app, this would call the API
-  };
+  useEffect(() => {
+    fetchLabTests();
+  }, []);
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="xl">
       <Box sx={{ py: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" fontWeight={700}>
-            Lab Test Management
-          </Typography>
+          <Box>
+            <Typography variant="h4" fontWeight={700}>Lab Test Management</Typography>
+            <Typography variant="body2" color="text.secondary">Live lab-order data from the database</Typography>
+          </Box>
+          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchLabTests} disabled={loading}>
+            Refresh
+          </Button>
         </Box>
 
-        <TableContainer component={Paper} elevation={0}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Patient</TableCell>
-                <TableCell>Test Name</TableCell>
-                <TableCell>Test Type</TableCell>
-                <TableCell>Doctor</TableCell>
-                <TableCell>Requested Date</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Notes</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {labTests.map((test) => (
-                <TableRow key={test.id}>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        {test.patient.split(' ').map(n => n[0]).join('')}
-                      </Avatar>
-                      <Typography variant="body2" fontWeight={600}>
-                        {test.patient}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{test.test_name}</TableCell>
-                  <TableCell>{test.test_type}</TableCell>
-                  <TableCell>{test.doctor}</TableCell>
-                  <TableCell>
-                    {new Date(test.requested_date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={test.status}
-                      color={getStatusColor(test.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {test.notes}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={1}>
-                      {test.status === 'completed' && test.result_url && (
-                        <IconButton
-                          size="small"
-                          color="success"
-                          onClick={() => handleDownloadResult(test.id)}
-                        >
-                          <DownloadIcon />
-                        </IconButton>
-                      )}
-                      {test.status === 'in_progress' && (
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleUploadResult(test.id)}
-                        >
-                          <UploadIcon />
-                        </IconButton>
-                      )}
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleEditTest(test)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteTest(test.id)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-        {/* Add/Edit Lab Test Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            {editingTest ? 'Edit Lab Test' : 'Add New Lab Test'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <TextField
-                fullWidth
-                label="Patient Name"
-                value={formData.patient_name}
-                onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
-                margin="normal"
-              />
-              <TextField
-                fullWidth
-                label="Test Name"
-                value={formData.test_name}
-                onChange={(e) => setFormData({ ...formData, test_name: e.target.value })}
-                margin="normal"
-              />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Test Type</InputLabel>
-                <Select
-                  value={formData.test_type}
-                  label="Test Type"
-                  onChange={(e) => setFormData({ ...formData, test_type: e.target.value })}
-                >
-                  <MenuItem value="Blood Test">Blood Test</MenuItem>
-                  <MenuItem value="Urine Test">Urine Test</MenuItem>
-                  <MenuItem value="X-Ray">X-Ray</MenuItem>
-                  <MenuItem value="MRI">MRI</MenuItem>
-                  <MenuItem value="CT Scan">CT Scan</MenuItem>
-                  <MenuItem value="Ultrasound">Ultrasound</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Doctor</InputLabel>
-                <Select
-                  value={formData.doctor_name}
-                  label="Doctor"
-                  onChange={(e) => setFormData({ ...formData, doctor_name: e.target.value })}
-                >
-                  <MenuItem value="Dr. Milinda Abeykoon">Dr. Milinda Abeykoon</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                fullWidth
-                label="Requested Date"
-                type="date"
-                value={formData.requested_date}
-                onChange={(e) => setFormData({ ...formData, requested_date: e.target.value })}
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  label="Status"
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                >
-                  <MenuItem value="requested">Requested</MenuItem>
-                  <MenuItem value="in_progress">In Progress</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                fullWidth
-                label="Notes"
-                multiline
-                rows={2}
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                margin="normal"
-              />
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
+          ) : labTests.length === 0 ? (
+            <Box py={8} textAlign="center">
+              <ScienceIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">No lab tests found</Typography>
             </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSaveTest} variant="contained">
-              {editingTest ? 'Update' : 'Add'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Patient</TableCell>
+                    <TableCell>Test Name</TableCell>
+                    <TableCell>Test Type</TableCell>
+                    <TableCell>Doctor</TableCell>
+                    <TableCell>Requested Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Result / Notes</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {labTests.map((test) => (
+                    <TableRow key={test.id} hover>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Avatar sx={{ width: 32, height: 32 }}>
+                            {test.patient_name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
+                          </Avatar>
+                          <Typography variant="body2" fontWeight={600}>{test.patient_name}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>{test.test_name}</TableCell>
+                      <TableCell>{test.test_type}</TableCell>
+                      <TableCell>{`Dr. ${test.doctor_name}`}</TableCell>
+                      <TableCell>{format(new Date(test.requested_date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell>
+                        <Chip label={test.item_status} color={getStatusColor(test.item_status)} size="small" />
+                      </TableCell>
+                      <TableCell>{test.result_text || 'Pending result'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Card>
       </Box>
     </Container>
   );

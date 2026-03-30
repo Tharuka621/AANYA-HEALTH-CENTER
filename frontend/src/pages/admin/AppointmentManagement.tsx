@@ -1,322 +1,193 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import {
+  Alert,
+  Avatar,
   Box,
-  Container,
-  Typography,
   Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Container,
+  Grid,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
+  Typography,
   Chip,
-  IconButton,
-  Avatar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  CheckCircle as CheckIcon,
-  Cancel as CancelIcon,
-} from '@mui/icons-material';
+import { CalendarToday as CalendarIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { axiosInstance } from '../../services/api';
+
+interface AdminAppointment {
+  id: number;
+  appointment_no: string;
+  patient_name: string;
+  patient_phone: string | null;
+  doctor_name: string | null;
+  slot_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  reason: string | null;
+  status: string;
+}
+
+const fmtDate = (value: string | null) => {
+  if (!value) return '—';
+  return format(new Date(value), 'dd/MM/yyyy');
+};
+
+const fmtTime = (value: string | null) => {
+  if (!value) return '—';
+  return new Date(`2000-01-01T${value}`).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+const getStatusColor = (status: string): 'primary' | 'success' | 'error' | 'warning' | 'info' | 'default' => {
+  switch (status.toLowerCase()) {
+    case 'scheduled':
+      return 'primary';
+    case 'checked_in':
+      return 'info';
+    case 'completed':
+      return 'success';
+    case 'cancelled':
+      return 'error';
+    default:
+      return 'default';
+  }
+};
 
 const AppointmentManagement: React.FC = () => {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    patient_name: '',
-    doctor_name: 'Dr. Milinda Abeykoon',
-    date: '',
-    time: '',
-    reason: '',
-    status: 'scheduled',
-  });
+  const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock appointments data
-  const appointments = [
-    {
-      id: '1',
-      patient: 'Kasun Bandara',
-      doctor: 'Dr. Milinda Abeykoon',
-      date: '2024-12-20',
-      time: '10:00 AM',
-      reason: 'General Checkup',
-      status: 'scheduled',
-      phone: '+94 71 123 4567',
-    },
-    {
-      id: '2',
-      patient: 'Nimal Perera',
-      doctor: 'Dr. Milinda Abeykoon',
-      date: '2024-12-20',
-      time: '11:30 AM',
-      reason: 'Blood Pressure Check',
-      status: 'completed',
-      phone: '+94 77 555 8899',
-    },
-    {
-      id: '3',
-      patient: 'Ishara Silva',
-      doctor: 'Dr. Milinda Abeykoon',
-      date: '2024-12-21',
-      time: '2:00 PM',
-      reason: 'Diabetes Consultation',
-      status: 'cancelled',
-      phone: '+94 76 234 5678',
-    },
-    {
-      id: '4',
-      patient: 'Amaya Fernando',
-      doctor: 'Dr. Milinda Abeykoon',
-      date: '2024-12-21',
-      time: '3:30 PM',
-      reason: 'Annual Health Checkup',
-      status: 'scheduled',
-      phone: '+94 72 987 6543',
-    },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'scheduled': return 'primary';
-      case 'completed': return 'success';
-      case 'cancelled': return 'error';
-      case 'no_show': return 'warning';
-      default: return 'default';
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosInstance.get('/admin/appointments');
+      setAppointments(response.data.appointments || []);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load appointments');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddAppointment = () => {
-    setEditingAppointment(null);
-    setFormData({
-      patient_name: '',
-  doctor_name: 'Dr. Milinda Abeykoon',
-      date: '',
-      time: '',
-      reason: '',
-      status: 'scheduled',
-    });
-    setOpenDialog(true);
-  };
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
-  const handleEditAppointment = (appointment: any) => {
-    setEditingAppointment(appointment);
-    setFormData({
-      patient_name: appointment.patient,
-      doctor_name: appointment.doctor,
-      date: appointment.date,
-      time: appointment.time,
-      reason: appointment.reason,
-      status: appointment.status,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleDeleteAppointment = (appointmentId: string) => {
-    console.log('Delete appointment:', appointmentId);
-    // In a real app, this would call the API
-  };
-
-  const handleCompleteAppointment = (appointmentId: string) => {
-    console.log('Complete appointment:', appointmentId);
-    // In a real app, this would call the API
-  };
-
-  const handleCancelAppointment = (appointmentId: string) => {
-    console.log('Cancel appointment:', appointmentId);
-    // In a real app, this would call the API
-  };
-
-  const handleSaveAppointment = () => {
-    console.log('Save appointment:', formData);
-    setOpenDialog(false);
-    // In a real app, this would call the API
-  };
+  const stats = useMemo(() => ({
+    total: appointments.length,
+    scheduled: appointments.filter((item) => item.status === 'scheduled').length,
+    checkedIn: appointments.filter((item) => item.status === 'checked_in').length,
+    completed: appointments.filter((item) => item.status === 'completed').length,
+  }), [appointments]);
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="xl">
       <Box sx={{ py: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" fontWeight={700}>
-            Appointment Management
-          </Typography>
+          <Box>
+            <Typography variant="h4" fontWeight={700}>
+              Appointment Management
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Live appointment data from the database
+            </Typography>
+          </Box>
+          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchAppointments} disabled={loading}>
+            Refresh
+          </Button>
         </Box>
 
-        <TableContainer component={Paper} elevation={0}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Patient</TableCell>
-                <TableCell>Doctor</TableCell>
-                <TableCell>Date & Time</TableCell>
-                <TableCell>Reason</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {appointments.map((appointment) => (
-                <TableRow key={appointment.id}>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        {appointment.patient.split(' ').map(n => n[0]).join('')}
-                      </Avatar>
-                      <Typography variant="body2" fontWeight={600}>
-                        {appointment.patient}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{appointment.doctor}</TableCell>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2">{appointment.date}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {appointment.time}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {appointment.reason}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={appointment.status}
-                      color={getStatusColor(appointment.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{appointment.phone}</TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={1}>
-                      {appointment.status === 'scheduled' && (
-                        <>
-                          <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => handleCompleteAppointment(appointment.id)}
-                          >
-                            <CheckIcon />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleCancelAppointment(appointment.id)}
-                          >
-                            <CancelIcon />
-                          </IconButton>
-                        </>
-                      )}
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleEditAppointment(appointment)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteAppointment(appointment.id)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Grid container spacing={2} mb={3}>
+          {[
+            { label: 'Total', value: stats.total },
+            { label: 'Scheduled', value: stats.scheduled },
+            { label: 'Checked In', value: stats.checkedIn },
+            { label: 'Completed', value: stats.completed },
+          ].map((item) => (
+            <Grid item xs={6} md={3} key={item.label}>
+              <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="body2" color="text.secondary">{item.label}</Typography>
+                  <Typography variant="h4" fontWeight={700}>{item.value}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
 
-        {/* Add/Edit Appointment Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            {editingAppointment ? 'Edit Appointment' : 'Schedule New Appointment'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <TextField
-                fullWidth
-                label="Patient Name"
-                value={formData.patient_name}
-                onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
-                margin="normal"
-              />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Doctor</InputLabel>
-                <Select
-                  value={formData.doctor_name}
-                  label="Doctor"
-                  onChange={(e) => setFormData({ ...formData, doctor_name: e.target.value })}
-                >
-                  <MenuItem value="Dr. Milinda Abeykoon">Dr. Milinda Abeykoon</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                fullWidth
-                label="Date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                fullWidth
-                label="Time"
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                fullWidth
-                label="Reason"
-                multiline
-                rows={2}
-                value={formData.reason}
-                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                margin="normal"
-              />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  label="Status"
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                >
-                  <MenuItem value="scheduled">Scheduled</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                  <MenuItem value="no_show">No Show</MenuItem>
-                </Select>
-              </FormControl>
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
+          ) : appointments.length === 0 ? (
+            <Box py={8} textAlign="center">
+              <CalendarIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">No appointments found</Typography>
             </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSaveAppointment} variant="contained">
-              {editingAppointment ? 'Update' : 'Schedule'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Patient</TableCell>
+                    <TableCell>Doctor</TableCell>
+                    <TableCell>Date & Time</TableCell>
+                    <TableCell>Reason</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Contact</TableCell>
+                    <TableCell>Appointment No.</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {appointments.map((appointment) => (
+                    <TableRow key={appointment.id} hover>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Avatar sx={{ width: 32, height: 32 }}>
+                            {appointment.patient_name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
+                          </Avatar>
+                          <Typography variant="body2" fontWeight={600}>
+                            {appointment.patient_name}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>{appointment.doctor_name ? `Dr. ${appointment.doctor_name}` : '—'}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>{fmtDate(appointment.slot_date)}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {fmtTime(appointment.start_time)} - {fmtTime(appointment.end_time)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{appointment.reason || '—'}</TableCell>
+                      <TableCell>
+                        <Chip label={appointment.status.replace('_', ' ')} color={getStatusColor(appointment.status)} size="small" />
+                      </TableCell>
+                      <TableCell>{appointment.patient_phone || '—'}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{appointment.appointment_no}</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Card>
       </Box>
     </Container>
   );

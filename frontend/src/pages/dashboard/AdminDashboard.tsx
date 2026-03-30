@@ -17,9 +17,13 @@ import {
   Science as LabIcon,
   TrendingUp as TrendingUpIcon,
   PersonAdd as PersonAddIcon,
+  Description as PrescriptionIcon,
+  ReceiptLong as BillingIcon,
+  Assessment as ReportsIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { axiosInstance } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardStats {
   totalUsers: number;
@@ -34,6 +38,7 @@ interface DashboardStats {
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalPatients: 0,
@@ -53,14 +58,12 @@ const AdminDashboard: React.FC = () => {
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
-      const usersResponse = await axiosInstance.get('/admin/users');
-      const users = usersResponse.data.users || [];
-      
-      setStats({
-        totalUsers: users.length,
-        totalPatients: users.filter((u: any) => u.role === 'PATIENT').length,
-        totalDoctors: users.filter((u: any) => u.role === 'DOCTOR').length,
-        todayAppointments: 0, // Can fetch from appointments endpoint
+      const response = await axiosInstance.get('/admin/dashboard-stats');
+      setStats(response.data.stats || {
+        totalUsers: 0,
+        totalPatients: 0,
+        totalDoctors: 0,
+        todayAppointments: 0,
         pendingAppointments: 0,
         completedAppointments: 0,
         activePrescriptions: 0,
@@ -106,30 +109,95 @@ const AdminDashboard: React.FC = () => {
 
   const activityCards = [
     {
+      title: 'Today Appointments',
+      value: stats.todayAppointments,
+      total: Math.max(stats.pendingAppointments + stats.completedAppointments, 1),
+      icon: <CalendarIcon />,
+      color: 'info',
+      helperText: 'Scheduled for today',
+    },
+    {
       title: 'Pending Appointments',
       value: stats.pendingAppointments,
-      total: stats.pendingAppointments + stats.completedAppointments,
+      total: Math.max(stats.pendingAppointments + stats.completedAppointments, 1),
       icon: <CalendarIcon />,
       color: 'warning',
+      helperText: 'Waiting check-in/completion',
     },
     {
       title: 'Completed Appointments',
       value: stats.completedAppointments,
-      total: stats.pendingAppointments + stats.completedAppointments,
+      total: Math.max(stats.pendingAppointments + stats.completedAppointments, 1),
       icon: <CalendarIcon />,
       color: 'success',
+      helperText: 'Closed successfully',
     },
     {
       title: 'Active Prescriptions',
       value: stats.activePrescriptions,
+      total: Math.max(stats.totalPatients, 1),
       icon: <PharmacyIcon />,
       color: 'primary',
+      helperText: 'Relative to patient base',
     },
     {
       title: 'Pending Lab Tests',
       value: stats.pendingLabTests,
+      total: Math.max(stats.totalPatients, 1),
       icon: <LabIcon />,
       color: 'info',
+      helperText: 'Awaiting completion',
+    },
+  ];
+
+  const quickActionCards = [
+    {
+      title: 'Appointment Management',
+      description: 'View and manage all appointments',
+      icon: <CalendarIcon sx={{ fontSize: 28, color: 'white' }} />,
+      avatarColor: 'success.main',
+      hoverBorder: 'success.main',
+      path: '/dashboard/admin/appointments',
+    },
+    {
+      title: 'Lab Test Management',
+      description: 'Monitor and manage lab tests',
+      icon: <LabIcon sx={{ fontSize: 28, color: 'white' }} />,
+      avatarColor: 'info.main',
+      hoverBorder: 'info.main',
+      path: '/dashboard/admin/lab-tests',
+    },
+    {
+      title: 'Prescription Management',
+      description: 'Manage doctor prescriptions and status',
+      icon: <PrescriptionIcon sx={{ fontSize: 28, color: 'white' }} />,
+      avatarColor: 'primary.main',
+      hoverBorder: 'primary.main',
+      path: '/dashboard/admin/prescriptions',
+    },
+    {
+      title: 'Pharmacy Management',
+      description: 'Manage medicines and pharmacy workflows',
+      icon: <PharmacyIcon sx={{ fontSize: 28, color: 'white' }} />,
+      avatarColor: 'warning.main',
+      hoverBorder: 'warning.main',
+      path: '/dashboard/admin/pharmacy',
+    },
+    {
+      title: 'Billing Management',
+      description: 'Track invoices, payments, and billing',
+      icon: <BillingIcon sx={{ fontSize: 28, color: 'white' }} />,
+      avatarColor: 'secondary.main',
+      hoverBorder: 'secondary.main',
+      path: '/dashboard/admin/billing',
+    },
+    {
+      title: 'Reports Management',
+      description: 'Generate and review operational reports',
+      icon: <ReportsIcon sx={{ fontSize: 28, color: 'white' }} />,
+      avatarColor: 'error.main',
+      hoverBorder: 'error.main',
+      path: '/dashboard/admin/reports',
     },
   ];
 
@@ -200,8 +268,14 @@ const AdminDashboard: React.FC = () => {
             Today's Activity
           </Typography>
         </Grid>
-        {activityCards.map((activity, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+        {activityCards.map((activity, index) => {
+          const progressPercent = Math.min(
+            100,
+            Math.round((activity.value / Math.max(activity.total, 1)) * 100)
+          );
+
+          return (
+          <Grid item xs={12} sm={6} md={4} lg={index === 0 ? 4 : 2} key={index}>
             <Card sx={{ 
               height: '100%',
               transition: 'all 0.3s ease',
@@ -226,30 +300,32 @@ const AdminDashboard: React.FC = () => {
                     <Typography variant="h4" fontWeight={700}>
                       {activity.value}
                     </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {activity.helperText}
+                    </Typography>
                   </Box>
                 </Box>
-                {activity.total && (
-                  <Box>
-                    <Box display="flex" justifyContent="space-between" mb={1}>
-                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                        Progress
-                      </Typography>
-                      <Typography variant="caption" fontWeight={700} color={`${activity.color}.main`}>
-                        {Math.round((activity.value / activity.total) * 100)}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={activity.total > 0 ? (activity.value / activity.total) * 100 : 0}
-                      color={activity.color as 'warning' | 'success' | 'primary' | 'info'}
-                      sx={{ height: 8, borderRadius: 4 }}
-                    />
+                <Box>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      Progress
+                    </Typography>
+                    <Typography variant="caption" fontWeight={700} color={`${activity.color}.main`}>
+                      {progressPercent}%
+                    </Typography>
                   </Box>
-                )}
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={progressPercent}
+                    color={activity.color as 'warning' | 'success' | 'primary' | 'info'}
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
               </CardContent>
             </Card>
           </Grid>
-        ))}
+        );
+        })}
       </Grid>
 
       {/* Quick Actions */}
@@ -259,134 +335,40 @@ const AdminDashboard: React.FC = () => {
             Quick Actions
           </Typography>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ 
-            transition: 'all 0.2s ease',
-            cursor: 'pointer',
-            border: '1px solid',
-            borderColor: 'divider',
-            '&:hover': { 
-              borderColor: 'primary.main',
-              boxShadow: 1,
-            }
-          }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Avatar sx={{ 
-                  bgcolor: 'primary.main', 
-                  width: 56, 
-                  height: 56,
-                }}>
-                  <PeopleIcon sx={{ fontSize: 28, color: 'white' }} />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    User Management
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Manage system users, roles, and permissions
-                  </Typography>
+        {quickActionCards.map((action) => (
+          <Grid item xs={12} md={6} lg={4} key={action.title}>
+            <Card
+              onClick={() => navigate(action.path)}
+              sx={{
+                transition: 'all 0.2s ease',
+                cursor: 'pointer',
+                border: '1px solid',
+                borderColor: 'divider',
+                '&:hover': {
+                  borderColor: action.hoverBorder,
+                  boxShadow: 2,
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar sx={{ bgcolor: action.avatarColor, width: 56, height: 56 }}>
+                    {action.icon}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h6" fontWeight={700}>
+                      {action.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {action.description}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ 
-            transition: 'all 0.2s ease',
-            cursor: 'pointer',
-            border: '1px solid',
-            borderColor: 'divider',
-            '&:hover': { 
-              borderColor: 'success.main',
-              boxShadow: 1,
-            }
-          }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Avatar sx={{ 
-                  bgcolor: 'success.main', 
-                  width: 56, 
-                  height: 56,
-                }}>
-                  <CalendarIcon sx={{ fontSize: 28, color: 'white' }} />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    Appointment Management
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    View and manage all appointments
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ 
-            transition: 'all 0.2s ease',
-            cursor: 'pointer',
-            border: '1px solid',
-            borderColor: 'divider',
-            '&:hover': { 
-              borderColor: 'warning.main',
-              boxShadow: 1,
-            }
-          }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Avatar sx={{ 
-                  bgcolor: 'warning.main', 
-                  width: 56, 
-                  height: 56,
-                }}>
-                  <PharmacyIcon sx={{ fontSize: 28, color: 'white' }} />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    Pharmacy Management
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Manage medicines and prescriptions
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ 
-            transition: 'all 0.2s ease',
-            cursor: 'pointer',
-            border: '1px solid',
-            borderColor: 'divider',
-            '&:hover': { 
-              borderColor: 'info.main',
-              boxShadow: 1,
-            }
-          }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Avatar sx={{ 
-                  bgcolor: 'info.main', 
-                  width: 56, 
-                  height: 56,
-                }}>
-                  <LabIcon sx={{ fontSize: 28, color: 'white' }} />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    Lab Test Management
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Monitor and manage lab tests
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
 
       {/* System Status */}

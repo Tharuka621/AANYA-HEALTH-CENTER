@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -6,21 +6,29 @@ import {
   Button,
   Snackbar,
   Alert,
+  CircularProgress,
 } from '@mui/material';
-import { FileDownload as ExportIcon } from '@mui/icons-material';
-import { Invoice, InvoicePayment } from './Billing/types';
-import { mockInvoices, mockPayments, mockInvoiceItems } from './Billing/mockData';
+import {
+  FileDownload as ExportIcon,
+  Refresh as RefreshIcon,
+} from '@mui/icons-material';
+import { axiosInstance } from '../../services/api';
+import { Invoice, InvoiceItem, InvoicePayment } from './Billing/types';
 import BillingSummaryCards from './Billing/components/BillingSummaryCards';
 import BillingTable from './Billing/components/BillingTable';
 import InvoiceDetailsDialog from './Billing/components/InvoiceDetailsDialog';
 import PayInvoiceDialog from './Billing/components/PayInvoiceDialog';
 
 const BillingManagement: React.FC = () => {
-  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
-  const [payments, setPayments] = useState<InvoicePayment[]>(mockPayments);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [payments, setPayments] = useState<InvoicePayment[]>([]);
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [payDialogOpen, setPayDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -31,8 +39,70 @@ const BillingManagement: React.FC = () => {
     severity: 'success',
   });
 
-  const handleViewInvoice = (invoice: Invoice) => {
+  useEffect(() => {
+    fetchBillingData();
+  }, []);
+
+  const fetchBillingData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosInstance.get('/admin/billing/invoices');
+
+      const mappedInvoices: Invoice[] = (response.data.invoices || []).map((invoice: any) => ({
+        id: Number(invoice.id),
+        patientName: invoice.patient_name || 'Unknown Patient',
+        totalAmount: Number(invoice.total_amount || 0),
+        status: invoice.status,
+        createdAt: invoice.created_at,
+      }));
+
+      const mappedPayments: InvoicePayment[] = (response.data.payments || []).map((payment: any) => ({
+        id: Number(payment.id),
+        invoiceId: Number(payment.invoice_id),
+        method: payment.method,
+        amount: Number(payment.amount || 0),
+        paidAt: payment.paid_at,
+      }));
+
+      setInvoices(mappedInvoices);
+      setPayments(mappedPayments);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load billing data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInvoiceItems = async (invoiceId: number) => {
+    try {
+      setDetailsLoading(true);
+      const response = await axiosInstance.get(`/admin/billing/invoices/${invoiceId}/items`);
+      const mappedItems: InvoiceItem[] = (response.data.items || []).map((item: any) => ({
+        id: Number(item.id),
+        invoiceId: Number(item.invoice_id),
+        medicineName: item.medicine_name || 'Unknown Item',
+        batchNo: item.batch_no || 'N/A',
+        qty: Number(item.qty || 0),
+        unitPrice: Number(item.unit_price || 0),
+        lineTotal: Number(item.line_total || 0),
+      }));
+      setInvoiceItems(mappedItems);
+    } catch (err: any) {
+      setInvoiceItems([]);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'Failed to load invoice items',
+        severity: 'error',
+      });
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleViewInvoice = async (invoice: Invoice) => {
     setSelectedInvoice(invoice);
+    await fetchInvoiceItems(invoice.id);
     setViewDialogOpen(true);
   };
 
@@ -52,31 +122,27 @@ const BillingManagement: React.FC = () => {
     }, 500);
   };
 
-  const handlePaymentSubmit = (
+  const handlePaymentSubmit = async (
     invoiceId: number,
     method: 'CASH' | 'CARD' | 'ONLINE',
     amount: number
   ) => {
-    const newPayment: InvoicePayment = {
-      id: payments.length + 1,
-      invoiceId,
-      method,
-      amount,
-      paidAt: new Date().toISOString(),
-    };
-    setPayments([...payments, newPayment]);
-
-    setInvoices(
-      invoices.map((inv) =>
-        inv.id === invoiceId ? { ...inv, status: 'PAID' as const } : inv
-      )
-    );
-
-    setSnackbar({
-      open: true,
-      message: `Payment of Rs. ${amount.toFixed(2)} received successfully via ${method}!`,
-      severity: 'success',
-    });
+    try {
+      await axiosInstance.post(`/admin/billing/invoices/${invoiceId}/pay`, { method });
+      await fetchBillingData();
+      setPayDialogOpen(false);
+      setSnackbar({
+        open: true,
+        message: `Payment of Rs. ${amount.toFixed(2)} recorded successfully via ${method}.`,
+        severity: 'success',
+      });
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'Failed to record payment',
+        severity: 'error',
+      });
+    }
   };
 
   const handleCloseSnackbar = () => {
@@ -96,33 +162,56 @@ const BillingManagement: React.FC = () => {
               Invoices and payments overview
             </Typography>
           </Box>
-          <Button
-            variant="outlined"
-            startIcon={<ExportIcon />}
-            disabled
-            sx={{ height: 'fit-content' }}
-          >
-            Export
-          </Button>
+          <Box display="flex" gap={2}>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={fetchBillingData}
+              disabled={loading}
+              sx={{ height: 'fit-content' }}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<ExportIcon />}
+              disabled
+              sx={{ height: 'fit-content' }}
+            >
+              Export
+            </Button>
+          </Box>
         </Box>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
 
         {/* Summary Cards */}
         <BillingSummaryCards invoices={invoices} payments={payments} />
 
         {/* Billing Table */}
-        <BillingTable
-          invoices={invoices}
-          onViewInvoice={handleViewInvoice}
-          onPayInvoice={handlePayInvoice}
-          onPrintInvoice={handlePrintInvoice}
-        />
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={8}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <BillingTable
+            invoices={invoices}
+            onViewInvoice={handleViewInvoice}
+            onPayInvoice={handlePayInvoice}
+            onPrintInvoice={handlePrintInvoice}
+          />
+        )}
 
         {/* Invoice Details Dialog */}
         <InvoiceDetailsDialog
           open={viewDialogOpen}
           onClose={() => setViewDialogOpen(false)}
           invoice={selectedInvoice}
-          items={mockInvoiceItems}
+          items={detailsLoading ? [] : invoiceItems}
         />
 
         {/* Pay Invoice Dialog */}

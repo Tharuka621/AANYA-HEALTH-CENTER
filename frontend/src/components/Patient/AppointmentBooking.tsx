@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import {
   Box,
   Card,
@@ -22,6 +23,9 @@ import {
   Person as PersonIcon,
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { axiosInstance } from '../../services/api';
 import { useToast } from '../common/Toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -46,13 +50,10 @@ interface BookingConfirmation {
   paymentStatus: string;
 }
 
-interface AppointmentFee {
-  amount: number;
-}
 
 const AppointmentBooking: React.FC = () => {
   const queryClient = useQueryClient();
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
@@ -61,7 +62,7 @@ const AppointmentBooking: React.FC = () => {
   const [openPaymentDialog, setOpenPaymentDialog] = useState(false);
   const [bookingConfirmation, setBookingConfirmation] = useState<BookingConfirmation | null>(null);
   const [appointmentFee, setAppointmentFee] = useState<number>(2500);
-  const [paymentMethod, setPaymentMethod] = useState<string>('card');
+  const [paymentMethod] = useState<string>('card');
   const [cardDetails, setCardDetails] = useState({
     cardNumber: '',
     cardHolder: '',
@@ -72,21 +73,22 @@ const AppointmentBooking: React.FC = () => {
   const { showSuccess, showError } = useToast();
 
   // Set minimum date to today
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date();
 
   useEffect(() => {
     if (selectedDate) {
-      fetchAvailableSlots();
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      fetchAvailableSlots(dateString);
     }
   }, [selectedDate]);
 
-  const fetchAvailableSlots = async () => {
+  const fetchAvailableSlots = async (dateString: string) => {
     setLoading(true);
-    
+
     try {
-      const response = await axiosInstance.get(`/appointments/slots/available?date=${selectedDate}`);
+      const response = await axiosInstance.get(`/appointments/slots/available?date=${dateString}`);
       setAvailableSlots(response.data);
-      
+
       if (response.data.length === 0) {
         showError('No available slots for this date');
       }
@@ -117,10 +119,10 @@ const AppointmentBooking: React.FC = () => {
 
   const handleBookAppointment = () => {
     if (!selectedSlot) return;
-    
+
     // Fetch the latest appointment fee
     fetchAppointmentFee();
-    
+
     // Close confirm dialog and open payment dialog
     setOpenConfirmDialog(false);
     setOpenPaymentDialog(true);
@@ -163,21 +165,21 @@ const AppointmentBooking: React.FC = () => {
         appointmentNumber: response.data.appointmentNumber,
         paymentStatus: response.data.paymentStatus,
       });
-      
+
       // Invalidate appointments cache to refetch the latest data
       queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
-      
+
       // Update available slots (reduce by 1)
       setAvailableSlots(availableSlots.map(slot =>
         slot.id === selectedSlot.id
           ? { ...slot, available_slots: slot.available_slots - 1, booked_count: slot.booked_count + 1 }
           : slot
       ));
-      
+
       // Close payment dialog
       setOpenPaymentDialog(false);
       setProcessingPayment(false);
-      
+
       // Reset form
       setSelectedSlot(null);
       setReason('');
@@ -211,12 +213,7 @@ const AppointmentBooking: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return format(new Date(dateString), 'dd/MM/yyyy');
   };
 
   return (
@@ -230,20 +227,25 @@ const AppointmentBooking: React.FC = () => {
             Select a date to view available time slots with doctors
           </Typography>
 
-          <TextField
-            fullWidth
-            label="Select Date"
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            inputProps={{ min: today }}
-            sx={{ mb: 3 }}
-          />
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Select Date"
+              value={selectedDate}
+              onChange={(newValue) => setSelectedDate(newValue)}
+              minDate={today}
+              format="dd/MM/yyyy"
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  sx: { mb: 3 },
+                },
+              }}
+            />
+          </LocalizationProvider>
 
           {bookingConfirmation && (
-            <Alert 
-              severity="success" 
+            <Alert
+              severity="success"
               icon={<CheckIcon />}
               sx={{ mb: 3 }}
               onClose={() => setBookingConfirmation(null)}
@@ -267,7 +269,7 @@ const AppointmentBooking: React.FC = () => {
           ) : selectedDate && availableSlots.length > 0 ? (
             <>
               <Typography variant="h6" gutterBottom>
-                Available Slots for {formatDate(selectedDate)}
+                Available Slots for {format(selectedDate, 'dd/MM/yyyy')}
               </Typography>
               <Grid container spacing={2}>
                 {availableSlots.map((slot) => (
@@ -291,7 +293,7 @@ const AppointmentBooking: React.FC = () => {
                           Dr. {slot.doctor_name}
                         </Typography>
                       </Box>
-                      
+
                       <Box display="flex" alignItems="center" gap={1} mb={1}>
                         <TimeIcon fontSize="small" color="action" />
                         <Typography variant="body2">
@@ -323,8 +325,8 @@ const AppointmentBooking: React.FC = () => {
       </Card>
 
       {/* Booking Confirmation Dialog */}
-      <Dialog 
-        open={openConfirmDialog} 
+      <Dialog
+        open={openConfirmDialog}
         onClose={() => setOpenConfirmDialog(false)}
         maxWidth="sm"
         fullWidth
@@ -336,7 +338,7 @@ const AppointmentBooking: React.FC = () => {
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Appointment Details:
               </Typography>
-              
+
               <Box my={2}>
                 <Box display="flex" justifyContent="space-between" py={1}>
                   <Typography variant="body2" color="text.secondary">Doctor:</Typography>
@@ -345,7 +347,7 @@ const AppointmentBooking: React.FC = () => {
                   </Typography>
                 </Box>
                 <Divider />
-                
+
                 <Box display="flex" justifyContent="space-between" py={1}>
                   <Typography variant="body2" color="text.secondary">Date:</Typography>
                   <Typography variant="body2" fontWeight={600}>
@@ -353,7 +355,7 @@ const AppointmentBooking: React.FC = () => {
                   </Typography>
                 </Box>
                 <Divider />
-                
+
                 <Box display="flex" justifyContent="space-between" py={1}>
                   <Typography variant="body2" color="text.secondary">Time:</Typography>
                   <Typography variant="body2" fontWeight={600}>
@@ -380,8 +382,8 @@ const AppointmentBooking: React.FC = () => {
           <Button onClick={() => setOpenConfirmDialog(false)}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleBookAppointment} 
+          <Button
+            onClick={handleBookAppointment}
             variant="contained"
             startIcon={<CheckIcon />}
           >
@@ -391,8 +393,8 @@ const AppointmentBooking: React.FC = () => {
       </Dialog>
 
       {/* Payment Dialog */}
-      <Dialog 
-        open={openPaymentDialog} 
+      <Dialog
+        open={openPaymentDialog}
         onClose={() => !processingPayment && setOpenPaymentDialog(false)}
         maxWidth="sm"
         fullWidth
@@ -417,7 +419,7 @@ const AppointmentBooking: React.FC = () => {
               <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
                 Card Information
               </Typography>
-              
+
               <TextField
                 fullWidth
                 label="Card Number"
@@ -491,14 +493,14 @@ const AppointmentBooking: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => setOpenPaymentDialog(false)}
             disabled={processingPayment}
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleProcessPayment} 
+          <Button
+            onClick={handleProcessPayment}
             variant="contained"
             disabled={processingPayment}
             startIcon={processingPayment ? <CircularProgress size={20} color="inherit" /> : <CheckIcon />}

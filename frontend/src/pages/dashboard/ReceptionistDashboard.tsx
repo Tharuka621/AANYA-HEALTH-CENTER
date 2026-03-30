@@ -20,24 +20,18 @@ import {
   TextField,
   Grid,
   Avatar,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   LinearProgress,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, parseISO } from 'date-fns';
 import {
   PersonAdd as PersonAddIcon,
-  CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
   Person as PersonIcon,
   LocalHospital as HospitalIcon,
   AccessTime as TimeIcon,
   Logout as LogoutIcon,
   Search as SearchIcon,
-  LocalActivity as TicketIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
@@ -421,7 +415,7 @@ const ReceptionistDashboard: React.FC = () => {
                         label={`${slot.booked_count || 0}/${slot.max_appointments}`}
                         size="small"
                         color={slot.booked_count >= slot.max_appointments ? "error" : "primary"}
-                        variant={selectedSlotId === slot.id ? "contained" : "outlined"}
+                        variant={selectedSlotId === slot.id ? "filled" : "outlined"}
                         sx={{ fontWeight: 700 }}
                       />
                     </Box>

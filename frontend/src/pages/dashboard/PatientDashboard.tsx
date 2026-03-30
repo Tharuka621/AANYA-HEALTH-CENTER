@@ -78,10 +78,10 @@ const PatientDashboard: React.FC = () => {
     try {
       const [prescRes, labRes] = await Promise.all([
         axiosInstance.get('/prescriptions/patient/prescriptions').catch(() => ({ data: { prescriptions: [] } })),
-        axiosInstance.get('/lab/patient/lab-orders').catch(() => ({ data: { labOrders: [] } }))
+        axiosInstance.get('/lab/patient/lab-orders').catch(() => ({ data: { data: [] } }))
       ]);
       setPrescriptions(prescRes.data?.prescriptions || []);
-      setLabReports(labRes.data?.labOrders || []);
+      setLabReports(labRes.data?.data || []);
     } catch (error) {
       console.error('Failed to fetch patient data', error);
     } finally {
@@ -190,12 +190,7 @@ const PatientDashboard: React.FC = () => {
   const formatDate = (dateString: string) => {
     if (!dateString) return 'TBD';
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
+      return new Date(dateString).toLocaleDateString('en-GB');
     } catch (e) {
       return 'Invalid Date';
     }
@@ -339,13 +334,13 @@ const PatientDashboard: React.FC = () => {
                                   Issued: {formatDate(prescription.created_at)}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" component="span" display="block">
-                                  {prescription.items?.length || 1} medicine(s) prescribed
+                                  {prescription.instructions?.substring(0, 30)}{prescription.instructions?.length > 30 ? '...' : ''}
                                 </Typography>
                               </>
                             }
                           />
-                          <IconButton size="small" color="primary">
-                            <DownloadIcon />
+                          <IconButton size="small" color="primary" onClick={() => navigate('/dashboard/patient/prescriptions')}>
+                            <ViewIcon />
                           </IconButton>
                         </ListItem>
                         {index < prescriptions.length - 1 && <Divider />}
@@ -400,17 +395,19 @@ const PatientDashboard: React.FC = () => {
                             }
                             secondary={
                               <Typography variant="body2" color="text.secondary">
-                                Ordered: {formatDate(report.created_at)}
+                                Ordered: {formatDate(report.requested_date)}
                               </Typography>
                             }
                           />
                           <Box display="flex" gap={1}>
-                            <IconButton size="small" color="primary">
+                            <IconButton size="small" color="primary" onClick={() => navigate('/dashboard/patient/lab-reports')}>
                               <ViewIcon />
                             </IconButton>
-                            <IconButton size="small" color="primary">
-                              <DownloadIcon />
-                            </IconButton>
+                            {report.result_url && (
+                              <IconButton size="small" color="primary" onClick={() => window.open(report.result_url, '_blank')}>
+                                <DownloadIcon />
+                              </IconButton>
+                            )}
                           </Box>
                         </ListItem>
                         {index < labReports.length - 1 && <Divider />}
@@ -490,12 +487,7 @@ const PatientDashboard: React.FC = () => {
             onPaymentSuccess={handlePaymentSuccess}
             appointmentDetails={{
               doctorName: selectedDoctor?.full_name || 'Dr. Milinda Abeykoon',
-              date: new Date(pendingAppointment.appointment_date).toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              }),
+              date: new Date(pendingAppointment.appointment_date).toLocaleDateString('en-GB'),
               time: pendingAppointment.appointment_time,
               reason: pendingAppointment.reason,
             }}

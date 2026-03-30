@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Container,
@@ -7,17 +7,11 @@ import {
   Card,
   CardContent,
   TextField,
-  Button,
   MenuItem,
-  IconButton,
-  Chip,
-  Divider,
   Alert,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Paper,
+  Chip,
+  Button,
+  CircularProgress,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -27,72 +21,154 @@ import {
   Cake as CakeIcon,
   Home as HomeIcon,
   ContactEmergency as EmergencyIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
+  LocalHospital as AllergyIcon,
   Save as SaveIcon,
   Edit as EditIcon,
-  LocalHospital as AllergyIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { format, isValid, parseISO } from 'date-fns';
+import { axiosInstance } from '../../services/api';
+
+interface PatientProfileData {
+  user_id: number;
+  patient_id: number;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  nic: string | null;
+  dob: string | null;
+  gender: 'MALE' | 'FEMALE' | 'OTHER' | null;
+  address: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  allergies: string[];
+}
+
+interface ProfileFormData {
+  full_name: string;
+  email: string;
+  phone: string;
+  nic: string;
+  dob: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER' | '';
+  address: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  allergiesText: string;
+}
+
+const toFormData = (profile: PatientProfileData): ProfileFormData => ({
+  full_name: profile.full_name || '',
+  email: profile.email || '',
+  phone: profile.phone || '',
+  nic: profile.nic || '',
+  dob: profile.dob || '',
+  gender: profile.gender || '',
+  address: profile.address || '',
+  emergency_contact_name: profile.emergency_contact_name || '',
+  emergency_contact_phone: profile.emergency_contact_phone || '',
+  allergiesText: (profile.allergies || []).join(', '),
+});
+
+const formatDob = (dob: string | null) => {
+  if (!dob) return '';
+  const parsed = parseISO(dob);
+  return isValid(parsed) ? format(parsed, 'dd/MM/yyyy') : dob;
+};
 
 const PatientProfile: React.FC = () => {
-  const { user } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
-  const [newAllergy, setNewAllergy] = useState('');
-
-  // User data (from users table)
-  const [userData, setUserData] = useState({
-    full_name: 'Nimal Perera',
-    email: 'nimal@example.com',
-    phone: '0771234567',
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [profile, setProfile] = useState<PatientProfileData | null>(null);
+  const [form, setForm] = useState<ProfileFormData>({
+    full_name: '',
+    email: '',
+    phone: '',
+    nic: '',
+    dob: '',
+    gender: '',
+    address: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    allergiesText: '',
   });
 
-  // Patient data (from patients table)
-  const [patientData, setPatientData] = useState({
-    nic: '921234567V',
-    dob: '1992-05-15',
-    gender: 'MALE',
-    address: '123 Galle Road, Colombo 03, Sri Lanka',
-    emergency_contact_name: 'Kamala Perera',
-    emergency_contact_phone: '0779876543',
-  });
-
-  // Allergies (from patient_allergies table)
-  const [allergies, setAllergies] = useState<string[]>([
-    'Penicillin',
-    'Peanuts',
-    'Dust mites',
-  ]);
-
-  const handleUserDataChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setUserData({ ...userData, [field]: event.target.value });
-  };
-
-  const handlePatientDataChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setPatientData({ ...patientData, [field]: event.target.value });
-  };
-
-  const handleAddAllergy = () => {
-    if (newAllergy.trim()) {
-      setAllergies([...allergies, newAllergy.trim()]);
-      setNewAllergy('');
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosInstance.get('/patient/profile');
+      const data: PatientProfileData = response.data.profile;
+      setProfile(data);
+      setForm(toFormData(data));
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load profile');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteAllergy = (index: number) => {
-    setAllergies(allergies.filter((_, i) => i !== index));
-  };
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
-  const handleSave = () => {
-    // TODO: API call to save data
-    console.log('Saving profile data:', { userData, patientData, allergies });
-    setIsEditing(false);
+  const allergies = useMemo(
+    () => form.allergiesText.split(',').map((a) => a.trim()).filter(Boolean),
+    [form.allergiesText]
+  );
+
+  const handleChange = (field: keyof ProfileFormData, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCancel = () => {
-    // TODO: Reset to original data
-    setIsEditing(false);
+    if (profile) {
+      setForm(toFormData(profile));
+    }
+    setEditing(false);
+    setSuccess(null);
+    setError(null);
   };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      await axiosInstance.put('/patient/profile', {
+        full_name: form.full_name,
+        phone: form.phone || null,
+        nic: form.nic || null,
+        dob: form.dob || null,
+        gender: form.gender || null,
+        address: form.address || null,
+        emergency_contact_name: form.emergency_contact_name || null,
+        emergency_contact_phone: form.emergency_contact_phone || null,
+        allergies,
+      });
+
+      await fetchProfile();
+      setEditing(false);
+      setSuccess('Profile updated successfully');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">
@@ -101,31 +177,41 @@ const PatientProfile: React.FC = () => {
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
           <Box>
             <Typography variant="h4" fontWeight={700} gutterBottom>
-              Patient Profile
+              My Profile
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Manage your personal and medical information
+              View and update your personal and emergency details
             </Typography>
           </Box>
-          {!isEditing ? (
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              onClick={() => setIsEditing(true)}
-            >
-              Edit Profile
-            </Button>
-          ) : (
-            <Box display="flex" gap={2}>
-              <Button variant="outlined" onClick={handleCancel}>
-                Cancel
+          <Box display="flex" gap={1.5}>
+            {!editing ? (
+              <Button
+                variant="contained"
+                startIcon={<EditIcon />}
+                onClick={() => setEditing(true)}
+              >
+                Edit Profile
               </Button>
-              <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave}>
-                Save Changes
-              </Button>
-            </Box>
-          )}
+            ) : (
+              <>
+                <Button variant="outlined" onClick={handleCancel} disabled={saving}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<SaveIcon />}
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </>
+            )}
+          </Box>
         </Box>
+
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
 
         <Grid container spacing={3}>
           {/* Personal Information Card */}
@@ -150,9 +236,9 @@ const PatientProfile: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Full Name"
-                      value={userData.full_name}
-                      onChange={handleUserDataChange('full_name')}
-                      disabled={!isEditing}
+                      value={form.full_name}
+                      disabled={!editing}
+                      onChange={(e) => handleChange('full_name', e.target.value)}
                       InputProps={{
                         startAdornment: <PersonIcon color="action" sx={{ mr: 1 }} />,
                       }}
@@ -163,7 +249,7 @@ const PatientProfile: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Email Address"
-                      value={userData.email}
+                      value={form.email}
                       disabled={true}
                       helperText="Email cannot be changed"
                       InputProps={{
@@ -176,9 +262,9 @@ const PatientProfile: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Phone Number"
-                      value={userData.phone}
-                      onChange={handleUserDataChange('phone')}
-                      disabled={!isEditing}
+                      value={form.phone}
+                      disabled={!editing}
+                      onChange={(e) => handleChange('phone', e.target.value)}
                       InputProps={{
                         startAdornment: <PhoneIcon color="action" sx={{ mr: 1 }} />,
                       }}
@@ -189,9 +275,9 @@ const PatientProfile: React.FC = () => {
                     <TextField
                       fullWidth
                       label="NIC Number"
-                      value={patientData.nic}
-                      onChange={handlePatientDataChange('nic')}
-                      disabled={!isEditing}
+                      value={form.nic}
+                      disabled={!editing}
+                      onChange={(e) => handleChange('nic', e.target.value)}
                       InputProps={{
                         startAdornment: <BadgeIcon color="action" sx={{ mr: 1 }} />,
                       }}
@@ -202,26 +288,27 @@ const PatientProfile: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Date of Birth"
-                      type="date"
-                      value={patientData.dob}
-                      onChange={handlePatientDataChange('dob')}
-                      disabled={!isEditing}
-                      InputLabelProps={{ shrink: true }}
+                      type={editing ? 'date' : 'text'}
+                      value={editing ? form.dob : formatDob(form.dob || null)}
+                      disabled={!editing}
+                      onChange={(e) => handleChange('dob', e.target.value)}
                       InputProps={{
                         startAdornment: <CakeIcon color="action" sx={{ mr: 1 }} />,
                       }}
+                      InputLabelProps={editing ? { shrink: true } : undefined}
                     />
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
                     <TextField
-                      fullWidth
                       select
+                      fullWidth
                       label="Gender"
-                      value={patientData.gender}
-                      onChange={handlePatientDataChange('gender')}
-                      disabled={!isEditing}
+                      value={form.gender}
+                      disabled={!editing}
+                      onChange={(e) => handleChange('gender', e.target.value)}
                     >
+                      <MenuItem value="">Select gender</MenuItem>
                       <MenuItem value="MALE">Male</MenuItem>
                       <MenuItem value="FEMALE">Female</MenuItem>
                       <MenuItem value="OTHER">Other</MenuItem>
@@ -232,9 +319,9 @@ const PatientProfile: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Address"
-                      value={patientData.address}
-                      onChange={handlePatientDataChange('address')}
-                      disabled={!isEditing}
+                      value={form.address}
+                      disabled={!editing}
+                      onChange={(e) => handleChange('address', e.target.value)}
                       multiline
                       rows={2}
                       InputProps={{
@@ -270,9 +357,9 @@ const PatientProfile: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Emergency Contact Name"
-                      value={patientData.emergency_contact_name}
-                      onChange={handlePatientDataChange('emergency_contact_name')}
-                      disabled={!isEditing}
+                      value={form.emergency_contact_name}
+                      disabled={!editing}
+                      onChange={(e) => handleChange('emergency_contact_name', e.target.value)}
                       InputProps={{
                         startAdornment: <PersonIcon color="action" sx={{ mr: 1 }} />,
                       }}
@@ -283,9 +370,9 @@ const PatientProfile: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Emergency Contact Phone"
-                      value={patientData.emergency_contact_phone}
-                      onChange={handlePatientDataChange('emergency_contact_phone')}
-                      disabled={!isEditing}
+                      value={form.emergency_contact_phone}
+                      disabled={!editing}
+                      onChange={(e) => handleChange('emergency_contact_phone', e.target.value)}
                       InputProps={{
                         startAdornment: <PhoneIcon color="action" sx={{ mr: 1 }} />,
                       }}
@@ -311,84 +398,30 @@ const PatientProfile: React.FC = () => {
                 </Box>
               </Box>
               <CardContent>
-                {isEditing && (
-                  <Box display="flex" gap={1} mb={2}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Add New Allergy"
-                      value={newAllergy}
-                      onChange={(e) => setNewAllergy(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddAllergy();
-                        }
-                      }}
-                    />
-                    <Button
-                      variant="contained"
-                      startIcon={<AddIcon />}
-                      onClick={handleAddAllergy}
-                    >
-                      Add
-                    </Button>
-                  </Box>
-                )}
-
-                {allergies.length > 0 ? (
-                  <Paper variant="outlined" sx={{ maxHeight: 300, overflow: 'auto' }}>
-                    <List dense>
-                      {allergies.map((allergy, index) => (
-                        <React.Fragment key={index}>
-                          <ListItem>
-                            <ListItemText
-                              primary={
-                                <Box display="flex" alignItems="center" gap={1}>
-                                  <AllergyIcon fontSize="small" color="error" />
-                                  <Typography variant="body1">{allergy}</Typography>
-                                </Box>
-                              }
-                            />
-                            {isEditing && (
-                              <ListItemSecondaryAction>
-                                <IconButton
-                                  edge="end"
-                                  size="small"
-                                  onClick={() => handleDeleteAllergy(index)}
-                                  color="error"
-                                >
-                                  <DeleteIcon />
-                                </IconButton>
-                              </ListItemSecondaryAction>
-                            )}
-                          </ListItem>
-                          {index < allergies.length - 1 && <Divider />}
-                        </React.Fragment>
-                      ))}
-                    </List>
-                  </Paper>
-                ) : (
-                  <Alert severity="info">
-                    No allergies recorded. {isEditing && 'Click "Add" to add allergies.'}
-                  </Alert>
-                )}
+                <TextField
+                  fullWidth
+                  label="Allergies"
+                  value={form.allergiesText}
+                  disabled={!editing}
+                  onChange={(e) => handleChange('allergiesText', e.target.value)}
+                  helperText="Use comma-separated values (e.g., Penicillin, Dust)"
+                  multiline
+                  rows={3}
+                />
+                <Box mt={2} display="flex" flexWrap="wrap" gap={1}>
+                  {allergies.length > 0 ? (
+                    allergies.map((allergy) => (
+                      <Chip key={allergy} label={allergy} color="error" variant="outlined" size="small" />
+                    ))
+                  ) : (
+                    <Alert severity="info" sx={{ width: '100%' }}>
+                      No allergies recorded.
+                    </Alert>
+                  )}
+                </Box>
               </CardContent>
             </Card>
           </Grid>
-
-          {/* Information Notice */}
-          {isEditing && (
-            <Grid item xs={12}>
-              <Alert severity="warning" icon={<SaveIcon />}>
-                <Typography variant="body2" fontWeight={600}>
-                  Don't forget to save your changes!
-                </Typography>
-                <Typography variant="body2">
-                  Make sure all information is accurate, especially emergency contact details and allergies.
-                </Typography>
-              </Alert>
-            </Grid>
-          )}
         </Grid>
       </Box>
     </Container>

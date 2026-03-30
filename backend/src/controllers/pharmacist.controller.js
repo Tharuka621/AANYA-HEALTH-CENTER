@@ -141,7 +141,10 @@ exports.dispensePrescription = async (req, res) => {
                     batch_id: batch.batch_id,
                     qty: batch.qty_to_deduct,
                     unit_price: batch.unit_price,
-                    line_total: lineTotal
+                    line_total: lineTotal,
+                    medicine_name: plan.medicine_name,
+                    dosage: plan.dosage,
+                    batch_no: batch.batch_no || 'N/A'
                 });
 
                 // Insert into dispense_items: id, prescription_item_id, batch_id, qty_dispensed, dispensed_by, dispensed_at
@@ -183,7 +186,8 @@ exports.dispensePrescription = async (req, res) => {
                 visit_id: prescription.visit_id,
                 total_amount: totalAmount,
                 status: 'UNPAID',
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                items: invoiceItems
             }
         });
 
@@ -228,6 +232,13 @@ exports.recordPayment = async (req, res) => {
         const { id } = req.params;
         const { method, payment_ref } = req.body;
 
+        const allowedMethods = ['CASH', 'CARD', 'ONLINE'];
+        if (!allowedMethods.includes(String(method || '').toUpperCase())) {
+            return res.status(400).json({
+                message: 'Invalid payment method. Use CASH, CARD, or ONLINE'
+            });
+        }
+
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
@@ -250,7 +261,7 @@ exports.recordPayment = async (req, res) => {
         // Insert payment
         await connection.query(
             `INSERT INTO invoice_payments(invoice_id, method, amount, payment_ref) VALUES(?, ?, ?, ?)`,
-            [id, method, invoice.total_amount, payment_ref || null]
+            [id, String(method).toUpperCase(), invoice.total_amount, payment_ref || null]
         );
 
         // Update invoice status
@@ -264,6 +275,11 @@ exports.recordPayment = async (req, res) => {
     } catch (err) {
         if (connection) await connection.rollback();
         console.error('recordPayment error:', err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({
+                message: 'Payment reference already exists. Please use a unique reference.'
+            });
+        }
         res.status(500).json({ message: 'Server error' });
     } finally {
         if (connection) connection.release();

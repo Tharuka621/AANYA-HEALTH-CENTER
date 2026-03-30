@@ -10,25 +10,44 @@ assertEnv("EMAIL_USER");
 assertEnv("EMAIL_PASSWORD");
 assertEnv("EMAIL_FROM");
 
+const emailPort = Number(process.env.EMAIL_PORT);
+const emailSecure = process.env.EMAIL_SECURE
+  ? process.env.EMAIL_SECURE === "true"
+  : emailPort === 465;
+
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: false, // for 587
+  port: emailPort,
+  secure: emailSecure,
   auth: {
     user: process.env.EMAIL_USER,       // Brevo login: a0cc3c001@smtp-brevo.com
     pass: process.env.EMAIL_PASSWORD,   // xsmtpsib-...
   },
+  // Keep startup resilient when SMTP is temporarily unreachable.
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 20000,
+  tls: {
+    servername: process.env.EMAIL_HOST,
+  },
 });
 
-transporter.verify()
-  .then(() => {
-    console.log("✅ Email transporter ready to send emails");
-    console.log(`📧 Using: ${process.env.EMAIL_HOST} with ${process.env.EMAIL_USER}`);
-    console.log(`📧 From will be: ${process.env.EMAIL_FROM}`);
-  })
-  .catch((err) => {
-    console.warn("⚠️ Email transporter verify failed:", err.message);
-  });
+const verifyOnStartup = process.env.EMAIL_VERIFY_ON_STARTUP === "true";
+
+if (verifyOnStartup) {
+  transporter.verify()
+    .then(() => {
+      console.log("✅ Email transporter ready to send emails");
+      console.log(`📧 Using: ${process.env.EMAIL_HOST} with ${process.env.EMAIL_USER}`);
+      console.log(`📧 From will be: ${process.env.EMAIL_FROM}`);
+    })
+    .catch((err) => {
+      console.warn("⚠️ Email transporter verify failed:", err.message);
+      console.warn("   Tip: check firewall/ISP blocks on SMTP port and provider TLS settings.");
+    });
+} else {
+  console.log("📧 Email transporter verification skipped at startup (set EMAIL_VERIFY_ON_STARTUP=true to enable)");
+}
 
 const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
@@ -61,8 +80,6 @@ const sendOTPEmail = async (email, otp) => {
     throw new Error("Failed to send OTP email");
   }
 };
-
-module.exports = { sendOTPEmail };
 
 const sendVerificationEmail = async (email, otp) => {
   const mailOptions = {

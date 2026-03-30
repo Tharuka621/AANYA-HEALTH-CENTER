@@ -30,14 +30,17 @@ import {
 import {
   getSavedReports,
   generateReport,
+  getReportPreview,
   deleteReport,
   downloadReportPDF,
+  downloadReportCSV,
 } from '../../../api/reports';
 import ReportTypeCard from './components/ReportTypeCard';
 import ReportFiltersComponent from './components/ReportFilters';
 import ReportResultsTable from './components/ReportResultsTable';
 import SavedReportsTable from './components/SavedReportsTable';
 import GenerateReportDialog from './components/GenerateReportDialog';
+import ReportInsights from './components/ReportInsights';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -58,6 +61,7 @@ const ReportsPage: React.FC = () => {
   const [selectedReportType, setSelectedReportType] = useState<ReportType | null>(null);
   const [reportPreview, setReportPreview] = useState<ReportPreview | null>(null);
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
+  const [lastPayload, setLastPayload] = useState<GenerateReportPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [savedReportsLoading, setSavedReportsLoading] = useState(false);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
@@ -114,6 +118,7 @@ const ReportsPage: React.FC = () => {
       const preview = await generateReport(payload);
       setReportPreview(preview);
       setSelectedReportType(payload.type);
+      setLastPayload(payload);
       setActiveTab(0); // Switch to Preview tab
       showSnackbar('Report generated successfully', 'success');
       loadSavedReports(); // Refresh saved reports
@@ -135,6 +140,11 @@ const ReportsPage: React.FC = () => {
         filters,
       });
       setReportPreview(preview);
+      setLastPayload({
+        type: selectedReportType,
+        title: `${selectedReportType} Report`,
+        filters,
+      });
       setActiveTab(0);
       showSnackbar('Filters applied successfully', 'success');
     } catch (error) {
@@ -146,33 +156,46 @@ const ReportsPage: React.FC = () => {
 
   const handleResetFilters = () => {
     setReportPreview(null);
+    setLastPayload(null);
     showSnackbar('Filters reset', 'info');
   };
 
-  const handleRefresh = () => {
-    if (selectedReportType && reportPreview) {
-      handleApplyFilters(reportPreview.data as any);
+  const handleRefresh = async () => {
+    if (lastPayload) {
+      setLoading(true);
+      try {
+        const preview = await generateReport(lastPayload);
+        setReportPreview(preview);
+        showSnackbar('Data refreshed', 'info');
+        await loadSavedReports();
+      } catch (error) {
+        showSnackbar('Failed to refresh report', 'error');
+      } finally {
+        setLoading(false);
+      }
     } else {
       loadSavedReports();
+      showSnackbar('Saved reports refreshed', 'info');
     }
-    showSnackbar('Data refreshed', 'info');
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!reportPreview) return;
-    showSnackbar('Export functionality will be implemented', 'info');
+    try {
+      await downloadReportCSV(reportPreview.reportId);
+      showSnackbar('Report downloaded as CSV', 'success');
+    } catch (error) {
+      showSnackbar('Failed to export report', 'error');
+    }
   };
 
   const handleViewSavedReport = async (report: SavedReport) => {
     setLoading(true);
     try {
-      const preview = await generateReport({
-        type: report.type,
-        title: report.title,
-        filters: { dateFrom: null, dateTo: null, groupBy: 'daily', outputFormat: 'table' },
-      });
+      const preview = await getReportPreview(report.id);
       setReportPreview(preview);
       setSelectedReportType(report.type);
+      setLastPayload(null);
       setActiveTab(0);
       showSnackbar('Report loaded successfully', 'success');
     } catch (error) {
@@ -377,15 +400,10 @@ const ReportsPage: React.FC = () => {
             </TabPanel>
 
             <TabPanel value={activeTab} index={1}>
-              <Box sx={{ p: 6, textAlign: 'center' }}>
-                <InsightsIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  Chart Insights Coming Soon
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Visual analytics and trends will be available in the next update
-                </Typography>
-              </Box>
+              <ReportInsights
+                reportType={selectedReportType}
+                reportPreview={reportPreview}
+              />
             </TabPanel>
           </Paper>
         )}

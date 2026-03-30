@@ -1,183 +1,224 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import {
+  Alert,
   Box,
-  Container,
-  Typography,
   Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Container,
+  Grid,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
+  Typography,
   Chip,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  Alert,
-  Grid,
-  Card,
-  CardContent,
+  MenuItem,
 } from '@mui/material';
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   Warning as WarningIcon,
   Inventory as InventoryIcon,
+  Refresh as RefreshIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
+import { axiosInstance } from '../../services/api';
+
+interface InventoryItem {
+  id: number;
+  name: string;
+  generic_name: string | null;
+  manufacturer: string | null;
+  batch_no: string | null;
+  expiry_date: string | null;
+  stock_quantity: number;
+  unit_price: number;
+  reorder_level: number;
+  category: string | null;
+}
+
+const getStockStatus = (quantity: number, reorderLevel: number): { status: string; color: 'error' | 'warning' | 'success' } => {
+  if (quantity <= reorderLevel) return { status: 'low', color: 'error' };
+  if (quantity <= reorderLevel * 2) return { status: 'medium', color: 'warning' };
+  return { status: 'good', color: 'success' };
+};
 
 const PharmacyManagement: React.FC = () => {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingMedicine, setEditingMedicine] = useState<any>(null);
-  const [formData, setFormData] = useState({
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
+  const [form, setForm] = useState({
     name: '',
-    generic_name: '',
+    unit: 'tab',
+    description: '',
     manufacturer: '',
-    batch_number: '',
-    expiry_date: '',
-    stock_quantity: '',
-    unit_price: '',
-    reorder_level: '',
     category: '',
+    low_stock_threshold: '20',
+    batch_no: '',
+    expiry_date: '',
+    qty_available: '0',
+    buy_price: '',
+    sell_price: '',
   });
 
-  // Mock medicines data
-  const medicines = [
-    {
-      id: '1',
-      name: 'Metformin',
-      generic_name: 'Metformin HCl',
-      manufacturer: 'Generic Pharma',
-      batch_number: 'MF2024001',
-      expiry_date: '2025-12-31',
-      stock_quantity: 500,
-      unit_price: 125.00,
-      reorder_level: 50,
-      category: 'Diabetes',
-    },
-    {
-      id: '2',
-      name: 'Lisinopril',
-      generic_name: 'Lisinopril',
-      manufacturer: 'CardioMed',
-      batch_number: 'LS2024001',
-      expiry_date: '2025-06-30',
-      stock_quantity: 25,
-      unit_price: 90.00,
-      reorder_level: 30,
-      category: 'Hypertension',
-    },
-    {
-      id: '3',
-      name: 'Aspirin',
-      generic_name: 'Acetylsalicylic Acid',
-      manufacturer: 'HeartCare',
-      batch_number: 'AS2024001',
-      expiry_date: '2025-03-15',
-      stock_quantity: 1000,
-      unit_price: 25.00,
-      reorder_level: 100,
-      category: 'Cardiovascular',
-    },
-    {
-      id: '4',
-      name: 'Vitamin D3',
-      generic_name: 'Cholecalciferol',
-      manufacturer: 'Vitamins Plus',
-      batch_number: 'VD2024001',
-      expiry_date: '2025-08-20',
-      stock_quantity: 5,
-      unit_price: 160.00,
-      reorder_level: 20,
-      category: 'Supplements',
-    },
-  ];
-
-  const getStockStatus = (quantity: number, reorderLevel: number): { status: string; color: 'error' | 'warning' | 'success' } => {
-    if (quantity <= reorderLevel) return { status: 'low', color: 'error' };
-    if (quantity <= reorderLevel * 2) return { status: 'medium', color: 'warning' };
-    return { status: 'good', color: 'success' };
+  const fetchInventory = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosInstance.get('/admin/pharmacy/inventory');
+      setInventory(response.data.inventory || []);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load inventory');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAddMedicine = () => {
-    setEditingMedicine(null);
-    setFormData({
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  const resetForm = () => {
+    setForm({
       name: '',
-      generic_name: '',
+      unit: 'tab',
+      description: '',
       manufacturer: '',
-      batch_number: '',
-      expiry_date: '',
-      stock_quantity: '',
-      unit_price: '',
-      reorder_level: '',
       category: '',
+      low_stock_threshold: '20',
+      batch_no: '',
+      expiry_date: '',
+      qty_available: '0',
+      buy_price: '',
+      sell_price: '',
     });
-    setOpenDialog(true);
+    setShowValidation(false);
   };
 
-  const handleEditMedicine = (medicine: any) => {
-    setEditingMedicine(medicine);
-    setFormData({
-      name: medicine.name,
-      generic_name: medicine.generic_name,
-      manufacturer: medicine.manufacturer,
-      batch_number: medicine.batch_number,
-      expiry_date: medicine.expiry_date,
-      stock_quantity: medicine.stock_quantity.toString(),
-      unit_price: medicine.unit_price.toString(),
-      reorder_level: medicine.reorder_level.toString(),
-      category: medicine.category,
-    });
-    setOpenDialog(true);
+  const todayKey = new Date().toISOString().split('T')[0];
+  const validationErrors = useMemo(() => {
+    const errors: Record<string, string> = {};
+
+    if (!form.name.trim()) {
+      errors.name = 'Medicine name is required';
+    }
+
+    if (form.sell_price === '') {
+      errors.sell_price = 'Sell price is required';
+    } else if (Number(form.sell_price) <= 0) {
+      errors.sell_price = 'Sell price must be greater than 0';
+    }
+
+    if (form.qty_available !== '' && Number(form.qty_available) < 0) {
+      errors.qty_available = 'Opening stock cannot be negative';
+    }
+
+    if (form.low_stock_threshold !== '' && Number(form.low_stock_threshold) < 0) {
+      errors.low_stock_threshold = 'Low stock threshold cannot be negative';
+    }
+
+    if (form.buy_price !== '' && Number(form.buy_price) < 0) {
+      errors.buy_price = 'Buy price cannot be negative';
+    }
+
+    if (form.expiry_date && form.expiry_date < todayKey) {
+      errors.expiry_date = 'Expiry date cannot be in the past';
+    }
+
+    return errors;
+  }, [form, todayKey]);
+
+  const hasValidationErrors = Object.keys(validationErrors).length > 0;
+
+  const handleCreateMedicine = async () => {
+    if (hasValidationErrors) {
+      setShowValidation(true);
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      await axiosInstance.post('/admin/pharmacy/medicines', {
+        name: form.name,
+        unit: form.unit,
+        description: form.description || null,
+        manufacturer: form.manufacturer || null,
+        category: form.category || null,
+        low_stock_threshold: Number(form.low_stock_threshold || 20),
+        batch_no: form.batch_no || null,
+        expiry_date: form.expiry_date || null,
+        qty_available: Number(form.qty_available || 0),
+        buy_price: form.buy_price === '' ? null : Number(form.buy_price),
+        sell_price: Number(form.sell_price),
+      });
+
+      setAddDialogOpen(false);
+      resetForm();
+      fetchInventory();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to add medicine');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDeleteMedicine = (medicineId: string) => {
-    console.log('Delete medicine:', medicineId);
-    // In a real app, this would call the API
-  };
-
-  const handleSaveMedicine = () => {
-    console.log('Save medicine:', formData);
-    setOpenDialog(false);
-    // In a real app, this would call the API
-  };
-
-  const lowStockMedicines = medicines.filter(m => m.stock_quantity <= m.reorder_level);
+  const lowStockItems = useMemo(
+    () => inventory.filter((item) => Number(item.stock_quantity || 0) <= Number(item.reorder_level || 0)),
+    [inventory]
+  );
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="xl">
       <Box sx={{ py: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" fontWeight={700}>
-            Pharmacy Management
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddMedicine}
-          >
-            Add Medicine
-          </Button>
+          <Box>
+            <Typography variant="h4" fontWeight={700}>Pharmacy Management</Typography>
+            <Typography variant="body2" color="text.secondary">Live inventory data from the database</Typography>
+          </Box>
+          <Box display="flex" gap={1.5}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setAddDialogOpen(true);
+                setShowValidation(false);
+              }}
+            >
+              Add Medicine
+            </Button>
+            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchInventory} disabled={loading}>
+              Refresh
+            </Button>
+          </Box>
         </Box>
 
-        {/* Low Stock Alert */}
-        {lowStockMedicines.length > 0 && (
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+        {lowStockItems.length > 0 && (
           <Alert severity="warning" sx={{ mb: 3 }}>
             <Box display="flex" alignItems="center" gap={1}>
               <WarningIcon />
               <Typography variant="body2">
-                {lowStockMedicines.length} medicine(s) are running low on stock
+                {lowStockItems.length} inventory item(s) are at or below the reorder level
               </Typography>
             </Box>
           </Alert>
         )}
 
-        {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
             <Card>
@@ -185,12 +226,8 @@ const PharmacyManagement: React.FC = () => {
                 <Box display="flex" alignItems="center" gap={2}>
                   <InventoryIcon color="primary" />
                   <Box>
-                    <Typography variant="h6" fontWeight={600}>
-                      {medicines.length}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Medicines
-                    </Typography>
+                    <Typography variant="h6" fontWeight={600}>{inventory.length}</Typography>
+                    <Typography variant="body2" color="text.secondary">Inventory Batches</Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -202,12 +239,8 @@ const PharmacyManagement: React.FC = () => {
                 <Box display="flex" alignItems="center" gap={2}>
                   <WarningIcon color="warning" />
                   <Box>
-                    <Typography variant="h6" fontWeight={600}>
-                      {lowStockMedicines.length}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Low Stock Items
-                    </Typography>
+                    <Typography variant="h6" fontWeight={600}>{lowStockItems.length}</Typography>
+                    <Typography variant="body2" color="text.secondary">Low Stock Items</Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -220,11 +253,9 @@ const PharmacyManagement: React.FC = () => {
                   <InventoryIcon color="success" />
                   <Box>
                     <Typography variant="h6" fontWeight={600}>
-                      {medicines.reduce((sum, m) => sum + m.stock_quantity, 0)}
+                      {inventory.reduce((sum, item) => sum + Number(item.stock_quantity || 0), 0)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Stock
-                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Total Stock</Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -237,11 +268,9 @@ const PharmacyManagement: React.FC = () => {
                   <InventoryIcon color="info" />
                   <Box>
                     <Typography variant="h6" fontWeight={600}>
-                      Rs. {medicines.reduce((sum, m) => sum + (m.stock_quantity * m.unit_price), 0).toFixed(2)}
+                      Rs. {inventory.reduce((sum, item) => sum + Number(item.stock_quantity || 0) * Number(item.unit_price || 0), 0).toFixed(2)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Value
-                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Total Value</Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -249,160 +278,172 @@ const PharmacyManagement: React.FC = () => {
           </Grid>
         </Grid>
 
-        <TableContainer component={Paper} elevation={0}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Medicine</TableCell>
-                <TableCell>Manufacturer</TableCell>
-                <TableCell>Batch Number</TableCell>
-                <TableCell>Expiry Date</TableCell>
-                <TableCell>Stock</TableCell>
-                <TableCell>Unit Price</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {medicines.map((medicine) => {
-                const stockStatus = getStockStatus(medicine.stock_quantity, medicine.reorder_level);
-                return (
-                  <TableRow key={medicine.id}>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" fontWeight={600}>
-                          {medicine.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {medicine.generic_name}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>{medicine.manufacturer}</TableCell>
-                    <TableCell>{medicine.batch_number}</TableCell>
-                    <TableCell>
-                      {new Date(medicine.expiry_date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="body2">
-                          {medicine.stock_quantity}
-                        </Typography>
-                        <Chip
-                          label={stockStatus.status}
-                          color={stockStatus.color}
-                          size="small"
-                        />
-                      </Box>
-                    </TableCell>
-                    <TableCell>Rs. {medicine.unit_price}</TableCell>
-                    <TableCell>{medicine.category}</TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={1}>
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleEditMedicine(medicine)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteMedicine(medicine.id)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Medicine</TableCell>
+                    <TableCell>Manufacturer</TableCell>
+                    <TableCell>Batch Number</TableCell>
+                    <TableCell>Expiry Date</TableCell>
+                    <TableCell>Stock</TableCell>
+                    <TableCell>Unit Price</TableCell>
+                    <TableCell>Category</TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {inventory.map((item) => {
+                    const stockStatus = getStockStatus(Number(item.stock_quantity || 0), Number(item.reorder_level || 0));
+                    return (
+                      <TableRow key={item.id} hover>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>{item.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">{item.generic_name || '—'}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>{item.manufacturer || '—'}</TableCell>
+                        <TableCell>{item.batch_no || '—'}</TableCell>
+                        <TableCell>{item.expiry_date ? format(new Date(item.expiry_date), 'dd/MM/yyyy') : '—'}</TableCell>
+                        <TableCell>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Typography variant="body2">{item.stock_quantity}</Typography>
+                            <Chip label={stockStatus.status} color={stockStatus.color} size="small" />
+                          </Box>
+                        </TableCell>
+                        <TableCell>Rs. {Number(item.unit_price || 0).toFixed(2)}</TableCell>
+                        <TableCell>{item.category || '—'}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Card>
 
-        {/* Add/Edit Medicine Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            {editingMedicine ? 'Edit Medicine' : 'Add New Medicine'}
-          </DialogTitle>
+        <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Add New Medicine</DialogTitle>
           <DialogContent>
-            <Box sx={{ pt: 2 }}>
+            <Box display="grid" gap={2} sx={{ mt: 1 }}>
               <TextField
-                fullWidth
                 label="Medicine Name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                margin="normal"
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                required
+                fullWidth
+                error={showValidation && Boolean(validationErrors.name)}
+                helperText={showValidation ? validationErrors.name : ''}
               />
               <TextField
+                label="Unit"
+                value={form.unit}
+                onChange={(e) => setForm((prev) => ({ ...prev, unit: e.target.value }))}
+                select
                 fullWidth
-                label="Generic Name"
-                value={formData.generic_name}
-                onChange={(e) => setFormData({ ...formData, generic_name: e.target.value })}
-                margin="normal"
+              >
+                <MenuItem value="tab">Tablet</MenuItem>
+                <MenuItem value="cap">Capsule</MenuItem>
+                <MenuItem value="ml">ml</MenuItem>
+                <MenuItem value="bottle">Bottle</MenuItem>
+                <MenuItem value="tube">Tube</MenuItem>
+              </TextField>
+              <TextField
+                label="Description"
+                value={form.description}
+                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                fullWidth
               />
               <TextField
-                fullWidth
                 label="Manufacturer"
-                value={formData.manufacturer}
-                onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
-                margin="normal"
+                value={form.manufacturer}
+                onChange={(e) => setForm((prev) => ({ ...prev, manufacturer: e.target.value }))}
+                fullWidth
               />
               <TextField
+                label="Category"
+                value={form.category}
+                onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
                 fullWidth
+              />
+              <TextField
+                label="Low Stock Threshold"
+                type="number"
+                value={form.low_stock_threshold}
+                onChange={(e) => setForm((prev) => ({ ...prev, low_stock_threshold: e.target.value }))}
+                fullWidth
+                error={showValidation && Boolean(validationErrors.low_stock_threshold)}
+                helperText={showValidation ? validationErrors.low_stock_threshold : ''}
+              />
+              <TextField
                 label="Batch Number"
-                value={formData.batch_number}
-                onChange={(e) => setFormData({ ...formData, batch_number: e.target.value })}
-                margin="normal"
+                value={form.batch_no}
+                onChange={(e) => setForm((prev) => ({ ...prev, batch_no: e.target.value }))}
+                fullWidth
               />
               <TextField
-                fullWidth
                 label="Expiry Date"
                 type="date"
-                value={formData.expiry_date}
-                onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                margin="normal"
+                value={form.expiry_date}
+                onChange={(e) => setForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
                 InputLabelProps={{ shrink: true }}
+                fullWidth
+                error={showValidation && Boolean(validationErrors.expiry_date)}
+                helperText={showValidation ? validationErrors.expiry_date : ''}
               />
               <TextField
-                fullWidth
-                label="Stock Quantity"
+                label="Opening Stock"
                 type="number"
-                value={formData.stock_quantity}
-                onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                margin="normal"
+                value={form.qty_available}
+                onChange={(e) => setForm((prev) => ({ ...prev, qty_available: e.target.value }))}
+                fullWidth
+                error={showValidation && Boolean(validationErrors.qty_available)}
+                helperText={showValidation ? validationErrors.qty_available : ''}
               />
               <TextField
-                fullWidth
-                label="Unit Price"
+                label="Buy Price"
                 type="number"
-                value={formData.unit_price}
-                onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
-                margin="normal"
+                value={form.buy_price}
+                onChange={(e) => setForm((prev) => ({ ...prev, buy_price: e.target.value }))}
+                fullWidth
+                error={showValidation && Boolean(validationErrors.buy_price)}
+                helperText={showValidation ? validationErrors.buy_price : ''}
               />
               <TextField
-                fullWidth
-                label="Reorder Level"
+                label="Sell Price"
                 type="number"
-                value={formData.reorder_level}
-                onChange={(e) => setFormData({ ...formData, reorder_level: e.target.value })}
-                margin="normal"
-              />
-              <TextField
+                value={form.sell_price}
+                onChange={(e) => setForm((prev) => ({ ...prev, sell_price: e.target.value }))}
+                required
                 fullWidth
-                label="Category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                margin="normal"
+                error={showValidation && Boolean(validationErrors.sell_price)}
+                helperText={showValidation ? validationErrors.sell_price : ''}
               />
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSaveMedicine} variant="contained">
-              {editingMedicine ? 'Update' : 'Add'}
+            <Button
+              onClick={() => {
+                setAddDialogOpen(false);
+                setShowValidation(false);
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                setShowValidation(true);
+                handleCreateMedicine();
+              }}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Add Medicine'}
             </Button>
           </DialogActions>
         </Dialog>
@@ -412,4 +453,3 @@ const PharmacyManagement: React.FC = () => {
 };
 
 export default PharmacyManagement;
-

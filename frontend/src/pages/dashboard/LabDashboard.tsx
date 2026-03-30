@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { format, isValid, parseISO } from 'date-fns';
 import {
   Box,
   Container,
@@ -23,6 +24,8 @@ import {
   Paper,
   Avatar,
   Divider,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Science as LabIcon,
@@ -36,13 +39,7 @@ import {
   Close,
   PlayArrow,
 } from '@mui/icons-material';
-import {
-  getPendingLabOrderItems,
-  getCompletedLabOrderItems,
-  updateOrderItemStatus,
-  addLabResult,
-  updateLabOrderStatus,
-} from '../../mock/labMock';
+import { labService } from '../../services/lab.service';
 import { LabOrderItemWithDetails } from '../../types/lab';
 
 const LabDashboard: React.FC = () => {
@@ -51,9 +48,26 @@ const LabDashboard: React.FC = () => {
   const [resultText, setResultText] = useState('');
   const [reportFile, setReportFile] = useState<File | null>(null);
 
-  // Get data from mock database
-  const pendingItems = getPendingLabOrderItems();
-  const completedItems = getCompletedLabOrderItems();
+  const [currentTab, setCurrentTab] = useState(0);
+
+  const [pendingItems, setPendingItems] = useState<LabOrderItemWithDetails[]>([]);
+  const [completedItems, setCompletedItems] = useState<LabOrderItemWithDetails[]>([]);
+
+  const fetchOrders = async () => {
+    const pendingRes = await labService.getPendingOrders();
+    const completedRes = await labService.getCompletedOrders();
+
+    if (pendingRes.success && pendingRes.data) {
+      setPendingItems(pendingRes.data);
+    }
+    if (completedRes.success && completedRes.data) {
+      setCompletedItems(completedRes.data);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchOrders();
+  }, []);
 
   const stats = {
     pending: pendingItems.length,
@@ -61,10 +75,11 @@ const LabDashboard: React.FC = () => {
     completed: completedItems.length,
   };
 
-  const handleStartTest = (item: LabOrderItemWithDetails) => {
-    // Update order status to IN_PROGRESS
-    updateLabOrderStatus(item.lab_order_id, 'IN_PROGRESS');
-    window.location.reload(); // Refresh to show updated status
+  const handleStartTest = async (item: LabOrderItemWithDetails) => {
+    const res = await labService.updateOrderStatus(item.lab_order_id, 'IN_PROGRESS');
+    if (res.success) {
+      fetchOrders();
+    }
   };
 
   const handleUploadClick = (item: LabOrderItemWithDetails) => {
@@ -78,40 +93,42 @@ const LabDashboard: React.FC = () => {
     }
   };
 
-  const handleSubmitResults = () => {
+  const handleSubmitResults = async () => {
     if (!selectedItem) return;
 
     // Create file URL if file exists
     const fileUrl = reportFile ? URL.createObjectURL(reportFile) : null;
-    
+
     // Add lab result to database
-    addLabResult(selectedItem.id, resultText || null, fileUrl);
+    const res = await labService.addLabResult(selectedItem.id, resultText || null, fileUrl);
 
-    // Update item status to DONE (will auto-complete order if all items done)
-    updateOrderItemStatus(selectedItem.id, 'DONE');
-
-    // Close dialog and reset
-    setUploadModalOpen(false);
-    setResultText('');
-    setReportFile(null);
-    setSelectedItem(null);
+    if (res.success) {
+      // Close dialog and reset
+      setUploadModalOpen(false);
+      setResultText('');
+      setReportFile(null);
+      setSelectedItem(null);
+      fetchOrders();
+      setCurrentTab(1); // Auto-switch to Completed Tests tab
+    }
   };
 
   const handleCancelUpload = () => {
     setUploadModalOpen(false);
-    setSelectedItem(null);
     setResultText('');
     setReportFile(null);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const parsed = parseISO(dateString);
+    if (!isValid(parsed)) {
+      return dateString;
+    }
+    return format(parsed, 'dd/MM/yyyy');
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
   };
 
   const getStatusColor = (status: string) => {
@@ -196,246 +213,260 @@ const LabDashboard: React.FC = () => {
             </Card>
           </Grid>
 
-          {/* Pending Lab Tests Table */}
+          {/* Tabs for Table switching */}
           <Grid item xs={12}>
-            <Card>
-              <Box
-                sx={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  p: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Box display="flex" alignItems="center" gap={1}>
-                  <ScheduleIcon sx={{ color: 'white' }} />
-                  <Typography variant="h6" fontWeight={600} color="white">
-                    Pending Lab Tests ({stats.pending})
-                  </Typography>
-                </Box>
-              </Box>
-              <CardContent>
-                {pendingItems.length > 0 ? (
-                  <TableContainer component={Paper} elevation={0}>
-                    <Table>
-                      <TableHead>
-                        <TableRow sx={{ bgcolor: 'grey.50' }}>
-                          <TableCell><strong>Appointment No</strong></TableCell>
-                          <TableCell><strong>Patient</strong></TableCell>
-                          <TableCell><strong>Test Name</strong></TableCell>
-                          <TableCell><strong>Test Type</strong></TableCell>
-                          <TableCell><strong>Doctor</strong></TableCell>
-                          <TableCell><strong>Requested Date</strong></TableCell>
-                          <TableCell><strong>Order Status</strong></TableCell>
-                          <TableCell align="center"><strong>Action</strong></TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {pendingItems.map((item) => (
-                          <TableRow key={item.id} hover>
-                            <TableCell>
-                              <Chip 
-                                label={item.appointment_no} 
-                                size="small" 
-                                color="primary" 
-                                variant="outlined"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                                  <PersonIcon fontSize="small" />
-                                </Avatar>
-                                <Box>
-                                  <Typography variant="body2" fontWeight={600}>
-                                    {item.patient_name}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {item.patient_phone}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" fontWeight={600}>
-                                {item.test_name}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip label={item.test_type} size="small" variant="outlined" />
-                            </TableCell>
-                            <TableCell>
-                              <Box display="flex" alignItems="center" gap={0.5}>
-                                <LocalHospital fontSize="small" color="action" />
-                                <Typography variant="body2">
-                                  {item.doctor_name}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Box display="flex" alignItems="center" gap={0.5}>
-                                <CalendarToday fontSize="small" color="action" />
-                                <Typography variant="body2">
-                                  {formatDate(item.requested_date)}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={item.order_status}
-                                size="small"
-                                color={getStatusColor(item.order_status) as any}
-                              />
-                            </TableCell>
-                            <TableCell align="center">
-                              <Box display="flex" gap={1} justifyContent="center">
-                                {item.order_status === 'ORDERED' && (
-                                  <Button
-                                    size="small"
-                                    variant="outlined"
-                                    color="info"
-                                    startIcon={<PlayArrow />}
-                                    onClick={() => handleStartTest(item)}
-                                  >
-                                    Start Test
-                                  </Button>
-                                )}
-                                {item.order_status === 'IN_PROGRESS' && (
-                                  <Button
-                                    size="small"
-                                    variant="contained"
-                                    startIcon={<UploadIcon />}
-                                    onClick={() => handleUploadClick(item)}
-                                  >
-                                    Upload Result
-                                  </Button>
-                                )}
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Box textAlign="center" py={6}>
-                    <ScheduleIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary">
-                      No pending lab tests
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      All tests have been processed
-                    </Typography>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
+              <Tabs value={currentTab} onChange={handleTabChange}>
+                <Tab label={`Pending Tests (${stats.pending})`} sx={{ fontWeight: 600, fontSize: '1.1rem' }} />
+                <Tab label={`Completed Tests (${stats.completed})`} sx={{ fontWeight: 600, fontSize: '1.1rem' }} />
+              </Tabs>
+            </Box>
           </Grid>
 
-          {/* Completed Tests Table */}
-          <Grid item xs={12}>
-            <Card>
-              <Box
-                sx={{
-                  background: 'linear-gradient(135deg, #4191d8 0%, #00f2fe 100%)',
-                  p: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CheckCircleIcon sx={{ color: 'white' }} />
-                  <Typography variant="h6" fontWeight={600} color="white">
-                    Completed Tests ({completedItems.length})
-                  </Typography>
-                </Box>
-              </Box>
-              <CardContent>
-                {completedItems.length > 0 ? (
-                  <TableContainer component={Paper} elevation={0}>
-                    <Table>
-                      <TableHead>
-                        <TableRow sx={{ bgcolor: 'grey.50' }}>
-                          <TableCell><strong>Appointment No</strong></TableCell>
-                          <TableCell><strong>Patient</strong></TableCell>
-                          <TableCell><strong>Test Name</strong></TableCell>
-                          <TableCell><strong>Test Type</strong></TableCell>
-                          <TableCell><strong>Doctor</strong></TableCell>
-                          <TableCell><strong>Requested Date</strong></TableCell>
-                          <TableCell><strong>Status</strong></TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {completedItems.map((item) => (
-                          <TableRow key={item.id} hover>
-                            <TableCell>
-                              <Chip 
-                                label={item.appointment_no} 
-                                size="small" 
-                                color="primary" 
-                                variant="outlined"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'success.main' }}>
-                                  <PersonIcon fontSize="small" />
-                                </Avatar>
-                                <Box>
-                                  <Typography variant="body2" fontWeight={600}>
-                                    {item.patient_name}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {item.patient_phone}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" fontWeight={600}>
-                                {item.test_name}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip label={item.test_type} size="small" variant="outlined" />
-                            </TableCell>
-                            <TableCell>
-                              <Box display="flex" alignItems="center" gap={0.5}>
-                                <LocalHospital fontSize="small" color="action" />
-                                <Typography variant="body2">
-                                  {item.doctor_name}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Box display="flex" alignItems="center" gap={0.5}>
-                                <CalendarToday fontSize="small" color="action" />
-                                <Typography variant="body2">
-                                  {formatDate(item.requested_date)}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Chip label="DONE" size="small" color="success" />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Box textAlign="center" py={6}>
-                    <CheckCircleIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary">
-                      No completed tests yet
+          {/* Pending Lab Tests Table */}
+          {currentTab === 0 && (
+            <Grid item xs={12}>
+              <Card>
+                <Box
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    p: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <ScheduleIcon sx={{ color: 'white' }} />
+                    <Typography variant="h6" fontWeight={600} color="white">
+                      Pending Lab Tests ({stats.pending})
                     </Typography>
                   </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
+                </Box>
+                <CardContent>
+                  {pendingItems.length > 0 ? (
+                    <TableContainer component={Paper} elevation={0}>
+                      <Table>
+                        <TableHead>
+                          <TableRow sx={{ bgcolor: 'grey.50' }}>
+                            <TableCell><strong>Appointment No</strong></TableCell>
+                            <TableCell><strong>Patient</strong></TableCell>
+                            <TableCell><strong>Test Name</strong></TableCell>
+                            <TableCell><strong>Test Type</strong></TableCell>
+                            <TableCell><strong>Doctor</strong></TableCell>
+                            <TableCell><strong>Requested Date</strong></TableCell>
+                            <TableCell><strong>Order Status</strong></TableCell>
+                            <TableCell align="center"><strong>Action</strong></TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {pendingItems.map((item) => (
+                            <TableRow key={item.id} hover>
+                              <TableCell>
+                                <Chip
+                                  label={item.appointment_no}
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                                    <PersonIcon fontSize="small" />
+                                  </Avatar>
+                                  <Box>
+                                    <Typography variant="body2" fontWeight={600}>
+                                      {item.patient_name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {item.patient_phone}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" fontWeight={600}>
+                                  {item.test_name}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Chip label={item.test_type} size="small" variant="outlined" />
+                              </TableCell>
+                              <TableCell>
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                  <LocalHospital fontSize="small" color="action" />
+                                  <Typography variant="body2">
+                                    {item.doctor_name}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                  <CalendarToday fontSize="small" color="action" />
+                                  <Typography variant="body2">
+                                    {formatDate(item.requested_date)}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={item.order_status}
+                                  size="small"
+                                  color={getStatusColor(item.order_status) as any}
+                                />
+                              </TableCell>
+                              <TableCell align="center">
+                                <Box display="flex" gap={1} justifyContent="center">
+                                  {item.order_status === 'ORDERED' && (
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      color="info"
+                                      startIcon={<PlayArrow />}
+                                      onClick={() => handleStartTest(item)}
+                                    >
+                                      Start Test
+                                    </Button>
+                                  )}
+                                  {item.order_status === 'IN_PROGRESS' && (
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      startIcon={<UploadIcon />}
+                                      onClick={() => handleUploadClick(item)}
+                                    >
+                                      Upload Result
+                                    </Button>
+                                  )}
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Box textAlign="center" py={6}>
+                      <ScheduleIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary">
+                        No pending lab tests
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        All tests have been processed
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+
+          {/* Completed Tests Table */}
+          {currentTab === 1 && (
+            <Grid item xs={12}>
+              <Card>
+                <Box
+                  sx={{
+                    background: 'linear-gradient(135deg, #4191d8 0%, #00f2fe 100%)',
+                    p: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CheckCircleIcon sx={{ color: 'white' }} />
+                    <Typography variant="h6" fontWeight={600} color="white">
+                      Completed Tests ({completedItems.length})
+                    </Typography>
+                  </Box>
+                </Box>
+                <CardContent>
+                  {completedItems.length > 0 ? (
+                    <TableContainer component={Paper} elevation={0}>
+                      <Table>
+                        <TableHead>
+                          <TableRow sx={{ bgcolor: 'grey.50' }}>
+                            <TableCell><strong>Appointment No</strong></TableCell>
+                            <TableCell><strong>Patient</strong></TableCell>
+                            <TableCell><strong>Test Name</strong></TableCell>
+                            <TableCell><strong>Test Type</strong></TableCell>
+                            <TableCell><strong>Doctor</strong></TableCell>
+                            <TableCell><strong>Requested Date</strong></TableCell>
+                            <TableCell><strong>Status</strong></TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {completedItems.map((item) => (
+                            <TableRow key={item.id} hover>
+                              <TableCell>
+                                <Chip
+                                  label={item.appointment_no}
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'success.main' }}>
+                                    <PersonIcon fontSize="small" />
+                                  </Avatar>
+                                  <Box>
+                                    <Typography variant="body2" fontWeight={600}>
+                                      {item.patient_name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {item.patient_phone}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" fontWeight={600}>
+                                  {item.test_name}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Chip label={item.test_type} size="small" variant="outlined" />
+                              </TableCell>
+                              <TableCell>
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                  <LocalHospital fontSize="small" color="action" />
+                                  <Typography variant="body2">
+                                    {item.doctor_name}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                  <CalendarToday fontSize="small" color="action" />
+                                  <Typography variant="body2">
+                                    {formatDate(item.requested_date)}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Chip label="DONE" size="small" color="success" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Box textAlign="center" py={6}>
+                      <CheckCircleIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary">
+                        No completed tests yet
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
         </Grid>
 
         {/* Upload Result Modal */}

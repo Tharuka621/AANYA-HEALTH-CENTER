@@ -269,6 +269,13 @@ const PharmacistDashboard: React.FC = () => {
       if (res.data.invoice) {
         setInvoices(prev => [res.data.invoice, ...prev]);
         setCurrentInvoice(res.data.invoice);
+        if (res.data.invoice.items) {
+          const itemsWithId = res.data.invoice.items.map((i: any) => ({
+            ...i,
+            invoice_id: res.data.invoice.id
+          }));
+          setInvoiceItems(prev => [...itemsWithId, ...prev]);
+        }
         setShowInvoice(true);
       }
 
@@ -334,19 +341,181 @@ const PharmacistDashboard: React.FC = () => {
   };
 
   const handlePrintReceipt = () => {
-    if (currentInvoice) {
-      console.log('=== RECEIPT ===');
-      console.log('Invoice ID:', currentInvoice.id);
-      console.log('Patient:', selectedPrescription?.patient);
-      console.log('Date:', new Date(currentInvoice.created_at).toLocaleString());
-      console.log('Status:', currentInvoice.status);
-      console.log('Total Amount: Rs.', currentInvoice.total_amount.toFixed(2));
-      console.log('Items:', invoiceItems.filter(item => item.invoice_id === currentInvoice.id));
-      console.log('===============');
+    if (!currentInvoice) return;
 
-      // In production, would call window.print() with a formatted receipt
-      alert('Receipt printed to console. Check browser console (F12).');
+    const invoiceItemsContent = invoiceItems
+      .filter(item => item.invoice_id === currentInvoice.id)
+      .map(item => `
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">
+            ${item.medicine_name} <br/><small style="color:#666">${item.dosage}</small>
+          </td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+            <span style="font-family: monospace; font-size: 0.85em; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">${item.batch_no || 'N/A'}</span>
+          </td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.qty}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">Rs. ${item.unit_price.toFixed(2)}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">Rs. ${item.line_total.toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+    const printWindow = window.open('', '_blank', 'height=800,width=800');
+    if (!printWindow) {
+      alert('Please allow popups to print the receipt.');
+      return;
     }
+
+    const receiptDate = new Date(currentInvoice.created_at).toLocaleString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    const paymentInfo = currentInvoice.status === 'PAID'
+      ? `<tr><th>Payment Method:</th><td>${paymentMethod} ${paymentRef ? `(${paymentRef})` : ''}</td></tr>`
+      : `<tr><th>Payment Status:</th><td style="color: red; font-weight: bold;">UNPAID</td></tr>`;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Receipt - INV-${currentInvoice.id}</title>
+          <style>
+            body { 
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+              padding: 40px; 
+              color: #333;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            .header { 
+              text-align: center; 
+              margin-bottom: 40px; 
+              padding-bottom: 20px;
+              border-bottom: 2px solid #2f40c3;
+            }
+            .header h1 { margin: 0 0 10px 0; font-size: 28px; color: #2f40c3; letter-spacing: 1px; }
+            .header p { margin: 5px 0; color: #555; }
+            .header .receipt-title { 
+              margin-top: 20px; 
+              font-size: 20px; 
+              font-weight: bold;
+              background-color: #f5f7ff;
+              display: inline-block;
+              padding: 8px 20px;
+              border-radius: 4px;
+            }
+            
+            .info-section { 
+              display: flex; 
+              justify-content: space-between; 
+              margin-bottom: 40px; 
+            }
+            .info-table { text-align: left; }
+            .info-table th { padding: 4px 15px 4px 0; color: #666; font-weight: normal; }
+            .info-table td { padding: 4px 0; font-weight: bold; }
+            
+            .items-table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin-bottom: 30px; 
+            }
+            .items-table th { 
+              background: #2f40c3; 
+              color: white;
+              padding: 12px 10px; 
+              text-align: left; 
+            }
+            
+            .totals { 
+              width: 100%; 
+              text-align: right; 
+              margin-top: 20px;
+            }
+            .totals td { padding: 8px 0; }
+            .totals .grand-total { 
+              font-size: 22px; 
+              font-weight: bold; 
+              color: #2f40c3;
+              border-top: 2px solid #ccc;
+              padding-top: 15px;
+            }
+            
+            .footer { 
+              text-align: center; 
+              margin-top: 60px; 
+              border-top: 1px solid #ccc; 
+              padding-top: 20px; 
+              color: #777; 
+              font-size: 14px; 
+            }
+            
+            @media print {
+              body { padding: 0; }
+              @page { margin: 1cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>AANYA HEALTH CENTER</h1>
+            <p>123 Medical Drive, Health City</p>
+            <p>Tel: +94 11 234 5678 | Email: info@aanyahealth.com</p>
+            <div class="receipt-title">PHARMACY RECEIPT</div>
+          </div>
+          
+          <div class="info-section">
+            <table class="info-table">
+              <tr><th>Invoice No:</th><td>INV-${String(currentInvoice.id).padStart(6, '0')}</td></tr>
+              <tr><th>Date:</th><td>${receiptDate}</td></tr>
+            </table>
+            <table class="info-table">
+              <tr><th>Patient:</th><td>${selectedPrescription?.patient || 'Walk-in'}</td></tr>
+              ${paymentInfo}
+            </table>
+          </div>
+
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Medicine / Item</th>
+                <th style="text-align: center;">Batch</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: right;">Unit Price</th>
+                <th style="text-align: right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${invoiceItemsContent}
+            </tbody>
+          </table>
+
+          <table class="totals" style="width: 50%; float: right;">
+            <tr>
+              <td style="text-align: right; padding-right: 20px; color: #666;">Subtotal:</td>
+              <td style="text-align: right;">Rs. ${currentInvoice.total_amount.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td class="grand-total" style="text-align: right; padding-right: 20px;">TOTAL (LKR):</td>
+              <td class="grand-total" style="text-align: right;">Rs. ${currentInvoice.total_amount.toFixed(2)}</td>
+            </tr>
+          </table>
+          <div style="clear: both;"></div>
+
+          <div class="footer">
+            <p><strong>Thank you for your visit!</strong></p>
+            <p>Wishing you a speedy recovery.</p>
+            <p style="font-size: 11px; margin-top: 30px;">This is a computer generated receipt and does not require a signature.</p>
+          </div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+
+    // Give resources time to load
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
   };
 
   return (
@@ -683,9 +852,9 @@ const PharmacistDashboard: React.FC = () => {
           >
             <DialogTitle>
               <Box display="flex" alignItems="center" gap={1}>
-                <MedicationIcon sx={{ color: 'primary.main' }} />
+                {showInvoice ? <ReceiptIcon sx={{ color: 'primary.main' }} /> : <MedicationIcon sx={{ color: 'primary.main' }} />}
                 <Typography variant="h6" fontWeight={700}>
-                  {showInvoice ? 'Dispense Summary' : 'Dispense Medicines'}
+                  {showInvoice ? 'Invoice & Receipt' : 'Dispense Medicines'}
                 </Typography>
               </Box>
             </DialogTitle>
@@ -1031,12 +1200,13 @@ const PharmacistDashboard: React.FC = () => {
 
                   <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                     <Button
-                      variant="outlined"
+                      variant="contained"
+                      color="primary"
                       startIcon={<PrintIcon />}
                       onClick={handlePrintReceipt}
                       sx={{ textTransform: 'none', fontWeight: 600 }}
                     >
-                      Print Receipt
+                      Print Official Receipt
                     </Button>
                   </Box>
                 </Box>

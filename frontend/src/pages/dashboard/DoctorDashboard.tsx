@@ -1069,7 +1069,7 @@ export default function DoctorDashboard() {
                             {history.prescriptions.map(p => (
                               <ListItem key={p.id} disableGutters sx={{ borderBottom: '1px solid', borderColor: 'divider', py: 1 }}>
                                 <ListItemText
-                                  primary={<Typography variant="body2" fontWeight={600}>{new Date(p.created_at).toLocaleDateString()}</Typography>}
+                                  primary={<Typography variant="body2" fontWeight={600}>{format(new Date(p.created_at), 'dd/MM/yyyy')}</Typography>}
                                   secondary={
                                     <Box>
                                       <Typography variant="caption" color="text.secondary">{p.doctor_name}</Typography>
@@ -1096,7 +1096,7 @@ export default function DoctorDashboard() {
                             {history.labOrders.map(lo => (
                               <ListItem key={lo.id} disableGutters sx={{ borderBottom: '1px solid', borderColor: 'divider', py: 1 }}>
                                 <ListItemText
-                                  primary={<Typography variant="body2" fontWeight={600}>{new Date(lo.created_at).toLocaleDateString()}</Typography>}
+                                  primary={<Typography variant="body2" fontWeight={600}>{format(new Date(lo.created_at), 'dd/MM/yyyy')}</Typography>}
                                   secondary={
                                     <Box>
                                       <Typography variant="caption" color="text.secondary">{lo.doctor_name}</Typography>

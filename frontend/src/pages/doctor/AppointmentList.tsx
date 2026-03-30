@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { format, isValid, parseISO } from 'date-fns';
 import {
   Box, Container, Typography, Button, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Chip, Avatar, Dialog,
   DialogTitle, DialogContent, DialogActions, TextField, Grid, Card,
   CardContent, CircularProgress, InputAdornment, Stack,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import {
   Visibility as ViewIcon,
   CalendarToday as CalendarIcon,
@@ -50,6 +52,24 @@ const fmtTime = (t: string) => {
   catch { return t; }
 };
 
+const parseDateValue = (value: string) => {
+  if (!value) return null;
+  const parsed = parseISO(value);
+  if (isValid(parsed)) return parsed;
+  const fallback = new Date(value);
+  return isValid(fallback) ? fallback : null;
+};
+
+const fmtDate = (value: string) => {
+  const parsed = parseDateValue(value);
+  return parsed ? format(parsed, 'dd/MM/yyyy') : value;
+};
+
+const dateKey = (value: string) => {
+  const parsed = parseDateValue(value);
+  return parsed ? format(parsed, 'yyyy-MM-dd') : '';
+};
+
 const AppointmentList: React.FC = () => {
   const { showError } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -58,7 +78,7 @@ const AppointmentList: React.FC = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -77,13 +97,15 @@ const AppointmentList: React.FC = () => {
   }, []);
 
   const filteredAppointments = useMemo(() => {
+    const selectedDateKey = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+
     return appointments.filter(apt => {
       const matchesSearch = !searchQuery ||
         apt.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         apt.appointment_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         apt.patient_phone?.includes(searchQuery);
       const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
-      const matchesDate = !selectedDate || apt.slot_date === selectedDate;
+      const matchesDate = !selectedDate || dateKey(apt.slot_date) === selectedDateKey;
       return matchesSearch && matchesStatus && matchesDate;
     });
   }, [appointments, searchQuery, statusFilter, selectedDate]);
@@ -140,9 +162,18 @@ const AppointmentList: React.FC = () => {
                   InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.disabled', fontSize: 20 }} /></InputAdornment> }} />
               </Grid>
               <Grid item xs={12} sm={3}>
-                <TextField fullWidth size="small" type="date" label="Filter by date"
-                  value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }} />
+                <DatePicker
+                  label="Filter by date"
+                  value={selectedDate}
+                  onChange={(newValue) => setSelectedDate(newValue)}
+                  format="dd/MM/yyyy"
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: 'small',
+                    },
+                  }}
+                />
               </Grid>
               <Grid item xs={12} sm={5}>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -203,7 +234,7 @@ const AppointmentList: React.FC = () => {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontWeight={600}>{apt.slot_date}</Typography>
+                        <Typography variant="body2" fontWeight={600}>{fmtDate(apt.slot_date)}</Typography>
                         <Typography variant="caption" color="text.secondary">
                           {fmtTime(apt.start_time)} – {fmtTime(apt.end_time)}
                         </Typography>
@@ -260,7 +291,7 @@ const AppointmentList: React.FC = () => {
               <Grid container spacing={2} sx={{ pt: 2 }}>
                 <Grid item xs={6}>
                   <Typography variant="caption" color="text.secondary">Date</Typography>
-                  <Typography fontWeight={600}>{selectedAppointment.slot_date}</Typography>
+                  <Typography fontWeight={600}>{fmtDate(selectedAppointment.slot_date)}</Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="caption" color="text.secondary">Time</Typography>

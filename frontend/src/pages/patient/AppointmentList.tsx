@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { format } from 'date-fns';
 import {
   Box,
   Container,
@@ -29,8 +30,10 @@ import {
   Edit as EditIcon,
   Cancel as CancelIcon,
   Visibility as ViewIcon,
-  CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
+import { useAuth } from '../../contexts/AuthContext';
+import { useAppointmentsByPatient } from '../../hooks/useAppointments';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const AppointmentList: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
@@ -42,45 +45,20 @@ const AppointmentList: React.FC = () => {
     status: 'scheduled',
   });
 
-  // Mock appointments data
-  const appointments = [
-    {
-      id: '1',
-      date: '2024-12-20',
-      time: '10:00 AM',
-      reason: 'Regular checkup',
-      status: 'COMPLETED',
-      doctor: 'Dr. Milinda Abeykoon',
-      notes: 'Annual physical examination',
-    },
-    {
-      id: '2',
-      date: '2024-12-15',
-      time: '11:30 AM',
-      reason: 'Blood pressure follow-up',
-      status: 'COMPLETED',
-      doctor: 'Dr. Milinda Abeykoon',
-      notes: 'BP medication adjustment',
-    },
-    {
-      id: '3',
-      date: '2024-12-25',
-      time: '2:00 PM',
-      reason: 'Diabetes consultation',
-      status: 'CONFIRMED',
-      doctor: 'Dr. Milinda Abeykoon',
-      notes: 'Diabetes management review',
-    },
-    {
-      id: '4',
-      date: '2024-12-10',
-      time: '3:30 PM',
-      reason: 'Follow-up visit',
-      status: 'CANCELLED',
-      doctor: 'Dr. Milinda Abeykoon',
-      notes: 'Patient cancelled due to emergency',
-    },
-  ];
+  const { user } = useAuth();
+  const { data: appointmentsData, isLoading, isError } = useAppointmentsByPatient(user?.id || '');
+
+  const rawAppointments = appointmentsData?.data || [];
+
+  const appointments = rawAppointments.map((app: any) => ({
+    id: app.id,
+    date: format(new Date(app.appointment_date || app.slot_date), 'dd/MM/yyyy'),
+    time: app.start_time || 'TBD',
+    reason: app.reason || 'N/A',
+    status: app.status || 'Scheduled',
+    doctor: app.doctor_name || 'Assigned Doctor',
+    notes: app.notes || '',
+  }));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -136,8 +114,24 @@ const AppointmentList: React.FC = () => {
     // In a real app, this would call the API
   };
 
-  const upcomingAppointments = appointments.filter(app => app.status === 'scheduled');
-  const completedAppointments = appointments.filter(app => app.status === 'completed');
+  const upcomingAppointments = appointments.filter((app: any) => app.status.toLowerCase() === 'scheduled' || app.status.toLowerCase() === 'confirmed');
+  const completedAppointments = appointments.filter((app: any) => app.status.toLowerCase() === 'completed');
+
+  if (isLoading) {
+    return (
+      <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 3 }}>
+        <Alert severity="error">Failed to load appointments. Please check your connection.</Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">

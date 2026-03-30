@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { format } from 'date-fns';
 import {
   Box,
   Container,
@@ -23,78 +24,26 @@ import {
   Download as DownloadIcon,
   Visibility as ViewIcon,
   Science as ScienceIcon,
-  Print as PrintIcon,
 } from "@mui/icons-material";
+import { axiosInstance } from "../../services/api";
 
 const LabReports: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any>(null);
 
-  // Mock lab reports data
-  const labReports = [
-    {
-      id: "1",
-      test_name: "Complete Blood Count",
-      test_type: "Blood Test",
-      requested_date: "2024-12-15",
-      completed_date: "2024-12-16",
-      status: "completed",
-      doctor: "Dr. Milinda Abeykoon",
-      notes: "All values within normal range",
-      result_url: "/reports/cbc_report.pdf",
-      values: {
-        Hemoglobin: "14.2 g/dL",
-        "White Blood Cells": "7.2 x 10³/μL",
-        Platelets: "280 x 10³/μL",
-        "Red Blood Cells": "4.5 x 10⁶/μL",
-      },
-    },
-    {
-      id: "2",
-      test_name: "Lipid Profile",
-      test_type: "Blood Test",
-      requested_date: "2024-12-10",
-      completed_date: "2024-12-11",
-      status: "completed",
-      doctor: "Dr. Milinda Abeykoon",
-      notes: "Cholesterol levels slightly elevated",
-      result_url: "/reports/lipid_report.pdf",
-      values: {
-        "Total Cholesterol": "220 mg/dL",
-        "HDL Cholesterol": "45 mg/dL",
-        "LDL Cholesterol": "150 mg/dL",
-        Triglycerides: "180 mg/dL",
-      },
-    },
-    {
-      id: "3",
-      test_name: "Urine Analysis",
-      test_type: "Urine Test",
-      requested_date: "2024-12-08",
-      completed_date: null,
-      status: "in_progress",
-      doctor: "Dr. Milinda Abeykoon",
-      notes: "Test in progress",
-      result_url: null,
-      values: null,
-    },
-    {
-      id: "4",
-      test_name: "Thyroid Function Test",
-      test_type: "Blood Test",
-      requested_date: "2024-12-05",
-      completed_date: "2024-12-06",
-      status: "completed",
-      doctor: "Dr. Milinda Abeykoon",
-      notes: "Normal thyroid function",
-      result_url: "/reports/thyroid_report.pdf",
-      values: {
-        TSH: "2.1 mIU/L",
-        "Free T4": "1.2 ng/dL",
-        "Free T3": "3.1 pg/mL",
-      },
-    },
-  ];
+  const [labReports, setLabReports] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchLabReports = async () => {
+      try {
+        const response = await axiosInstance.get('/lab/patient/lab-orders');
+        setLabReports(response.data?.data || []);
+      } catch (error) {
+        console.error('Failed to fetch lab reports', error);
+      }
+    };
+    fetchLabReports();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -117,11 +66,6 @@ const LabReports: React.FC = () => {
   const handleDownloadReport = (reportId: string) => {
     console.log("Download report:", reportId);
     // In a real app, this would download the report
-  };
-
-  const handlePrintReport = (reportId: string) => {
-    console.log("Print report:", reportId);
-    // In a real app, this would open print dialog
   };
 
   const completedReports = labReports.filter(
@@ -191,11 +135,11 @@ const LabReports: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    {new Date(report.requested_date).toLocaleDateString()}
+                    {format(new Date(report.requested_date), 'dd/MM/yyyy')}
                   </TableCell>
                   <TableCell>
                     {report.completed_date
-                      ? new Date(report.completed_date).toLocaleDateString()
+                      ? format(new Date(report.completed_date), 'dd/MM/yyyy')
                       : "N/A"}
                   </TableCell>
                   <TableCell>
@@ -264,16 +208,16 @@ const LabReports: React.FC = () => {
                   </Typography>
                   <Typography variant="body2">
                     Requested Date:{" "}
-                    {new Date(
-                      selectedReport.requested_date
-                    ).toLocaleDateString()}
+                    {format(new Date(
+                      selectedReport?.requested_date
+                    ), 'dd/MM/yyyy')}
                   </Typography>
                   {selectedReport.completed_date && (
                     <Typography variant="body2">
                       Completed Date:{" "}
-                      {new Date(
+                      {format(new Date(
                         selectedReport.completed_date
-                      ).toLocaleDateString()}
+                      ), 'dd/MM/yyyy')}
                     </Typography>
                   )}
                   <Box mt={1}>

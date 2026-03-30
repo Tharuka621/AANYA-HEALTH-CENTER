@@ -1,350 +1,385 @@
-// Mock API service for Reports Management
+import { differenceInCalendarDays, format, isValid, parseISO } from 'date-fns';
+import { axiosInstance } from '../services/api';
 import {
-  SavedReport,
   GenerateReportPayload,
-  ReportPreview,
-  PatientVisitRow,
-  LabTestRow,
-  PrescriptionRow,
   InventoryRow,
+  LabTestRow,
+  PatientVisitRow,
+  PrescriptionRow,
+  ReportFilters,
+  ReportPreview,
   ReportSummary,
+  ReportType,
+  SavedReport,
 } from '../types/reports';
 
-// Mock data generators
-const generatePatientVisitData = (): PatientVisitRow[] => [
-  {
-    visitId: 'V001',
-    patientName: 'Priya Perera',
-    patientId: 'P001',
-    doctorName: 'Dr. Nimal Fernando',
-    checkInTime: '09:30',
-    diagnosis: 'Seasonal flu with fever',
-    vitalsSummary: 'BP: 120/80, Temp: 101°F, Pulse: 78',
-    status: 'completed',
-    date: '20/01/2026',
-  },
-  {
-    visitId: 'V002',
-    patientName: 'Ravi Silva',
-    patientId: 'P002',
-    doctorName: 'Dr. Sunil Jayawardena',
-    checkInTime: '10:15',
-    diagnosis: 'Hypertension follow-up',
-    vitalsSummary: 'BP: 145/95, Temp: 98.6°F, Pulse: 82',
-    status: 'completed',
-    date: '20/01/2026',
-  },
-  {
-    visitId: 'V003',
-    patientName: 'Anjali De Silva',
-    patientId: 'P003',
-    doctorName: 'Dr. Nimal Fernando',
-    checkInTime: '11:00',
-    diagnosis: 'Diabetes mellitus type 2',
-    vitalsSummary: 'BP: 130/85, Glucose: 145 mg/dL, Pulse: 75',
-    status: 'completed',
-    date: '21/01/2026',
-  },
-  {
-    visitId: 'V004',
-    patientName: 'Kamal Wijesinghe',
-    patientId: 'P004',
-    doctorName: 'Dr. Sunil Jayawardena',
-    checkInTime: '14:30',
-    diagnosis: 'Pending assessment',
-    vitalsSummary: 'BP: 118/76, Temp: 98.4°F',
-    status: 'checked_in',
-    date: '22/01/2026',
-  },
-];
+const SAVED_REPORTS_KEY = 'aanya-admin-saved-reports';
+const REPORT_PREVIEWS_KEY = 'aanya-admin-report-previews';
 
-const generateLabTestData = (): LabTestRow[] => [
-  {
-    labOrderId: 'LO001',
-    patientName: 'Priya Perera',
-    patientId: 'P001',
-    testName: 'Complete Blood Count (CBC)',
-    orderedDate: '20/01/2026',
-    resultValue: 'WBC: 8500, RBC: 4.5M, Hb: 13.5 g/dL',
-    resultStatus: 'completed',
-    labTechName: 'Saman Kumara',
-    completedDate: '21/01/2026',
-  },
-  {
-    labOrderId: 'LO002',
-    patientName: 'Ravi Silva',
-    patientId: 'P002',
-    testName: 'Lipid Profile',
-    orderedDate: '20/01/2026',
-    resultValue: 'Total: 220 mg/dL, LDL: 145, HDL: 40',
-    resultStatus: 'completed',
-    labTechName: 'Nisha Dias',
-    completedDate: '21/01/2026',
-  },
-  {
-    labOrderId: 'LO003',
-    patientName: 'Anjali De Silva',
-    patientId: 'P003',
-    testName: 'Fasting Blood Sugar',
-    orderedDate: '21/01/2026',
-    resultValue: 'Pending',
-    resultStatus: 'pending',
-    labTechName: 'Saman Kumara',
-  },
-  {
-    labOrderId: 'LO004',
-    patientName: 'Kamal Wijesinghe',
-    patientId: 'P004',
-    testName: 'Liver Function Test',
-    orderedDate: '22/01/2026',
-    resultValue: 'Pending',
-    resultStatus: 'pending',
-  },
-];
-
-const generatePrescriptionData = (): PrescriptionRow[] => [
-  {
-    prescriptionId: 'RX001',
-    patientName: 'Priya Perera',
-    patientId: 'P001',
-    doctorName: 'Dr. Nimal Fernando',
-    medicineName: 'Paracetamol 500mg',
-    qty: 20,
-    dosage: '1 tablet 3 times daily',
-    durationDays: 7,
-    issuedQty: 20,
-    prescribedDate: '20/01/2026',
-  },
-  {
-    prescriptionId: 'RX002',
-    patientName: 'Ravi Silva',
-    patientId: 'P002',
-    doctorName: 'Dr. Sunil Jayawardena',
-    medicineName: 'Amlodipine 5mg',
-    qty: 30,
-    dosage: '1 tablet once daily',
-    durationDays: 30,
-    issuedQty: 30,
-    prescribedDate: '20/01/2026',
-  },
-  {
-    prescriptionId: 'RX003',
-    patientName: 'Anjali De Silva',
-    patientId: 'P003',
-    doctorName: 'Dr. Nimal Fernando',
-    medicineName: 'Metformin 500mg',
-    qty: 60,
-    dosage: '1 tablet twice daily',
-    durationDays: 30,
-    issuedQty: 60,
-    prescribedDate: '21/01/2026',
-  },
-  {
-    prescriptionId: 'RX004',
-    patientName: 'Priya Perera',
-    patientId: 'P001',
-    doctorName: 'Dr. Nimal Fernando',
-    medicineName: 'Amoxicillin 250mg',
-    qty: 15,
-    dosage: '1 capsule 3 times daily',
-    durationDays: 5,
-    prescribedDate: '20/01/2026',
-  },
-];
-
-const generateInventoryData = (): InventoryRow[] => [
-  {
-    medicineId: 'M001',
-    medicineName: 'Paracetamol 500mg',
-    batchNo: 'BATCH-2024-001',
-    qtyRemaining: 450,
-    expiryDate: '15/12/2026',
-    reorderLevel: 200,
-    status: 'ok',
-    daysUntilExpiry: 324,
-  },
-  {
-    medicineId: 'M002',
-    medicineName: 'Amlodipine 5mg',
-    batchNo: 'BATCH-2024-002',
-    qtyRemaining: 85,
-    expiryDate: '30/06/2026',
-    reorderLevel: 100,
-    status: 'low',
-    daysUntilExpiry: 156,
-  },
-  {
-    medicineId: 'M003',
-    medicineName: 'Metformin 500mg',
-    batchNo: 'BATCH-2023-045',
-    qtyRemaining: 120,
-    expiryDate: '10/02/2026',
-    reorderLevel: 150,
-    status: 'expiring',
-    daysUntilExpiry: 16,
-  },
-  {
-    medicineId: 'M004',
-    medicineName: 'Amoxicillin 250mg',
-    batchNo: 'BATCH-2024-015',
-    qtyRemaining: 320,
-    expiryDate: '20/09/2026',
-    reorderLevel: 150,
-    status: 'ok',
-    daysUntilExpiry: 238,
-  },
-  {
-    medicineId: 'M005',
-    medicineName: 'Atorvastatin 10mg',
-    batchNo: 'BATCH-2024-008',
-    qtyRemaining: 45,
-    expiryDate: '05/03/2026',
-    reorderLevel: 80,
-    status: 'low',
-    daysUntilExpiry: 39,
-  },
-];
-
-// Mock saved reports
-const mockSavedReports: SavedReport[] = [
-  {
-    id: 'RPT001',
-    title: 'January Patient Visits Summary',
-    type: 'PATIENT_VISIT',
-    status: 'published',
-    createdBy: 'Admin User',
-    createdDate: '15/01/2026',
-    lastModified: '16/01/2026',
-  },
-  {
-    id: 'RPT002',
-    title: 'Weekly Lab Test Analysis',
-    type: 'LAB_TEST',
-    status: 'draft',
-    createdBy: 'Lab Manager',
-    createdDate: '20/01/2026',
-  },
-  {
-    id: 'RPT003',
-    title: 'Prescription Trends - Q1 2026',
-    type: 'PRESCRIPTION',
-    status: 'under_review',
-    createdBy: 'Dr. Nimal Fernando',
-    createdDate: '18/01/2026',
-    lastModified: '22/01/2026',
-  },
-  {
-    id: 'RPT004',
-    title: 'Inventory Stock Alert',
-    type: 'INVENTORY',
-    status: 'published',
-    createdBy: 'Pharmacy Manager',
-    createdDate: '22/01/2026',
-  },
-];
-
-// API Functions
-export const getSavedReports = async (): Promise<SavedReport[]> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return mockSavedReports;
+const safeParseDate = (value?: string | null) => {
+  if (!value) return null;
+  const parsed = parseISO(value);
+  return isValid(parsed) ? parsed : null;
 };
 
-export const generateReport = async (
-  payload: GenerateReportPayload
-): Promise<ReportPreview> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
+const formatDate = (value?: string | null) => {
+  const parsed = safeParseDate(value);
+  return parsed ? format(parsed, 'dd/MM/yyyy') : '';
+};
 
-  let data: any[] = [];
-  let summary: ReportSummary = { totalRecords: 0 };
+const formatTime = (value?: string | null) => {
+  if (!value) return '';
+  return value.slice(0, 5);
+};
+
+const parseFilterDate = (value?: string | null) => {
+  if (!value) return null;
+  const [day, month, year] = value.split('/').map(Number);
+  if (!day || !month || !year) return null;
+  const parsed = new Date(year, month - 1, day);
+  return isValid(parsed) ? parsed : null;
+};
+
+const isWithinDateRange = (value: string | null | undefined, filters: ReportFilters) => {
+  const targetDate = safeParseDate(value || null);
+  if (!targetDate) return false;
+
+  const from = parseFilterDate(filters.dateFrom);
+  const to = parseFilterDate(filters.dateTo);
+
+  if (from && targetDate < from) return false;
+  if (to) {
+    const endOfDay = new Date(to);
+    endOfDay.setHours(23, 59, 59, 999);
+    if (targetDate > endOfDay) return false;
+  }
+
+  return true;
+};
+
+const readSavedReports = (): SavedReport[] => {
+  if (typeof window === 'undefined') return [];
+  const raw = window.localStorage.getItem(SAVED_REPORTS_KEY);
+  if (!raw) return [];
+
+  try {
+    return JSON.parse(raw) as SavedReport[];
+  } catch {
+    return [];
+  }
+};
+
+const writeSavedReports = (reports: SavedReport[]) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(SAVED_REPORTS_KEY, JSON.stringify(reports));
+};
+
+const readReportPreviews = (): Record<string, ReportPreview> => {
+  if (typeof window === 'undefined') return {};
+  const raw = window.localStorage.getItem(REPORT_PREVIEWS_KEY);
+  if (!raw) return {};
+
+  try {
+    return JSON.parse(raw) as Record<string, ReportPreview>;
+  } catch {
+    return {};
+  }
+};
+
+const writeReportPreviews = (previews: Record<string, ReportPreview>) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(REPORT_PREVIEWS_KEY, JSON.stringify(previews));
+};
+
+const toVisitStatus = (status?: string | null) => {
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'completed') return 'completed' as const;
+  if (normalized === 'cancelled') return 'cancelled' as const;
+  return 'checked_in' as const;
+};
+
+const buildVitalsSummary = (row: any) => {
+  const parts = [] as string[];
+  if (row.systolic_bp || row.diastolic_bp) {
+    parts.push(`BP: ${row.systolic_bp || '-'}${row.diastolic_bp ? `/${row.diastolic_bp}` : ''}`);
+  }
+  if (row.temperature) {
+    parts.push(`Temp: ${row.temperature}`);
+  }
+  if (row.pulse) {
+    parts.push(`Pulse: ${row.pulse}`);
+  }
+  if (row.weight) {
+    parts.push(`Weight: ${row.weight}`);
+  }
+  if (row.sugar_level) {
+    parts.push(`Sugar: ${row.sugar_level}`);
+  }
+  return parts.join(', ') || 'No vitals recorded';
+};
+
+const buildPatientVisitReport = async (filters: ReportFilters) => {
+  const response = await axiosInstance.get('/admin/appointments');
+  const mapped = (response.data.appointments || [])
+    .filter((row: any) => isWithinDateRange(row.slot_date, filters))
+    .map((row: any) => ({
+      visitId: String(row.visit_id || row.id),
+      patientName: row.patient_name || 'Unknown Patient',
+      patientId: String(row.patient_id || ''),
+      doctorName: row.doctor_name || 'Unknown Doctor',
+      checkInTime: formatTime(row.check_in_time || row.start_time),
+      diagnosis: row.diagnosis || row.reason || 'Not recorded',
+      vitalsSummary: buildVitalsSummary(row),
+      status: toVisitStatus(row.visit_status || row.status),
+      date: formatDate(row.slot_date),
+    }))
+    .filter((row: PatientVisitRow) => {
+      const patientMatch = !('patientId' in filters) || !filters.patientId || row.patientId === filters.patientId;
+      const statusMatch = !('status' in filters) || !filters.status || row.status === filters.status;
+      return patientMatch && statusMatch;
+    });
+
+  return {
+    data: mapped,
+    summary: {
+      totalRecords: mapped.length,
+      completed: mapped.filter((row: PatientVisitRow) => row.status === 'completed').length,
+      checkedIn: mapped.filter((row: PatientVisitRow) => row.status === 'checked_in').length,
+    } as ReportSummary,
+  };
+};
+
+const buildLabTestReport = async (filters: ReportFilters) => {
+  const response = await axiosInstance.get('/admin/lab-tests');
+  const mapped = (response.data.labTests || [])
+    .filter((row: any) => isWithinDateRange(row.requested_date, filters))
+    .map((row: any) => ({
+      labOrderId: String(row.lab_order_id),
+      patientName: row.patient_name || 'Unknown Patient',
+      patientId: String(row.patient_id || ''),
+      testName: row.test_name || 'Unknown Test',
+      orderedDate: formatDate(row.requested_date),
+      resultValue: row.result_text || 'Pending',
+      resultStatus: String(row.item_status || 'pending').toLowerCase() as LabTestRow['resultStatus'],
+      labTechName: row.lab_tech_name || undefined,
+      completedDate: formatDate(row.completed_at) || undefined,
+    }))
+    .filter((row: LabTestRow) => {
+      const statusMatch = !('resultStatus' in filters) || !filters.resultStatus || row.resultStatus === filters.resultStatus;
+      const typeMatch = !('testType' in filters) || !filters.testType || row.testName.toLowerCase().includes(String(filters.testType).toLowerCase());
+      return statusMatch && typeMatch;
+    });
+
+  return {
+    data: mapped,
+    summary: {
+      totalRecords: mapped.length,
+      completed: mapped.filter((row: LabTestRow) => row.resultStatus === 'completed').length,
+      pending: mapped.filter((row: LabTestRow) => row.resultStatus === 'pending').length,
+    } as ReportSummary,
+  };
+};
+
+const buildPrescriptionReport = async (filters: ReportFilters) => {
+  const response = await axiosInstance.get('/admin/prescriptions');
+  const mapped = (response.data.prescriptions || [])
+    .filter((row: any) => isWithinDateRange(row.created_at, filters))
+    .flatMap((row: any) => {
+      const items = Array.isArray(row.items) ? row.items.filter(Boolean) : [];
+      if (items.length === 0) {
+        return [{
+          prescriptionId: `RX-${row.id}`,
+          patientName: row.patient_name || 'Unknown Patient',
+          patientId: String(row.patient_id || ''),
+          doctorName: row.doctor_name || 'Unknown Doctor',
+          medicineName: 'No items',
+          qty: 0,
+          dosage: '-',
+          durationDays: 0,
+          issuedQty: 0,
+          prescribedDate: formatDate(row.created_at),
+        }];
+      }
+
+      return items.map((item: any) => ({
+        prescriptionId: `RX-${row.id}`,
+        patientName: row.patient_name || 'Unknown Patient',
+        patientId: String(row.patient_id || ''),
+        doctorName: row.doctor_name || 'Unknown Doctor',
+        medicineName: item.medicine_name || 'Unknown Medicine',
+        qty: Number(item.qty || 0),
+        dosage: item.dosage || '-',
+        durationDays: Number(item.duration_days || 0),
+        issuedQty: String(row.status || '').toUpperCase() === 'ACTIVE' ? Number(item.qty || 0) : 0,
+        prescribedDate: formatDate(row.created_at),
+      }));
+    })
+    .filter((row: PrescriptionRow) => {
+      const medicineMatch = !('medicineId' in filters) || !filters.medicineId || row.medicineName.toLowerCase().includes(String(filters.medicineId).toLowerCase());
+      const issuedMatch = !('issuedOnly' in filters) || !filters.issuedOnly || Number(row.issuedQty || 0) > 0;
+      return medicineMatch && issuedMatch;
+    });
+
+  return {
+    data: mapped,
+    summary: {
+      totalRecords: mapped.length,
+      totalPrescribedQty: mapped.reduce((sum: number, row: PrescriptionRow) => sum + row.qty, 0),
+      totalIssuedQty: mapped.reduce((sum: number, row: PrescriptionRow) => sum + Number(row.issuedQty || 0), 0),
+    } as ReportSummary,
+  };
+};
+
+const buildInventoryReport = async (filters: ReportFilters) => {
+  const response = await axiosInstance.get('/admin/pharmacy/inventory');
+  const today = new Date();
+
+  const mapped = (response.data.inventory || [])
+    .map((row: any) => {
+      const expiryDate = safeParseDate(row.expiry_date);
+      const daysUntilExpiry = expiryDate ? differenceInCalendarDays(expiryDate, today) : undefined;
+      const quantity = Number(row.stock_quantity || 0);
+      const reorderLevel = Number(row.reorder_level || 0);
+      let status: InventoryRow['status'] = 'ok';
+
+      if (typeof daysUntilExpiry === 'number' && daysUntilExpiry <= 30) {
+        status = 'expiring';
+      } else if (quantity <= reorderLevel) {
+        status = 'low';
+      }
+
+      return {
+        medicineId: String(row.medicine_id || row.id),
+        medicineName: row.name || 'Unknown Medicine',
+        batchNo: row.batch_no || 'N/A',
+        qtyRemaining: quantity,
+        expiryDate: formatDate(row.expiry_date),
+        reorderLevel,
+        status,
+        daysUntilExpiry,
+      };
+    })
+    .filter((row: InventoryRow) => {
+      const lowStockMatch = !('lowStockOnly' in filters) || !filters.lowStockOnly || row.status === 'low';
+      const medicineMatch = !('medicineId' in filters) || !filters.medicineId || row.medicineName.toLowerCase().includes(String(filters.medicineId).toLowerCase());
+      const expiryMatch = !('expiringWithinDays' in filters) || !filters.expiringWithinDays || (typeof row.daysUntilExpiry === 'number' && row.daysUntilExpiry <= filters.expiringWithinDays);
+      return lowStockMatch && medicineMatch && expiryMatch;
+    });
+
+  return {
+    data: mapped,
+    summary: {
+      totalRecords: mapped.length,
+      lowStock: mapped.filter((row: InventoryRow) => row.status === 'low').length,
+      expiringSoon: mapped.filter((row: InventoryRow) => row.status === 'expiring').length,
+      totalQty: mapped.reduce((sum: number, row: InventoryRow) => sum + row.qtyRemaining, 0),
+    } as ReportSummary,
+  };
+};
+
+const saveGeneratedReport = (report: SavedReport, preview: ReportPreview) => {
+  const reports = readSavedReports().filter((item) => item.id !== report.id);
+  writeSavedReports([report, ...reports]);
+
+  const previews = readReportPreviews();
+  previews[report.id] = preview;
+  writeReportPreviews(previews);
+};
+
+const downloadBlob = (content: string, fileName: string, type: string) => {
+  if (typeof window === 'undefined') return;
+  const blob = new Blob([content], { type });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  window.URL.revokeObjectURL(url);
+};
+
+export const getSavedReports = async (): Promise<SavedReport[]> => readSavedReports();
+
+export const generateReport = async (payload: GenerateReportPayload): Promise<ReportPreview> => {
+  let result: { data: any[]; summary: ReportSummary } = { data: [], summary: { totalRecords: 0 } };
 
   switch (payload.type) {
     case 'PATIENT_VISIT':
-      data = generatePatientVisitData();
-      summary = {
-        totalRecords: data.length,
-        completed: data.filter((d) => d.status === 'completed').length,
-        checkedIn: data.filter((d) => d.status === 'checked_in').length,
-      };
+      result = await buildPatientVisitReport(payload.filters);
       break;
-
     case 'LAB_TEST':
-      data = generateLabTestData();
-      summary = {
-        totalRecords: data.length,
-        completed: data.filter((d) => d.resultStatus === 'completed').length,
-        pending: data.filter((d) => d.resultStatus === 'pending').length,
-      };
+      result = await buildLabTestReport(payload.filters);
       break;
-
     case 'PRESCRIPTION':
-      data = generatePrescriptionData();
-      summary = {
-        totalRecords: data.length,
-        totalPrescribedQty: data.reduce((sum, d) => sum + d.qty, 0),
-        totalIssuedQty: data.reduce((sum, d) => sum + (d.issuedQty || 0), 0),
-      };
+      result = await buildPrescriptionReport(payload.filters);
       break;
-
     case 'INVENTORY':
-      data = generateInventoryData();
-      summary = {
-        totalRecords: data.length,
-        lowStock: data.filter((d) => d.status === 'low').length,
-        expiringSoon: data.filter((d) => d.status === 'expiring').length,
-        totalQty: data.reduce((sum, d) => sum + d.qtyRemaining, 0),
-      };
+      result = await buildInventoryReport(payload.filters);
       break;
   }
 
   const reportId = `RPT-${Date.now()}`;
-
-  return {
+  const generatedAt = format(new Date(), 'dd/MM/yyyy, HH:mm');
+  const preview: ReportPreview = {
     reportId,
     type: payload.type,
-    data,
-    summary,
-    generatedAt: new Date().toLocaleString('en-GB', { 
-      timeZone: 'Asia/Colombo',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }),
+    data: result.data,
+    summary: result.summary,
+    generatedAt,
   };
+
+  saveGeneratedReport(
+    {
+      id: reportId,
+      title: payload.title,
+      type: payload.type,
+      status: 'published',
+      createdBy: 'Admin',
+      createdDate: format(new Date(), 'dd/MM/yyyy'),
+      lastModified: format(new Date(), 'dd/MM/yyyy'),
+    },
+    preview
+  );
+
+  return preview;
 };
 
 export const getReportPreview = async (reportId: string): Promise<ReportPreview> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 600));
-
-  // Mock: return a patient visit report preview
-  return {
-    reportId,
-    type: 'PATIENT_VISIT',
-    data: generatePatientVisitData(),
-    summary: {
-      totalRecords: 4,
-      completed: 3,
-      checkedIn: 1,
-    },
-    generatedAt: '25/01/2026, 10:30',
-  };
+  const preview = readReportPreviews()[reportId];
+  if (!preview) {
+    throw new Error('Report preview not found');
+  }
+  return preview;
 };
 
 export const deleteReport = async (reportId: string): Promise<void> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  console.log('Deleted report:', reportId);
+  writeSavedReports(readSavedReports().filter((report) => report.id !== reportId));
+  const previews = readReportPreviews();
+  delete previews[reportId];
+  writeReportPreviews(previews);
 };
 
 export const downloadReportPDF = async (reportId: string): Promise<void> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  console.log('Downloaded PDF for report:', reportId);
+  const preview = await getReportPreview(reportId);
+  const content = JSON.stringify(preview, null, 2);
+  downloadBlob(content, `${reportId}.txt`, 'text/plain;charset=utf-8');
 };
 
 export const downloadReportCSV = async (reportId: string): Promise<void> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  console.log('Downloaded CSV for report:', reportId);
+  const preview = await getReportPreview(reportId);
+  if (!preview.data.length) {
+    downloadBlob('', `${reportId}.csv`, 'text/csv;charset=utf-8');
+    return;
+  }
+
+  const headers = Object.keys(preview.data[0] as Record<string, unknown>);
+  const rows = preview.data.map((row) =>
+    headers
+      .map((header) => {
+        const value = (row as Record<string, unknown>)[header];
+        return `"${String(value ?? '').replace(/"/g, '""')}"`;
+      })
+      .join(',')
+  );
+
+  downloadBlob([headers.join(','), ...rows].join('\n'), `${reportId}.csv`, 'text/csv;charset=utf-8');
 };

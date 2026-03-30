@@ -144,7 +144,7 @@ const PayInvoiceDialog: React.FC<PayInvoiceDialogProps> = ({
           />
 
           <Alert severity="info" sx={{ mt: 2 }}>
-            This is a demo payment. No actual transaction will be processed.
+            This records the invoice as fully paid in the database.
           </Alert>
         </Box>
       </DialogContent>

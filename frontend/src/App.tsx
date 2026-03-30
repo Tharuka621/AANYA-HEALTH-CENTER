@@ -34,6 +34,7 @@ import PatientAppointmentList from './pages/patient/AppointmentList';
 import PatientPrescriptionList from './pages/patient/PrescriptionList';
 import PatientLabReports from './pages/patient/LabReports';
 import PatientProfile from './pages/patient/PatientProfile';
+import UserProfile from './pages/profile/UserProfile';
 
 function App() {
   const queryClient = new QueryClient({
@@ -311,6 +312,58 @@ function App() {
                     <ProtectedRoute allowedRoles={["patient"]}>
                       <DashboardLayout>
                         <PatientProfile />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* ─── Universal Profile Routes for All Roles ─── */}
+                <Route
+                  path="/dashboard/doctor/profile"
+                  element={
+                    <ProtectedRoute allowedRoles={["doctor"]}>
+                      <DashboardLayout>
+                        <UserProfile />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/receptionist/profile"
+                  element={
+                    <ProtectedRoute allowedRoles={["receptionist"]}>
+                      <DashboardLayout>
+                        <UserProfile />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/pharmacist/profile"
+                  element={
+                    <ProtectedRoute allowedRoles={["pharmacist"]}>
+                      <DashboardLayout>
+                        <UserProfile />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/lab/profile"
+                  element={
+                    <ProtectedRoute allowedRoles={["lab", "lab_tech"]}>
+                      <DashboardLayout>
+                        <UserProfile />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/admin/profile"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <UserProfile />
                       </DashboardLayout>
                     </ProtectedRoute>
                   }

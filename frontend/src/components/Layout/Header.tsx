@@ -12,7 +12,6 @@ import {
   Divider,
   ListItemIcon,
   ListItemText,
-  Paper,
   List,
   ListItem,
   ListItemAvatar,
@@ -23,14 +22,11 @@ import {
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
-  AccountCircle as AccountIcon,
   Logout as LogoutIcon,
   Settings as SettingsIcon,
   Person as PersonIcon,
-  CheckCircle as SuccessIcon,
   Warning as WarningIcon,
   Info as InfoIcon,
-  Error as ErrorIcon,
   DoneAll as DoneAllIcon,
   FiberManualRecord as DotIcon,
   Schedule as ScheduleIcon,
@@ -323,8 +319,8 @@ const Header: React.FC = () => {
               overflow: 'hidden',
             },
           }}
-          slotProps={{
-            backdrop: { sx: { backgroundColor: 'transparent' } },
+          BackdropProps={{
+            sx: { backgroundColor: 'transparent' },
           }}
         >
           {/* Header */}
@@ -510,7 +506,11 @@ const Header: React.FC = () => {
           </Box>
 
           <MenuItem
-            onClick={handleProfileClose}
+            onClick={() => {
+              handleProfileClose();
+              const role = user?.role || 'patient';
+              navigate(`/dashboard/${role}/profile`);
+            }}
             sx={{ py: 1.5, '&:hover': { bgcolor: alpha('#1565c0', 0.06) } }}
           >
             <ListItemIcon>

@@ -19,7 +19,6 @@ import {
   DialogActions,
   TextField,
   Grid,
-  Avatar,
   LinearProgress,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -30,7 +29,6 @@ import {
   Person as PersonIcon,
   LocalHospital as HospitalIcon,
   AccessTime as TimeIcon,
-  Logout as LogoutIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
@@ -57,7 +55,7 @@ interface Appointment {
 }
 
 const ReceptionistDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  useAuth();
   const { showSuccess, showError } = useToast();
 
   // Filter states
@@ -261,65 +259,6 @@ const ReceptionistDashboard: React.FC = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Header */}
-      <Box
-        sx={{
-          bgcolor: 'primary.main',
-          color: 'white',
-          py: 3,
-          px: 4,
-          boxShadow: 2,
-        }}
-      >
-        <Container maxWidth="xl">
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Avatar sx={{ bgcolor: 'white', color: 'primary.main', width: 48, height: 48 }}>
-                <HospitalIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="h5" fontWeight={700}>
-                  AANYA Health - Receptionist
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {new Date().toLocaleDateString('en-GB')}
-                </Typography>
-              </Box>
-            </Box>
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box textAlign="right" mr={1}>
-                <Typography variant="body1" fontWeight={600}>
-                  {user?.full_name}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                  Receptionist
-                </Typography>
-              </Box>
-              <Avatar sx={{ bgcolor: 'white', color: 'primary.main', width: 40, height: 40 }}>
-                <PersonIcon />
-              </Avatar>
-              <Button
-                variant="outlined"
-                color="inherit"
-                startIcon={<LogoutIcon />}
-                onClick={logout}
-                sx={{
-                  borderColor: 'white',
-                  color: 'white',
-                  fontWeight: 600,
-                  '&:hover': {
-                    borderColor: 'white',
-                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                  },
-                }}
-              >
-                Logout
-              </Button>
-            </Box>
-          </Box>
-        </Container>
-      </Box>
-
       {loading && <LinearProgress sx={{ position: 'sticky', top: 0, zIndex: 1000 }} />}
 
       {/* Main Content */}

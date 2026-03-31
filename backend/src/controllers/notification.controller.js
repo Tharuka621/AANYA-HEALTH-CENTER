@@ -97,14 +97,18 @@ async function getDoctorNotifications(userId) {
   // 3. Completed lab results for doctor's patients
   try {
     const [labResults] = await pool.query(
-      `SELECT lt.id, lt.test_name, u.full_name as patient_name, lt.updated_at
-       FROM lab_tests lt
-       INNER JOIN patients p ON lt.patient_id = p.id
+      `SELECT loi.id, lt.name as test_name, u.full_name as patient_name,
+              COALESCE(lr.completed_at, lo.created_at) as updated_at
+       FROM lab_order_items loi
+       INNER JOIN lab_orders lo ON loi.lab_order_id = lo.id
+       INNER JOIN lab_tests lt ON loi.lab_test_id = lt.id
+       INNER JOIN patients p ON lo.patient_id = p.id
        INNER JOIN users u ON p.user_id = u.id
-       INNER JOIN doctors d ON lt.doctor_id = d.id
-       WHERE d.user_id = ? AND lt.status = 'completed'
-         AND lt.updated_at >= DATE_SUB(NOW(), INTERVAL 48 HOUR)
-       ORDER BY lt.updated_at DESC
+       INNER JOIN doctors d ON lo.doctor_id = d.id
+       LEFT JOIN lab_results lr ON lr.lab_order_item_id = loi.id
+       WHERE d.user_id = ? AND loi.status = 'DONE'
+         AND COALESCE(lr.completed_at, lo.created_at) >= DATE_SUB(NOW(), INTERVAL 48 HOUR)
+       ORDER BY COALESCE(lr.completed_at, lo.created_at) DESC
        LIMIT 5`,
       [userId]
     );
@@ -273,12 +277,14 @@ async function getLabNotifications(userId) {
   // 1. Pending lab test requests
   try {
     const [pending] = await pool.query(
-      `SELECT lt.id, lt.test_name, u.full_name as patient_name, lt.created_at
-       FROM lab_tests lt
-       INNER JOIN patients p ON lt.patient_id = p.id
+      `SELECT loi.id, lt.name as test_name, u.full_name as patient_name, lo.created_at
+       FROM lab_order_items loi
+       INNER JOIN lab_orders lo ON loi.lab_order_id = lo.id
+       INNER JOIN lab_tests lt ON loi.lab_test_id = lt.id
+       INNER JOIN patients p ON lo.patient_id = p.id
        INNER JOIN users u ON p.user_id = u.id
-       WHERE lt.status = 'requested'
-       ORDER BY lt.created_at ASC
+       WHERE loi.status = 'PENDING' AND lo.status IN ('ORDERED', 'IN_PROGRESS')
+       ORDER BY lo.created_at ASC
        LIMIT 10`
     );
     if (pending.length > 0) {
@@ -306,7 +312,10 @@ async function getLabNotifications(userId) {
   // 2. In-progress tests
   try {
     const [inProgress] = await pool.query(
-      `SELECT COUNT(*) as count FROM lab_tests WHERE status = 'in_progress'`
+      `SELECT COUNT(*) as count
+       FROM lab_order_items loi
+       INNER JOIN lab_orders lo ON loi.lab_order_id = lo.id
+       WHERE loi.status = 'PENDING' AND lo.status = 'IN_PROGRESS'`
     );
     if (inProgress[0].count > 0) {
       notifications.push({
@@ -357,12 +366,16 @@ async function getPatientNotifications(userId) {
   // 2. Completed lab reports
   try {
     const [reports] = await pool.query(
-      `SELECT lt.id, lt.test_name, lt.updated_at
-       FROM lab_tests lt
-       INNER JOIN patients p ON lt.patient_id = p.id
-       WHERE p.user_id = ? AND lt.status = 'completed'
-         AND lt.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-       ORDER BY lt.updated_at DESC
+      `SELECT loi.id, lt.name as test_name,
+              COALESCE(lr.completed_at, lo.created_at) as updated_at
+       FROM lab_order_items loi
+       INNER JOIN lab_orders lo ON loi.lab_order_id = lo.id
+       INNER JOIN lab_tests lt ON loi.lab_test_id = lt.id
+       INNER JOIN patients p ON lo.patient_id = p.id
+       LEFT JOIN lab_results lr ON lr.lab_order_item_id = loi.id
+       WHERE p.user_id = ? AND loi.status = 'DONE'
+         AND COALESCE(lr.completed_at, lo.created_at) >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+       ORDER BY COALESCE(lr.completed_at, lo.created_at) DESC
        LIMIT 5`,
       [userId]
     );
@@ -467,7 +480,10 @@ async function getAdminNotifications(userId) {
   // 4. Pending lab tests
   try {
     const [pendingLabs] = await pool.query(
-      `SELECT COUNT(*) as count FROM lab_tests WHERE status = 'requested'`
+      `SELECT COUNT(*) as count
+       FROM lab_order_items loi
+       INNER JOIN lab_orders lo ON loi.lab_order_id = lo.id
+       WHERE loi.status = 'PENDING' AND lo.status IN ('ORDERED', 'IN_PROGRESS')`
     );
     if (pendingLabs[0].count > 0) {
       notifications.push({

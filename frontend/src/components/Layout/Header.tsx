@@ -136,6 +136,11 @@ const Header: React.FC = () => {
   const formatRole = (role: string) =>
     role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
 
+  const getDashboardRole = (role?: string) => {
+    if (!role) return 'patient';
+    return role === 'lab_tech' ? 'lab' : role;
+  };
+
   // Avatar initials from real name
   const getInitials = (name: string) =>
     name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
@@ -508,7 +513,7 @@ const Header: React.FC = () => {
           <MenuItem
             onClick={() => {
               handleProfileClose();
-              const role = user?.role || 'patient';
+              const role = getDashboardRole(user?.role);
               navigate(`/dashboard/${role}/profile`);
             }}
             sx={{ py: 1.5, '&:hover': { bgcolor: alpha('#1565c0', 0.06) } }}
@@ -520,7 +525,11 @@ const Header: React.FC = () => {
           </MenuItem>
 
           <MenuItem
-            onClick={handleProfileClose}
+            onClick={() => {
+              handleProfileClose();
+              const role = getDashboardRole(user?.role);
+              navigate(`/dashboard/${role}/settings`);
+            }}
             sx={{ py: 1.5, '&:hover': { bgcolor: alpha('#1565c0', 0.06) } }}
           >
             <ListItemIcon>

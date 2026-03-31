@@ -89,7 +89,8 @@ const Sidebar: React.FC = () => {
           ...baseItems,
           { icon: PersonAddIcon, label: 'Patients', path: '/dashboard/doctor/patients' },
           { icon: CalendarIcon, label: 'Appointments', path: '/dashboard/doctor/appointments' },
-          { icon: LabIcon, label: 'Lab Tests', path: '/dashboard/doctor/lab-tests' }
+          { icon: LabIcon, label: 'Lab Tests', path: '/dashboard/doctor/lab-tests' },
+          { icon: SettingsIcon, label: 'Settings', path: '/dashboard/doctor/settings' }
         ];
 
       case 'receptionist':
@@ -97,7 +98,8 @@ const Sidebar: React.FC = () => {
           ...baseItems,
           { icon: PersonAddIcon, label: 'Patients', path: '/dashboard/receptionist/patients' },
           { icon: CalendarIcon, label: 'Appointments', path: '/dashboard/receptionist/appointments' },
-          { icon: PaymentIcon, label: 'Billing', path: '/dashboard/receptionist/billing' }
+          { icon: PaymentIcon, label: 'Billing', path: '/dashboard/receptionist/billing' },
+          { icon: SettingsIcon, label: 'Settings', path: '/dashboard/receptionist/settings' }
         ];
 
       case 'pharmacist':
@@ -105,14 +107,16 @@ const Sidebar: React.FC = () => {
           ...baseItems,
           { icon: PharmacyIcon, label: 'Pharmacy', path: '/dashboard/pharmacist/pharmacy' },
           { icon: DescriptionIcon, label: 'Prescriptions', path: '/dashboard/pharmacist/prescriptions' },
-          { icon: ReportsIcon, label: 'Inventory Reports', path: '/dashboard/pharmacist/reports' }
+          { icon: ReportsIcon, label: 'Inventory Reports', path: '/dashboard/pharmacist/reports' },
+          { icon: SettingsIcon, label: 'Settings', path: '/dashboard/pharmacist/settings' }
         ];
 
       case 'lab':
         return [
           ...baseItems,
           { icon: LabIcon, label: 'Lab Tests', path: '/dashboard/lab/lab-tests' },
-          { icon: ReportsIcon, label: 'Lab Reports', path: '/dashboard/lab/reports' }
+          { icon: ReportsIcon, label: 'Lab Reports', path: '/dashboard/lab/reports' },
+          { icon: SettingsIcon, label: 'Settings', path: '/dashboard/lab/settings' }
         ];
 
       case 'patient':
@@ -121,7 +125,8 @@ const Sidebar: React.FC = () => {
           { icon: CalendarIcon, label: 'Appointments', path: '/dashboard/patient/appointments' },
           { icon: DescriptionIcon, label: 'Prescriptions', path: '/dashboard/patient/prescriptions' },
           { icon: LabIcon, label: 'Lab Reports', path: '/dashboard/patient/lab-reports' },
-          { icon: PersonIcon, label: 'My Profile', path: '/dashboard/patient/profile' }
+          { icon: PersonIcon, label: 'My Profile', path: '/dashboard/patient/profile' },
+          { icon: SettingsIcon, label: 'Settings', path: '/dashboard/patient/settings' }
         ];
 
       default:

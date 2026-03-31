@@ -35,6 +35,7 @@ import PatientPrescriptionList from './pages/patient/PrescriptionList';
 import PatientLabReports from './pages/patient/LabReports';
 import PatientProfile from './pages/patient/PatientProfile';
 import UserProfile from './pages/profile/UserProfile';
+import RoleSettings from './pages/settings/RoleSettings';
 
 function App() {
   const queryClient = new QueryClient({
@@ -209,6 +210,56 @@ function App() {
                     <ProtectedRoute allowedRoles={["admin"]}>
                       <DashboardLayout>
                         <SettingsManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/doctor/settings"
+                  element={
+                    <ProtectedRoute allowedRoles={["doctor"]}>
+                      <DashboardLayout>
+                        <RoleSettings />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/receptionist/settings"
+                  element={
+                    <ProtectedRoute allowedRoles={["receptionist"]}>
+                      <DashboardLayout>
+                        <RoleSettings />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/pharmacist/settings"
+                  element={
+                    <ProtectedRoute allowedRoles={["pharmacist"]}>
+                      <DashboardLayout>
+                        <RoleSettings />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/lab/settings"
+                  element={
+                    <ProtectedRoute allowedRoles={["lab", "lab_tech"]}>
+                      <DashboardLayout>
+                        <RoleSettings />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/patient/settings"
+                  element={
+                    <ProtectedRoute allowedRoles={["patient"]}>
+                      <DashboardLayout>
+                        <RoleSettings />
                       </DashboardLayout>
                     </ProtectedRoute>
                   }

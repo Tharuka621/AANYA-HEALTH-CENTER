@@ -28,7 +28,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const login = useLogin();
   const { showError, showSuccess } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading, setUser } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -86,6 +86,11 @@ const Login: React.FC = () => {
       console.log('Login result:', result);
       console.log('User:', result.user);
       console.log('User role:', result.user?.role);
+      
+      // Update the AuthContext with the logged-in user
+      if (result.user) {
+        setUser(result.user);
+      }
       
       showSuccess('Login successful! Redirecting...');
       

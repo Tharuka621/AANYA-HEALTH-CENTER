@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authService, tokenStorage, userStorage } from '../services/auth';
 import { AuthResponse, LoginRequest, SignupRequest, User } from '../types';
-import { useAuth as useAuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 // Query keys
 export const authKeys = {
@@ -35,7 +35,6 @@ export const useCurrentUser = () => {
 // Login mutation
 export const useLogin = () => {
   const queryClient = useQueryClient();
-  const { setUser } = useAuthContext();
 
   return useMutation({
     mutationFn: (credentials: LoginRequest) => authService.login(credentials),
@@ -43,9 +42,6 @@ export const useLogin = () => {
       // Store token and user
       tokenStorage.set(data.token);
       userStorage.set(data.user);
-      
-      // Update AuthContext immediately
-      setUser(data.user);
       
       // Update query cache
       queryClient.setQueryData(authKeys.user(), data.user);
@@ -60,7 +56,7 @@ export const useLogin = () => {
 // Signup mutation
 export const useSignup = () => {
   const queryClient = useQueryClient();
-  const { setUser } = useAuthContext();
+  const { setUser } = useAuth();
 
   return useMutation({
     mutationFn: (userData: SignupRequest) => authService.signup(userData),
@@ -85,7 +81,7 @@ export const useSignup = () => {
 // Logout mutation
 export const useLogout = () => {
   const queryClient = useQueryClient();
-  const { setUser } = useAuthContext();
+  const { setUser } = useAuth();
 
   return useMutation({
     mutationFn: () => authService.logout(),

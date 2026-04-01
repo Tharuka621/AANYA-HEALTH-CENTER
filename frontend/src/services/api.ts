@@ -39,11 +39,20 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only redirect on 401 if it's NOT a login or signup request
     if (error.response?.status === 401) {
-      // Clear auth data on unauthorized
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const isAuthRequest = 
+        error.config?.url?.includes('/auth/login') || 
+        error.config?.url?.includes('/auth/signup') ||
+        error.config?.url?.includes('/auth/forgot-password') ||
+        error.config?.url?.includes('/auth/reset-password');
+      
+      if (!isAuthRequest) {
+        // Clear auth data on unauthorized (for other endpoints)
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

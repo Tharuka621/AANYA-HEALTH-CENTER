@@ -12,6 +12,7 @@ const prescriptionRoutes = require("./routes/prescription.routes");
 const patientRoutes = require("./routes/patient.routes");
 const notificationRoutes = require("./routes/notification.routes");
 const profileRoutes = require("./routes/profile.routes");
+const reportRoutes = require("./routes/report.routes");
 
 const app = express();
 
@@ -19,7 +20,7 @@ app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json()); 
 
 // Serve uploaded files (lab report PDFs, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -36,6 +37,7 @@ app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/admin/reports", reportRoutes);
 
 app.get("/", (req, res) => res.send("Aanya backend is running ✅"));
 

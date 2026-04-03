@@ -1,6 +1,7 @@
 require("dotenv").config();
 const app = require("./app");
 const { testDbConnection } = require("./config/db");
+const { ensureReportsSchema } = require("./config/reporting");
 const { startReminderJob } = require("./jobs/appointmentReminder");
 
 // Global error handlers
@@ -23,6 +24,7 @@ async function startServer() {
   try {
     await testDbConnection();
     console.log("✅ MySQL connected successfully");
+    await ensureReportsSchema();
 
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);

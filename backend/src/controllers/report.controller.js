@@ -66,7 +66,7 @@ const buildPatientVisitReport = async (filters) => {
         a.status,
         a.reason,
         a.created_at,
-        a.check_in_time,
+        v.check_in_time,
         ds.slot_date,
         TIME_FORMAT(ds.start_time, '%H:%i') AS start_time,
         p.id AS patient_id,
@@ -328,6 +328,86 @@ const buildInventoryReport = async (filters) => {
   };
 };
 
+const buildPharmacyPredictionReport = async (filters) => {
+  // Aggregate consumption over the last 12 months
+  const [consumptionRows] = await pool.query(
+    `SELECT 
+        pi.medicine_id, 
+        SUM(di.qty_dispensed) as total_dispensed
+     FROM dispense_items di
+     JOIN prescription_items pi ON di.prescription_item_id = pi.id
+     WHERE di.dispensed_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
+     GROUP BY pi.medicine_id`
+  );
+
+  const consumptionMap = consumptionRows.reduce((acc, row) => {
+    acc[String(row.medicine_id)] = Number(row.total_dispensed || 0);
+    return acc;
+  }, {});
+
+  // Get current inventory totals
+  const [inventoryRows] = await pool.query(
+    `SELECT 
+        medicine_id, 
+        SUM(qty_available) as total_stock
+     FROM inventory_batches
+     GROUP BY medicine_id`
+  );
+
+  const inventoryMap = inventoryRows.reduce((acc, row) => {
+    acc[String(row.medicine_id)] = Number(row.total_stock || 0);
+    return acc;
+  }, {});
+
+  // Get medicine details
+  const [medicines] = await pool.query(
+    `SELECT id, name, category, low_stock_threshold FROM medicines ORDER BY name ASC`
+  );
+
+  const growthFactor = 1.15; // 15% growth buffer
+  const mapped = medicines
+    .map((med) => {
+      const pastYearConsumption = consumptionMap[String(med.id)] || 0;
+      const currentStock = inventoryMap[String(med.id)] || 0;
+      const predictedNeed = Math.ceil(pastYearConsumption * growthFactor);
+      const recommendedOrder = Math.max(0, predictedNeed - currentStock);
+
+      let status = 'adequate';
+      if (currentStock === 0 && predictedNeed > 0) status = 'critical';
+      else if (currentStock < predictedNeed * 0.2) status = 'critical';
+      else if (currentStock < predictedNeed * 0.5) status = 'low';
+
+      return {
+        medicineId: String(med.id),
+        medicineName: med.name,
+        category: med.category || 'N/A',
+        pastYearConsumption,
+        currentStock,
+        predictedNeed,
+        recommendedOrder,
+        status
+      };
+    })
+    .filter((row) => {
+      // Basic filtering
+      if (filters.medicineId && !row.medicineName.toLowerCase().includes(filters.medicineId.toLowerCase())) return false;
+      if (filters.status && row.status !== filters.status.toLowerCase()) return false;
+      // Option to only show items that need reordering
+      if (filters.reorderOnly && row.recommendedOrder === 0) return false;
+      return true;
+    });
+
+  return {
+    data: mapped,
+    summary: {
+      totalRecords: mapped.length,
+      criticalItems: mapped.filter(r => r.status === 'critical').length,
+      lowStockItems: mapped.filter(r => r.status === 'low').length,
+      totalRecommendedOrder: mapped.reduce((sum, r) => sum + r.recommendedOrder, 0)
+    }
+  };
+};
+
 const buildReportData = async (type, filters) => {
   switch (type) {
     case 'PATIENT_VISIT':
@@ -338,6 +418,8 @@ const buildReportData = async (type, filters) => {
       return buildPrescriptionReport(filters);
     case 'INVENTORY':
       return buildInventoryReport(filters);
+    case 'PHARMACY_PREDICTION':
+      return buildPharmacyPredictionReport(filters);
     default:
       return { data: [], summary: { totalRecords: 0 } };
   }
@@ -348,7 +430,7 @@ exports.generateReport = async (req, res) => {
     const { type, title, filters } = req.body;
     const normalizedType = normalizeReportType(type);
 
-    const allowedTypes = ['PATIENT_VISIT', 'LAB_TEST', 'PRESCRIPTION', 'INVENTORY'];
+    const allowedTypes = ['PATIENT_VISIT', 'LAB_TEST', 'PRESCRIPTION', 'INVENTORY', 'PHARMACY_PREDICTION'];
     if (!allowedTypes.includes(normalizedType)) {
       return res.status(400).json({ message: 'Invalid report type' });
     }

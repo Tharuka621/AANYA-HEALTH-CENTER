@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+console.log(`[DIAG] Notification Controller loaded from: ${__filename}`);
 
 /**
  * Get role-specific notifications for the authenticated user.
@@ -225,9 +226,10 @@ async function getPharmacistNotifications(userId) {
   // 2. Low-stock medicines
   try {
     const [lowStock] = await pool.query(
-      `SELECT id, medicine_name, quantity, reorder_level
-       FROM pharmacy_inventory
-       WHERE quantity <= reorder_level
+      `SELECT m.id, m.name as medicine_name, COALESCE(ib.total, 0) as quantity, m.low_stock_threshold
+       FROM medicines m
+       LEFT JOIN (SELECT medicine_id, SUM(qty_available) as total FROM inventory_batches GROUP BY medicine_id) ib ON m.id = ib.medicine_id
+       WHERE COALESCE(ib.total, 0) <= COALESCE(m.low_stock_threshold, 10)
        ORDER BY quantity ASC
        LIMIT 5`
     );
@@ -235,23 +237,24 @@ async function getPharmacistNotifications(userId) {
       notifications.push({
         id: `pharm-stock-${m.id}`,
         title: 'Low Stock Alert',
-        message: `${m.medicine_name}: only ${m.quantity} units left (reorder at ${m.reorder_level})`,
+        message: `${m.medicine_name}: only ${m.quantity} units left (reorder at ${m.low_stock_threshold})`,
         type: 'error',
         category: 'inventory',
         created_at: new Date().toISOString(),
       });
     });
-  } catch (e) { console.error('Pharmacist stock query error:', e.message); }
+  } catch (e) { console.error('[V2] Pharmacist stock query error:', e.message); }
 
   // 3. Medicines expiring within 30 days
   try {
     const [expiring] = await pool.query(
-      `SELECT id, medicine_name, expiry_date
-       FROM pharmacy_inventory
-       WHERE expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-         AND expiry_date >= CURDATE()
-         AND quantity > 0
-       ORDER BY expiry_date ASC
+      `SELECT ib.id, m.name as medicine_name, ib.expiry_date
+       FROM inventory_batches ib
+       JOIN medicines m ON ib.medicine_id = m.id
+       WHERE ib.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+         AND ib.expiry_date >= CURDATE()
+         AND ib.qty_available > 0
+       ORDER BY ib.expiry_date ASC
        LIMIT 5`
     );
     expiring.forEach(m => {
@@ -463,7 +466,11 @@ async function getAdminNotifications(userId) {
   // 3. Low-stock medicines (admin overview)
   try {
     const [lowStock] = await pool.query(
-      `SELECT COUNT(*) as count FROM pharmacy_inventory WHERE quantity <= reorder_level`
+      `SELECT COUNT(*) as count FROM (
+         SELECT m.id FROM medicines m
+         LEFT JOIN (SELECT medicine_id, SUM(qty_available) as total FROM inventory_batches GROUP BY medicine_id) ib ON m.id = ib.medicine_id
+         WHERE COALESCE(ib.total, 0) <= COALESCE(m.low_stock_threshold, 10)
+       ) as low_stock`
     );
     if (lowStock[0].count > 0) {
       notifications.push({
@@ -475,7 +482,7 @@ async function getAdminNotifications(userId) {
         created_at: new Date().toISOString(),
       });
     }
-  } catch (e) { console.error('Admin stock query error:', e.message); }
+  } catch (e) { console.error('[V2] Admin stock query error:', e.message); }
 
   // 4. Pending lab tests
   try {

@@ -21,6 +21,8 @@ testDbConnection();
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {
+  console.log(`[DIAG] Server source file: ${__filename}`);
+  console.log(`[DIAG] Current working directory: ${process.cwd()}`);
   try {
     await testDbConnection();
     console.log("✅ MySQL connected successfully");

@@ -563,3 +563,9 @@ exports.resendVerificationEmail = async (req, res) => {
     });
   }
 };
+exports.logout = async (req, res) => {
+  return res.json({
+    ok: true,
+    message: "Logout successful ✅"
+  });
+};

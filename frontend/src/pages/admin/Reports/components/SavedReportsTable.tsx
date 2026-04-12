@@ -50,6 +50,8 @@ const getTypeColor = (type: ReportType): string => {
       return '#2e7d32';
     case 'INVENTORY':
       return '#ed6c02';
+    case 'PHARMACY_PREDICTION':
+      return '#1565c0';
     default:
       return '#757575';
   }

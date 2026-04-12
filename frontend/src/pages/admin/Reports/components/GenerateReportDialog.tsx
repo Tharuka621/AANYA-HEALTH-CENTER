@@ -65,6 +65,11 @@ const reportTypes: Array<{
     title: 'Inventory Report',
     description: 'Monitor stock levels, expiry, and reorder alerts',
   },
+  {
+    type: 'PHARMACY_PREDICTION',
+    title: 'Pharmacy Prediction',
+    description: 'Forecast medicine demand and recommend order quantities',
+  },
 ];
 
 const GenerateReportDialog: React.FC<GenerateReportDialogProps> = ({

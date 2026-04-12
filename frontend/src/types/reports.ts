@@ -1,6 +1,6 @@
 // Report Types and DTOs for AANYA Health Management System
 
-export type ReportType = 'PATIENT_VISIT' | 'LAB_TEST' | 'PRESCRIPTION' | 'INVENTORY';
+export type ReportType = 'PATIENT_VISIT' | 'LAB_TEST' | 'PRESCRIPTION' | 'INVENTORY' | 'PHARMACY_PREDICTION';
 
 export type ReportStatus = 'draft' | 'published' | 'under_review';
 
@@ -58,11 +58,18 @@ export interface InventoryFilters extends BaseFilters {
   medicineId?: string;
 }
 
+export interface PharmacyPredictionFilters extends BaseFilters {
+  medicineId?: string;
+  status?: 'critical' | 'low' | 'adequate';
+  reorderOnly?: boolean;
+}
+
 export type ReportFilters = 
   | PatientVisitFilters 
   | LabTestFilters 
   | PrescriptionFilters 
-  | InventoryFilters;
+  | InventoryFilters
+  | PharmacyPredictionFilters;
 
 // Data Row Interfaces
 export interface PatientVisitRow {
@@ -113,7 +120,18 @@ export interface InventoryRow {
   daysUntilExpiry?: number;
 }
 
-export type ReportRow = PatientVisitRow | LabTestRow | PrescriptionRow | InventoryRow;
+export interface PharmacyPredictionRow {
+  medicineId: string;
+  medicineName: string;
+  category: string;
+  pastYearConsumption: number;
+  currentStock: number;
+  predictedNeed: number;
+  recommendedOrder: number;
+  status: 'critical' | 'low' | 'adequate';
+}
+
+export type ReportRow = PatientVisitRow | LabTestRow | PrescriptionRow | InventoryRow | PharmacyPredictionRow;
 
 // Report Generation Payload
 export interface GenerateReportPayload {

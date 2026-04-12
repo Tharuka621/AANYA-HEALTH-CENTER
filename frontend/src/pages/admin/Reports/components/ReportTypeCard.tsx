@@ -31,6 +31,7 @@ const iconMap: Record<ReportType, typeof SvgIcon> = {
   LAB_TEST: LabIcon,
   PRESCRIPTION: PrescriptionIcon,
   INVENTORY: InventoryIcon,
+  PHARMACY_PREDICTION: TrendingUpIcon,
 };
 
 const colorMap: Record<ReportType, string> = {
@@ -38,6 +39,7 @@ const colorMap: Record<ReportType, string> = {
   LAB_TEST: '#9c27b0',
   PRESCRIPTION: '#2e7d32',
   INVENTORY: '#ed6c02',
+  PHARMACY_PREDICTION: '#1565c0',
 };
 
 const ReportTypeCard: React.FC<ReportTypeCardProps> = ({

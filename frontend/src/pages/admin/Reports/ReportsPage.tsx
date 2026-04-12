@@ -13,6 +13,7 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
+import html2canvas from 'html2canvas';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
@@ -179,13 +180,78 @@ const ReportsPage: React.FC = () => {
     }
   };
 
-  const handleExport = async () => {
+  const captureCharts = async () => {
+    const chartIds = [
+      'chart-visits-doctor', 'chart-visit-status',
+      'chart-ordered-tests', 'chart-test-results',
+      'chart-top-medicines', 'chart-prescription-doctor',
+      'chart-predicted-demand', 'chart-inventory-status',
+      'chart-stock-health', 'chart-low-stock'
+    ];
+    
+    const images: string[] = [];
+    for (const id of chartIds) {
+      const el = document.getElementById(id);
+      if (el) {
+        try {
+          const canvas = await html2canvas(el, {
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+          });
+          images.push(canvas.toDataURL('image/png'));
+        } catch (err) {
+          console.error(`Failed to capture chart ${id}:`, err);
+        }
+      }
+    }
+    return images;
+  };
+
+  const handleExport = async (format: 'PDF' | 'CSV' = 'PDF') => {
     if (!reportPreview) return;
+    setLoading(true);
     try {
-      await downloadReportCSV(reportPreview.reportId);
+      if (format === 'PDF') {
+        const chartImages = await captureCharts();
+        await downloadReportPDF(reportPreview.reportId, chartImages);
+        showSnackbar(
+          chartImages.length > 0 
+            ? 'Report with charts downloaded as PDF' 
+            : 'Report downloaded as PDF (Insights tab was not active)', 
+          'success'
+        );
+      } else {
+        await downloadReportCSV(reportPreview.reportId);
+        showSnackbar('Report downloaded as CSV', 'success');
+      }
+    } catch (error) {
+      showSnackbar(`Failed to export report as ${format}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async (id: string) => {
+    setLoading(true);
+    try {
+      const chartImages = await captureCharts();
+      await downloadReportPDF(id, chartImages);
+      showSnackbar('Report downloaded as PDF', 'success');
+    } catch (error) {
+      showSnackbar('Failed to download PDF', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadCSV = async (id: string) => {
+    try {
+      await downloadReportCSV(id);
       showSnackbar('Report downloaded as CSV', 'success');
     } catch (error) {
-      showSnackbar('Failed to export report', 'error');
+      showSnackbar('Failed to download CSV', 'error');
     }
   };
 
@@ -253,6 +319,12 @@ const ReportsPage: React.FC = () => {
       description: 'Monitor stock levels, low stock alerts, and expiry dates',
       filterChips: ['Low Stock', 'Expiring Soon', 'By Medicine'],
     },
+    {
+      type: 'PHARMACY_PREDICTION' as ReportType,
+      title: 'Pharmacy Prediction',
+      description: 'Forecast medicine demand and recommend order quantities',
+      filterChips: ['Critical Restock', 'Restock Needed', 'Adequate'],
+    },
   ];
 
   return (
@@ -292,8 +364,9 @@ const ReportsPage: React.FC = () => {
               </IconButton>
 
               <IconButton
-                onClick={handleExport}
+                onClick={() => handleExport('PDF')}
                 disabled={!reportPreview}
+                title="Download PDF"
                 sx={{
                   bgcolor: 'white',
                   border: '1px solid',
@@ -392,8 +465,8 @@ const ReportsPage: React.FC = () => {
                     data={reportPreview?.data || []}
                     loading={loading}
                     onView={(row) => console.log('View:', row)}
-                    onDownloadPDF={() => showSnackbar('PDF download started', 'info')}
-                    onDownloadCSV={() => showSnackbar('CSV download started', 'info')}
+                    onDownloadPDF={() => handleDownloadPDF(reportPreview!.reportId)}
+                    onDownloadCSV={() => handleDownloadCSV(reportPreview!.reportId)}
                   />
                 </Box>
               )}

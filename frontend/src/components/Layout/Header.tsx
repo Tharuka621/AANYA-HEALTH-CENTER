@@ -415,6 +415,8 @@ const Header: React.FC = () => {
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
+                        primaryTypographyProps={{ component: 'div' }}
+                        secondaryTypographyProps={{ component: 'div' }}
                         primary={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             {!isRead && (
@@ -424,6 +426,7 @@ const Header: React.FC = () => {
                               variant="body2"
                               fontWeight={isRead ? 500 : 700}
                               color="text.primary"
+                              component="div"
                               sx={{ lineHeight: 1.3 }}
                             >
                               {notif.title}
@@ -435,6 +438,7 @@ const Header: React.FC = () => {
                             <Typography
                               variant="caption"
                               color="text.secondary"
+                              component="div"
                               sx={{
                                 display: 'block',
                                 lineHeight: 1.4,
@@ -446,6 +450,7 @@ const Header: React.FC = () => {
                             </Typography>
                             <Typography
                               variant="caption"
+                              component="div"
                               sx={{
                                 fontSize: '0.65rem',
                                 color: 'text.disabled',

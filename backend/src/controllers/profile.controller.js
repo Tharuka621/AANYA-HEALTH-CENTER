@@ -107,10 +107,14 @@ exports.getProfile = async (req, res) => {
         // Pharmacist stats
         const [[pharmStats]] = await pool.query(
           `SELECT
-            (SELECT COUNT(*) FROM prescriptions WHERE status = 'pending') as pending_prescriptions,
-            (SELECT COUNT(*) FROM prescriptions WHERE status = 'dispensed') as dispensed_prescriptions,
-            (SELECT COUNT(*) FROM pharmacy_inventory WHERE quantity <= reorder_level) as low_stock_items,
-            (SELECT COUNT(*) FROM pharmacy_inventory) as total_inventory_items`
+            (SELECT COUNT(*) FROM prescriptions WHERE status = 'ACTIVE') as pending_prescriptions,
+            (SELECT COUNT(*) FROM prescriptions WHERE status = 'DISPENSED') as dispensed_prescriptions,
+            (SELECT COUNT(*) FROM (
+               SELECT m.id FROM medicines m
+               LEFT JOIN (SELECT medicine_id, SUM(qty_available) as total FROM inventory_batches GROUP BY medicine_id) ib ON m.id = ib.medicine_id
+               WHERE COALESCE(ib.total, 0) <= COALESCE(m.low_stock_threshold, 10)
+             ) as low_stock) as low_stock_items,
+            (SELECT COUNT(*) FROM medicines) as total_inventory_items`
         );
         stats = pharmStats || {};
         break;
@@ -153,7 +157,7 @@ exports.getProfile = async (req, res) => {
       stats,
     });
   } catch (err) {
-    console.error('GET PROFILE ERROR:', err);
+    console.error('[V2] GET PROFILE ERROR:', err);
     return res.status(500).json({ ok: false, message: 'Internal server error' });
   }
 };

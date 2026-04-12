@@ -66,6 +66,11 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
   const [expiringWithinDays, setExpiringWithinDays] = useState<7 | 30 | 60 | ''>('');
   const [invMedicineId, setInvMedicineId] = useState<string>('');
 
+  // Pharmacy Prediction specific
+  const [predMedicineId, setPredMedicineId] = useState<string>('');
+  const [predStatus, setPredStatus] = useState<'critical' | 'low' | 'adequate' | ''>('');
+  const [reorderOnly, setReorderOnly] = useState<boolean>(false);
+
   const formatDate = (date: Date | null): string | null => {
     if (!date) return null;
     const day = String(date.getDate()).padStart(2, '0');
@@ -121,6 +126,15 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
         };
         break;
 
+      case 'PHARMACY_PREDICTION':
+        filters = {
+          ...baseFilters,
+          ...(predMedicineId && { medicineId: predMedicineId }),
+          ...(predStatus && { status: predStatus }),
+          reorderOnly,
+        };
+        break;
+
       default:
         filters = baseFilters;
     }
@@ -145,6 +159,9 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
     setLowStockOnly(false);
     setExpiringWithinDays('');
     setInvMedicineId('');
+    setPredMedicineId('');
+    setPredStatus('');
+    setReorderOnly(false);
     onReset();
   };
 
@@ -426,6 +443,56 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     />
                   }
                   label="Low Stock Only"
+                />
+              </Grid>
+            </>
+          )}
+
+          {/* Pharmacy Prediction Filters */}
+          {reportType === 'PHARMACY_PREDICTION' && (
+            <>
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Medicine Name</InputLabel>
+                  <Select
+                    value={predMedicineId}
+                    label="Medicine Name"
+                    onChange={(e) => setPredMedicineId(e.target.value)}
+                  >
+                    <MenuItem value="">All Medicines</MenuItem>
+                    <MenuItem value="Paracetamol">Paracetamol</MenuItem>
+                    <MenuItem value="Amlodipine">Amlodipine</MenuItem>
+                    <MenuItem value="Metformin">Metformin</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Prediction Status</InputLabel>
+                  <Select
+                    value={predStatus}
+                    label="Prediction Status"
+                    onChange={(e) => setPredStatus(e.target.value as any)}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    <MenuItem value="critical">Critical</MenuItem>
+                    <MenuItem value="low">Low</MenuItem>
+                    <MenuItem value="adequate">Adequate</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={reorderOnly}
+                      onChange={(e) => setReorderOnly(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label="Reorder Only"
                 />
               </Grid>
             </>

@@ -32,13 +32,14 @@ const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'info
     case 'completed':
     case 'ok':
       return 'success';
+    case 'expiring':
+    case 'critical':
+      return 'error';
     case 'checked_in':
     case 'pending':
     case 'low':
       return 'warning';
     case 'cancelled':
-      return 'error';
-    case 'expiring':
       return 'error';
     default:
       return 'default';
@@ -192,6 +193,36 @@ const ReportResultsTable: React.FC<ReportResultsTableProps> = ({
     },
   ];
 
+  // Pharmacy Prediction Columns
+  const pharmacyPredictionColumns: GridColDef[] = [
+    { field: 'medicineName', headerName: 'Medicine Name', flex: 1, minWidth: 200 },
+    { field: 'category', headerName: 'Category', width: 140 },
+    { field: 'pastYearConsumption', headerName: 'Past Year Consumption', width: 180, type: 'number' },
+    { field: 'currentStock', headerName: 'Current Stock', width: 130, type: 'number' },
+    { field: 'predictedNeed', headerName: 'Predicted Need (1 Yr)', width: 170, type: 'number' },
+    { field: 'recommendedOrder', headerName: 'Recommended Order', width: 180, type: 'number' },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 130,
+      renderCell: (params: GridRenderCellParams) => (
+        <Chip
+          label={params.value.toUpperCase()}
+          color={getStatusColor(params.value)}
+          size="small"
+          sx={{ fontWeight: 600, fontSize: '0.7rem' }}
+        />
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 140,
+      sortable: false,
+      renderCell: renderActions,
+    },
+  ];
+
   const getColumns = (): GridColDef[] => {
     switch (reportType) {
       case 'PATIENT_VISIT':
@@ -202,6 +233,8 @@ const ReportResultsTable: React.FC<ReportResultsTableProps> = ({
         return prescriptionColumns;
       case 'INVENTORY':
         return inventoryColumns;
+      case 'PHARMACY_PREDICTION':
+        return pharmacyPredictionColumns;
       default:
         return [];
     }
@@ -211,7 +244,11 @@ const ReportResultsTable: React.FC<ReportResultsTableProps> = ({
     if ('visitId' in row) return row.visitId;
     if ('labOrderId' in row) return row.labOrderId;
     if ('prescriptionId' in row) return row.prescriptionId;
-    if ('medicineId' in row) return row.medicineId + row.batchNo;
+    if ('medicineId' in row) {
+      // InventoryRow has batchNo, PharmacyPredictionRow does not
+      const suffix = ('batchNo' in row) ? row.batchNo : 'prediction';
+      return row.medicineId + suffix;
+    }
     return Math.random().toString();
   };
 

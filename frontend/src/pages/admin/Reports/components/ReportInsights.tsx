@@ -14,6 +14,9 @@ import {
   Cell,
   BarChart,
   Bar,
+  ScatterChart,
+  Scatter,
+  ZAxis,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -29,6 +32,8 @@ import {
   PrescriptionRow,
   InventoryRow,
   PharmacyPredictionRow,
+  PharmacyProfitabilityRow,
+  PeakClinicHoursRow,
 } from '../../../../types/reports';
 
 const STAT_COLORS = ['#1976d2', '#2e7d32', '#ed6c02'];
@@ -47,7 +52,13 @@ const toInventoryRows = (data: ReportPreview['data']): InventoryRow[] =>
   data.filter((row): row is InventoryRow => 'medicineId' in row && 'batchNo' in row);
 
 const toPharmacyPredictionRows = (data: ReportPreview['data']): PharmacyPredictionRow[] =>
-  data.filter((row): row is PharmacyPredictionRow => 'medicineId' in row && !('batchNo' in row));
+  data.filter((row): row is PharmacyPredictionRow => 'medicineId' in row && !('batchNo' in row) && !('totalProfit' in row));
+
+const toPharmacyProfitabilityRows = (data: ReportPreview['data']): PharmacyProfitabilityRow[] =>
+  data.filter((row): row is PharmacyProfitabilityRow => 'totalProfit' in row);
+
+const toPeakClinicHoursRows = (data: ReportPreview['data']): PeakClinicHoursRow[] =>
+  data.filter((row): row is PeakClinicHoursRow => 'hourOfDay' in row);
 
 const StatCard: React.FC<{ title: string; value: string | number; index: number }> = ({ title, value, index }) => (
   <Grid item xs={12} sm={6} md={3}>
@@ -308,6 +319,83 @@ const ReportInsights: React.FC<ReportInsightsProps> = ({ reportType, reportPrevi
                 <Tooltip />
                 <Legend />
               </PieChart>
+            </ChartWrapper>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  }
+
+  if (reportType === 'PHARMACY_PROFITABILITY') {
+    const rows = toPharmacyProfitabilityRows(reportPreview.data);
+    const topProfitable = [...rows]
+      .sort((a, b) => b.totalProfit - a.totalProfit)
+      .slice(0, 10);
+
+    return (
+      <Box sx={{ p: 3 }}>
+        <Grid container spacing={2} mb={3}>
+          <StatCard title="Total Medicines" value={summary.totalRecords || rows.length} index={0} />
+          <StatCard title="Total Revenue" value={`Rs. ${summary.totalRevenue || 0}`} index={1} />
+          <StatCard title="Total Profit" value={`Rs. ${summary.totalProfit || 0}`} index={2} />
+          <StatCard title="Avg Margin" value={`${summary.averageMargin || 0}%`} index={3} />
+        </Grid>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <ChartWrapper title="Top 10 Most Profitable Medicines" id="chart-profitability">
+              <BarChart data={topProfitable} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="medicineName" angle={-15} textAnchor="end" height={60} tick={{ fontSize: 11 }} />
+                <YAxis />
+                <Tooltip formatter={(val) => `Rs. ${val}`} />
+                <Legend />
+                <Bar dataKey="totalRevenue" name="Revenue" fill="#1976d2" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="totalCost" name="Cost" fill="#f44336" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="totalProfit" name="Profit" fill="#2e7d32" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartWrapper>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  }
+
+  if (reportType === 'PEAK_CLINIC_HOURS') {
+    const rows = toPeakClinicHoursRows(reportPreview.data);
+    const dayKeys: (keyof PeakClinicHoursRow)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const scatterData = rows.flatMap((r) => 
+      dayKeys.map((key, i) => ({
+        hour: r.formattedHour,
+        day: dayNames[i],
+        dayIndex: i,
+        visits: (r[key] as number) || 0
+      }))
+    ).filter(d => d.visits > 0);
+    
+    // Calculate max visits for the dynamic Z-Axis range sizing (min size = 60, max size = 600)
+    const maxVisits = Math.max(1, ...scatterData.map(d => d.visits));
+
+    return (
+      <Box sx={{ p: 3 }}>
+        <Grid container spacing={2} mb={3}>
+          <StatCard title="Total Visits" value={summary.totalRecords || 0} index={0} />
+          <StatCard title="Peak Hour" value={String(summary.peakHour || 'N/A')} index={1} />
+          <StatCard title="Peak Visits" value={summary.peakVisits || 0} index={2} />
+          <StatCard title="Avg Hourly Visits" value={summary.avgHourlyVisits || 0} index={3} />
+        </Grid>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <ChartWrapper title="Visit Heatmap (Day vs Hour)" id="chart-peak-hours" height={350}>
+              <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis type="category" dataKey="hour" name="Time" tick={{ fontSize: 12 }} />
+                <YAxis type="category" dataKey="day" name="Day" interval={0} tick={{ fontSize: 12 }} />
+                <ZAxis type="number" dataKey="visits" range={[20, Math.max(200, maxVisits * 10)]} name="Visits" />
+                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                <Scatter data={scatterData} fill="#ed6c02" />
+              </ScatterChart>
             </ChartWrapper>
           </Grid>
         </Grid>

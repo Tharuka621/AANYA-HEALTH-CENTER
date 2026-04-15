@@ -1178,8 +1178,8 @@ const PharmacistDashboard: React.FC = () => {
                                 />
                               </TableCell>
                               <TableCell align="center">{item.qty}</TableCell>
-                              <TableCell align="right">Rs. {item.unit_price.toFixed(2)}</TableCell>
-                              <TableCell align="right">Rs. {item.line_total.toFixed(2)}</TableCell>
+                              <TableCell align="right">Rs. {Number(item.unit_price || 0).toFixed(2)}</TableCell>
+                              <TableCell align="right">Rs. {Number(item.line_total || 0).toFixed(2)}</TableCell>
                             </TableRow>
                           ))}
                         <TableRow>
@@ -1190,7 +1190,7 @@ const PharmacistDashboard: React.FC = () => {
                           </TableCell>
                           <TableCell align="right">
                             <Typography variant="h6" color="primary.main" fontWeight={700}>
-                              Rs. {currentInvoice.total_amount.toFixed(2)}
+                              Rs. {Number(currentInvoice.total_amount || 0).toFixed(2)}
                             </Typography>
                           </TableCell>
                         </TableRow>

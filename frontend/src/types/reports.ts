@@ -1,6 +1,6 @@
 // Report Types and DTOs for AANYA Health Management System
 
-export type ReportType = 'PATIENT_VISIT' | 'LAB_TEST' | 'PRESCRIPTION' | 'INVENTORY' | 'PHARMACY_PREDICTION';
+export type ReportType = 'PATIENT_VISIT' | 'LAB_TEST' | 'PRESCRIPTION' | 'INVENTORY' | 'PHARMACY_PREDICTION' | 'PHARMACY_PROFITABILITY' | 'PEAK_CLINIC_HOURS';
 
 export type ReportStatus = 'draft' | 'published' | 'under_review';
 
@@ -64,12 +64,23 @@ export interface PharmacyPredictionFilters extends BaseFilters {
   reorderOnly?: boolean;
 }
 
+export interface PharmacyProfitabilityFilters extends BaseFilters {
+  medicineId?: string;
+  categoryId?: string;
+}
+
+export interface PeakClinicHoursFilters extends BaseFilters {
+  doctorId?: string;
+}
+
 export type ReportFilters = 
   | PatientVisitFilters 
   | LabTestFilters 
   | PrescriptionFilters 
   | InventoryFilters
-  | PharmacyPredictionFilters;
+  | PharmacyPredictionFilters
+  | PharmacyProfitabilityFilters
+  | PeakClinicHoursFilters;
 
 // Data Row Interfaces
 export interface PatientVisitRow {
@@ -131,7 +142,31 @@ export interface PharmacyPredictionRow {
   status: 'critical' | 'low' | 'adequate';
 }
 
-export type ReportRow = PatientVisitRow | LabTestRow | PrescriptionRow | InventoryRow | PharmacyPredictionRow;
+export interface PharmacyProfitabilityRow {
+  medicineId: string;
+  medicineName: string;
+  category: string;
+  totalQty: number;
+  totalCost: number;
+  totalRevenue: number;
+  totalProfit: number;
+  profitMargin: number; // percentage
+}
+
+export interface PeakClinicHoursRow {
+  hourOfDay: number;
+  formattedHour: string;
+  totalVisits: number;
+  sunday: number;
+  monday: number;
+  tuesday: number;
+  wednesday: number;
+  thursday: number;
+  friday: number;
+  saturday: number;
+}
+
+export type ReportRow = PatientVisitRow | LabTestRow | PrescriptionRow | InventoryRow | PharmacyPredictionRow | PharmacyProfitabilityRow | PeakClinicHoursRow;
 
 // Report Generation Payload
 export interface GenerateReportPayload {

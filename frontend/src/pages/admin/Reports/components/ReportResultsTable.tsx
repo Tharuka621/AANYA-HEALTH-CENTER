@@ -223,6 +223,43 @@ const ReportResultsTable: React.FC<ReportResultsTableProps> = ({
     },
   ];
 
+  // Pharmacy Profitability Columns
+  const pharmacyProfitabilityColumns: GridColDef[] = [
+    { field: 'medicineName', headerName: 'Medicine Name', flex: 1, minWidth: 200 },
+    { field: 'category', headerName: 'Category', width: 140 },
+    { field: 'totalQty', headerName: 'Total Qty Sold', width: 120, type: 'number' },
+    { field: 'totalCost', headerName: 'Total Cost (LKR)', width: 130, type: 'number' },
+    { field: 'totalRevenue', headerName: 'Total Revenue (LKR)', width: 150, type: 'number' },
+    { field: 'totalProfit', headerName: 'Total Profit (LKR)', width: 140, type: 'number' },
+    {
+      field: 'profitMargin',
+      headerName: 'Margin (%)',
+      width: 100,
+      type: 'number',
+      renderCell: (params: GridRenderCellParams) => (
+        <Chip
+          label={`${params.value}%`}
+          color={params.value > 20 ? 'success' : params.value > 0 ? 'warning' : 'error'}
+          size="small"
+          sx={{ fontWeight: 600 }}
+        />
+      ),
+    },
+  ];
+
+  // Peak Clinic Hours Columns
+  const peakClinicHoursColumns: GridColDef[] = [
+    { field: 'formattedHour', headerName: 'Time of Day', flex: 1, minWidth: 200 },
+    { field: 'totalVisits', headerName: 'Total Visits', width: 150, type: 'number' },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 140,
+      sortable: false,
+      renderCell: renderActions,
+    },
+  ];
+
   const getColumns = (): GridColDef[] => {
     switch (reportType) {
       case 'PATIENT_VISIT':
@@ -235,6 +272,10 @@ const ReportResultsTable: React.FC<ReportResultsTableProps> = ({
         return inventoryColumns;
       case 'PHARMACY_PREDICTION':
         return pharmacyPredictionColumns;
+      case 'PHARMACY_PROFITABILITY':
+        return pharmacyProfitabilityColumns;
+      case 'PEAK_CLINIC_HOURS':
+        return peakClinicHoursColumns;
       default:
         return [];
     }
@@ -246,9 +287,10 @@ const ReportResultsTable: React.FC<ReportResultsTableProps> = ({
     if ('prescriptionId' in row) return row.prescriptionId;
     if ('medicineId' in row) {
       // InventoryRow has batchNo, PharmacyPredictionRow does not
-      const suffix = ('batchNo' in row) ? row.batchNo : 'prediction';
+      const suffix = ('batchNo' in row) ? row.batchNo : ('totalProfit' in row ? 'profit' : 'prediction');
       return row.medicineId + suffix;
     }
+    if ('hourOfDay' in row) return `hour-${row.hourOfDay}`;
     return Math.random().toString();
   };
 

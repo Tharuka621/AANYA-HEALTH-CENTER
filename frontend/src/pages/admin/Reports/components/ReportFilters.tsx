@@ -71,6 +71,12 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
   const [predStatus, setPredStatus] = useState<'critical' | 'low' | 'adequate' | ''>('');
   const [reorderOnly, setReorderOnly] = useState<boolean>(false);
 
+  // Pharmacy Profitability specific
+  const [profMedicineId, setProfMedicineId] = useState<string>('');
+
+  // Peak Clinic Hours specific
+  const [peakDoctorId, setPeakDoctorId] = useState<string>('');
+
   const formatDate = (date: Date | null): string | null => {
     if (!date) return null;
     const day = String(date.getDate()).padStart(2, '0');
@@ -135,6 +141,20 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
         };
         break;
 
+      case 'PHARMACY_PROFITABILITY':
+        filters = {
+          ...baseFilters,
+          ...(profMedicineId && { medicineId: profMedicineId }),
+        };
+        break;
+
+      case 'PEAK_CLINIC_HOURS':
+        filters = {
+          ...baseFilters,
+          ...(peakDoctorId && { doctorId: peakDoctorId }),
+        };
+        break;
+
       default:
         filters = baseFilters;
     }
@@ -162,6 +182,8 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
     setPredMedicineId('');
     setPredStatus('');
     setReorderOnly(false);
+    setProfMedicineId('');
+    setPeakDoctorId('');
     onReset();
   };
 
@@ -494,6 +516,47 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                   }
                   label="Reorder Only"
                 />
+              </Grid>
+            </>
+          )}
+
+          {/* Pharmacy Profitability Filters */}
+          {reportType === 'PHARMACY_PROFITABILITY' && (
+            <>
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Medicine Name</InputLabel>
+                  <Select
+                    value={profMedicineId}
+                    label="Medicine Name"
+                    onChange={(e) => setProfMedicineId(e.target.value)}
+                  >
+                    <MenuItem value="">All Medicines</MenuItem>
+                    <MenuItem value="Paracetamol">Paracetamol</MenuItem>
+                    <MenuItem value="Amlodipine">Amlodipine</MenuItem>
+                    <MenuItem value="Metformin">Metformin</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </>
+          )}
+
+          {/* Peak Clinic Hours Filters */}
+          {reportType === 'PEAK_CLINIC_HOURS' && (
+            <>
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Doctor</InputLabel>
+                  <Select
+                    value={peakDoctorId}
+                    label="Doctor"
+                    onChange={(e) => setPeakDoctorId(e.target.value)}
+                  >
+                    <MenuItem value="">All Doctors</MenuItem>
+                    <MenuItem value="DOC001">Dr. Nimal Fernando</MenuItem>
+                    <MenuItem value="DOC002">Dr. Sunil Jayawardena</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
             </>
           )}

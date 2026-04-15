@@ -408,6 +408,171 @@ const buildPharmacyPredictionReport = async (filters) => {
   };
 };
 
+const buildPharmacyProfitabilityReport = async (filters) => {
+  const [rows] = await pool.query(
+    `SELECT 
+      ib.medicine_id, 
+      m.name as medicine_name, 
+      m.category,
+      di.qty_dispensed,
+      ib.buy_price,
+      ib.sell_price,
+      di.dispensed_at
+     FROM dispense_items di
+     JOIN inventory_batches ib ON di.batch_id = ib.id
+     JOIN medicines m ON ib.medicine_id = m.id`
+  );
+
+  const aggregated = {};
+  rows
+    .filter((row) => isWithinDateRange(row.dispensed_at, filters))
+    .forEach((row) => {
+      const medicineMatch = !filters.medicineId || row.medicine_name.toLowerCase().includes(String(filters.medicineId).toLowerCase());
+      const categoryMatch = !filters.categoryId || (row.category && row.category.toLowerCase().includes(String(filters.categoryId).toLowerCase()));
+      
+      if (medicineMatch && categoryMatch) {
+        const id = String(row.medicine_id);
+        if (!aggregated[id]) {
+          aggregated[id] = {
+            medicineId: id,
+            medicineName: row.medicine_name,
+            category: row.category || 'N/A',
+            totalQty: 0,
+            totalCost: 0,
+            totalRevenue: 0,
+            totalProfit: 0,
+          };
+        }
+        
+        const qty = Number(row.qty_dispensed || 0);
+        const buy = Number(row.buy_price || 0);
+        const sell = Number(row.sell_price || 0);
+        
+        aggregated[id].totalQty += qty;
+        aggregated[id].totalCost += qty * buy;
+        aggregated[id].totalRevenue += qty * sell;
+        aggregated[id].totalProfit += qty * (sell - buy);
+      }
+    });
+
+  const mapped = Object.values(aggregated).map((item) => {
+    item.profitMargin = item.totalRevenue > 0 ? Math.round((item.totalProfit / item.totalRevenue) * 100) : 0;
+    return item;
+  });
+
+  const totalRev = mapped.reduce((sum, row) => sum + row.totalRevenue, 0);
+  const totalProf = mapped.reduce((sum, row) => sum + row.totalProfit, 0);
+
+  return {
+    data: mapped,
+    summary: {
+      totalRecords: mapped.length,
+      totalRevenue: totalRev,
+      totalProfit: totalProf,
+      averageMargin: totalRev > 0 ? Math.round((totalProf / totalRev) * 100) : 0,
+    }
+  };
+};
+
+const formatHourAmPm = (hour) => {
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  let h = hour % 12;
+  h = h ? h : 12; // the hour '0' should be '12'
+  return `${String(h).padStart(2, '0')}:00 ${ampm}`;
+};
+
+const buildPeakClinicHoursReport = async (filters) => {
+  const [rows] = await pool.query(
+    `SELECT 
+      a.id as appointment_id,
+      a.created_at,
+      COALESCE(ds.slot_date, a.created_at) as appointment_date,
+      a.doctor_id,
+      du.full_name as doctor_name,
+      COALESCE(v.check_in_time, ds.start_time) as target_time
+     FROM appointments a
+     LEFT JOIN doctors d ON d.id = a.doctor_id
+     LEFT JOIN users du ON du.id = d.user_id
+     LEFT JOIN visits v ON v.appointment_id = a.id
+     LEFT JOIN doctor_slots ds ON ds.id = a.slot_id
+     WHERE a.status != 'cancelled'`
+  );
+
+  const hourCounts = {};
+  for (let i = 0; i < 24; i++) {
+    hourCounts[i] = {
+      totalVisits: 0,
+      sunday: 0,
+      monday: 0,
+      tuesday: 0,
+      wednesday: 0,
+      thursday: 0,
+      friday: 0,
+      saturday: 0
+    };
+  }
+
+  const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  let totalVisits = 0;
+  
+  rows
+    .filter((row) => isWithinDateRange(row.appointment_date || row.created_at, filters))
+    .forEach((row) => {
+      const doctorMatch = !filters.doctorId || (row.doctor_name && row.doctor_name.toLowerCase().includes(String(filters.doctorId).toLowerCase()));
+      
+      if (doctorMatch && row.target_time) {
+        let hour = 0;
+        if (typeof row.target_time === 'string') {
+          hour = parseInt(row.target_time.split(':')[0], 10);
+        } else if (row.target_time instanceof Date) {
+          hour = row.target_time.getHours();
+        }
+        
+        let dayIndex = 0;
+        const appDate = row.appointment_date ? new Date(row.appointment_date) : new Date();
+        if (!isNaN(appDate.getTime())) {
+           dayIndex = appDate.getDay();
+        }
+        
+        if (!isNaN(hour) && hour >= 0 && hour < 24) {
+          hourCounts[hour].totalVisits++;
+          hourCounts[hour][daysOfWeek[dayIndex]]++;
+          totalVisits++;
+        }
+      }
+    });
+
+  const mapped = Object.keys(hourCounts).map((hourStr) => {
+    const hourOfDay = parseInt(hourStr, 10);
+    const metrics = hourCounts[hourOfDay];
+    return {
+      hourOfDay,
+      formattedHour: formatHourAmPm(hourOfDay),
+      ...metrics
+    };
+  }).filter((row) => row.totalVisits > 0);
+
+  let peakHourStr = 'N/A';
+  let peakVisits = 0;
+  
+  mapped.forEach((r) => {
+    if (r.totalVisits > peakVisits) {
+      peakVisits = r.totalVisits;
+      peakHourStr = r.formattedHour;
+    }
+  });
+
+  return {
+    data: mapped,
+    summary: {
+      totalRecords: totalVisits,
+      peakHour: peakHourStr,
+      peakVisits: peakVisits,
+      avgHourlyVisits: mapped.length > 0 ? Math.round(totalVisits / mapped.length) : 0,
+    }
+  };
+};
+
 const buildReportData = async (type, filters) => {
   switch (type) {
     case 'PATIENT_VISIT':
@@ -420,6 +585,10 @@ const buildReportData = async (type, filters) => {
       return buildInventoryReport(filters);
     case 'PHARMACY_PREDICTION':
       return buildPharmacyPredictionReport(filters);
+    case 'PHARMACY_PROFITABILITY':
+      return buildPharmacyProfitabilityReport(filters);
+    case 'PEAK_CLINIC_HOURS':
+      return buildPeakClinicHoursReport(filters);
     default:
       return { data: [], summary: { totalRecords: 0 } };
   }
@@ -430,7 +599,7 @@ exports.generateReport = async (req, res) => {
     const { type, title, filters } = req.body;
     const normalizedType = normalizeReportType(type);
 
-    const allowedTypes = ['PATIENT_VISIT', 'LAB_TEST', 'PRESCRIPTION', 'INVENTORY', 'PHARMACY_PREDICTION'];
+    const allowedTypes = ['PATIENT_VISIT', 'LAB_TEST', 'PRESCRIPTION', 'INVENTORY', 'PHARMACY_PREDICTION', 'PHARMACY_PROFITABILITY', 'PEAK_CLINIC_HOURS'];
     if (!allowedTypes.includes(normalizedType)) {
       return res.status(400).json({ message: 'Invalid report type' });
     }

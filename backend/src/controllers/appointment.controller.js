@@ -284,7 +284,8 @@ const getPatientAppointments = async (req, res) => {
         TIME_FORMAT(ds.end_time, '%H:%i') as end_time
       FROM appointments a
       INNER JOIN patients p ON a.patient_id = p.id
-      INNER JOIN users u ON a.doctor_id = u.id
+      INNER JOIN doctors d ON a.doctor_id = d.id
+      INNER JOIN users u ON d.user_id = u.id
       INNER JOIN doctor_slots ds ON a.slot_id = ds.id
       WHERE p.user_id = ?
       ORDER BY ds.slot_date DESC, ds.start_time DESC

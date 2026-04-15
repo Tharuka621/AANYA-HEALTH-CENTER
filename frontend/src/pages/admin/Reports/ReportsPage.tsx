@@ -325,6 +325,18 @@ const ReportsPage: React.FC = () => {
       description: 'Forecast medicine demand and recommend order quantities',
       filterChips: ['Critical Restock', 'Restock Needed', 'Adequate'],
     },
+    {
+      type: 'PHARMACY_PROFITABILITY' as ReportType,
+      title: 'Pharmacy Profitability',
+      description: 'Analyze revenue, cost, and profit margins for dispensed medicines',
+      filterChips: ['By Medicine', 'By Category'],
+    },
+    {
+      type: 'PEAK_CLINIC_HOURS' as ReportType,
+      title: 'Peak Clinic Hours',
+      description: 'Identify busiest clinic hours to optimize staff scheduling',
+      filterChips: ['By Time of Day'],
+    },
   ];
 
   return (

@@ -15,6 +15,8 @@ import {
   Medication as PrescriptionIcon,
   Inventory as InventoryIcon,
   TrendingUp as TrendingUpIcon,
+  AttachMoney as ProfitIcon,
+  AccessTime as TimeIcon,
 } from '@mui/icons-material';
 import { ReportType } from '../../../../types/reports';
 
@@ -32,6 +34,8 @@ const iconMap: Record<ReportType, typeof SvgIcon> = {
   PRESCRIPTION: PrescriptionIcon,
   INVENTORY: InventoryIcon,
   PHARMACY_PREDICTION: TrendingUpIcon,
+  PHARMACY_PROFITABILITY: ProfitIcon,
+  PEAK_CLINIC_HOURS: TimeIcon,
 };
 
 const colorMap: Record<ReportType, string> = {
@@ -40,6 +44,8 @@ const colorMap: Record<ReportType, string> = {
   PRESCRIPTION: '#2e7d32',
   INVENTORY: '#ed6c02',
   PHARMACY_PREDICTION: '#1565c0',
+  PHARMACY_PROFITABILITY: '#2e7d32',
+  PEAK_CLINIC_HOURS: '#d32f2f',
 };
 
 const ReportTypeCard: React.FC<ReportTypeCardProps> = ({

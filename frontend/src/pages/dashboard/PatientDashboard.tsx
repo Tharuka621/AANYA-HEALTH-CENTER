@@ -273,6 +273,23 @@ const PatientDashboard: React.FC = () => {
                                 <Typography variant="body2" color="text.secondary" component="span" display="block">
                                   Appointment #{appointment.appointmentNumber || appointment.appointment_no} - {appointment.reason || 'General consultation'}
                                 </Typography>
+                                {appointment.estimated_arrival_time && (
+                                  <Box display="inline-flex" alignItems="center" gap={0.5} mt={0.5}>
+                                    <TimeIcon sx={{ fontSize: 14, color: 'success.main' }} />
+                                    <Typography variant="caption" color="success.main" fontWeight={700} component="span">
+                                      Arrive by: {appointment.estimated_arrival_time}
+                                    </Typography>
+                                    {appointment.queue_position && (
+                                      <Chip
+                                        label={`Queue #${appointment.queue_position}`}
+                                        size="small"
+                                        color="primary"
+                                        variant="outlined"
+                                        sx={{ ml: 0.5, height: 18, fontSize: '0.65rem' }}
+                                      />
+                                    )}
+                                  </Box>
+                                )}
                               </>
                             }
                           />

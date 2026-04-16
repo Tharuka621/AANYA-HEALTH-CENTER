@@ -82,6 +82,10 @@ const AppointmentList: React.FC = () => {
     status: app.status || 'scheduled',
     doctor: app.doctor_name || 'Assigned Doctor',
     notes: app.notes || '',
+    appointmentNumber: app.appointmentNumber || `APT${String(app.id).padStart(6, '0')}`,
+    queue_position: app.queue_position || 1,
+    estimated_arrival_time: app.estimated_arrival_time || null,
+    minutes_per_patient: app.minutes_per_patient || null,
   }));
 
   const getStatusColor = (status: string) => {
@@ -255,33 +259,67 @@ const AppointmentList: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell>Appt. No.</TableCell>
                 <TableCell>Date &amp; Time</TableCell>
+                <TableCell>Arrive By</TableCell>
                 <TableCell>Doctor</TableCell>
                 <TableCell>Reason</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell>Notes</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {appointments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">No appointments found.</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 appointments.map((appointment: any) => (
                   <TableRow key={appointment.id}>
+                    {/* Appointment Number + Queue */}
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2" fontWeight={700} color="primary.main" sx={{ fontFamily: 'monospace' }}>
+                          {appointment.appointmentNumber}
+                        </Typography>
+                        <Chip
+                          label={`#${appointment.queue_position} in queue`}
+                          size="small"
+                          variant="outlined"
+                          color="default"
+                          sx={{ mt: 0.5, fontSize: '0.68rem' }}
+                        />
+                      </Box>
+                    </TableCell>
+                    {/* Date & Slot Time */}
                     <TableCell>
                       <Box>
                         <Typography variant="body2" fontWeight={600}>
                           {appointment.date}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {appointment.time}
+                          Slot: {appointment.time}
                         </Typography>
                       </Box>
+                    </TableCell>
+                    {/* Estimated Arrive By */}
+                    <TableCell>
+                      {appointment.estimated_arrival_time ? (
+                        <Box>
+                          <Typography variant="body2" fontWeight={700} color="success.main">
+                            {appointment.estimated_arrival_time}
+                          </Typography>
+                          {appointment.minutes_per_patient && (
+                            <Typography variant="caption" color="text.secondary">
+                              ~{appointment.minutes_per_patient} min/patient
+                            </Typography>
+                          )}
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">—</Typography>
+                      )}
                     </TableCell>
                     <TableCell>{appointment.doctor}</TableCell>
                     <TableCell>
@@ -295,11 +333,6 @@ const AppointmentList: React.FC = () => {
                         color={getStatusColor(appointment.status)}
                         size="small"
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {appointment.notes}
-                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>

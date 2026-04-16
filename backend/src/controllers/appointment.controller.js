@@ -281,7 +281,15 @@ const getPatientAppointments = async (req, res) => {
         u.email as doctor_email,
         ds.slot_date,
         TIME_FORMAT(ds.start_time, '%H:%i') as start_time,
-        TIME_FORMAT(ds.end_time, '%H:%i') as end_time
+        TIME_FORMAT(ds.end_time, '%H:%i') as end_time,
+        ds.max_appointments,
+        TIMESTAMPDIFF(MINUTE, ds.start_time, ds.end_time) as slot_duration_minutes,
+        (
+          SELECT COUNT(*) FROM appointments a2
+          WHERE a2.slot_id = a.slot_id
+            AND a2.status != 'cancelled'
+            AND a2.id <= a.id
+        ) as queue_position
       FROM appointments a
       INNER JOIN patients p ON a.patient_id = p.id
       INNER JOIN doctors d ON a.doctor_id = d.id
@@ -293,11 +301,32 @@ const getPatientAppointments = async (req, res) => {
 
     const [appointments] = await pool.query(query, [userId]);
 
-    // Add appointment number to each appointment
-    const appointmentsWithNumber = appointments.map(apt => ({
-      ...apt,
-      appointmentNumber: apt.appointment_no || `APT${String(apt.id).padStart(6, '0')}`
-    }));
+    // Add appointment number and estimated arrival time to each appointment
+    const appointmentsWithNumber = appointments.map(apt => {
+      const queuePos = apt.queue_position || 1;
+      const maxApts = apt.max_appointments || 10;
+      const slotDuration = apt.slot_duration_minutes || 60;
+      // Minutes per patient in this slot
+      const minutesPerPatient = Math.floor(slotDuration / maxApts);
+      // Estimated arrival = slot_start + (queue_position - 1) * minutesPerPatient
+      let estimatedArrival = null;
+      if (apt.start_time) {
+        const [h, m] = apt.start_time.split(':').map(Number);
+        const totalMinutes = h * 60 + m + (queuePos - 1) * minutesPerPatient;
+        const arrHour = Math.floor(totalMinutes / 60) % 24;
+        const arrMin = totalMinutes % 60;
+        const period = arrHour >= 12 ? 'PM' : 'AM';
+        const displayHour = arrHour % 12 || 12;
+        estimatedArrival = `${displayHour}:${String(arrMin).padStart(2, '0')} ${period}`;
+      }
+      return {
+        ...apt,
+        appointmentNumber: apt.appointment_no || `APT${String(apt.id).padStart(6, '0')}`,
+        queue_position: queuePos,
+        minutes_per_patient: minutesPerPatient,
+        estimated_arrival_time: estimatedArrival,
+      };
+    });
 
     res.json(appointmentsWithNumber);
   } catch (error) {

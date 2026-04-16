@@ -9,6 +9,7 @@ const {
   bookAppointment,
   getPatientAppointments,
   getDoctorAppointments,
+  updatePatientAppointment,
   cancelAppointment,
   getAppointmentFee,
   bookAppointmentWithPayment,
@@ -29,6 +30,7 @@ router.get('/fee', getAppointmentFee);
 router.post('/book', authenticate, hasRole('PATIENT'), bookAppointment);
 router.post('/book-with-payment', authenticate, hasRole('PATIENT'), bookAppointmentWithPayment);
 router.get('/patient/appointments', authenticate, hasRole('PATIENT'), getPatientAppointments);
+router.put('/patient/appointments/:appointmentId', authenticate, hasRole('PATIENT'), updatePatientAppointment);
 
 // Doctor routes - manage availability slots
 router.get('/doctor/slots', authenticate, hasRole('DOCTOR'), getDoctorSlots);

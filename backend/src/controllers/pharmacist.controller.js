@@ -159,19 +159,19 @@ exports.dispensePrescription = async (req, res) => {
             }
         }
 
-        // 5. Create Invoice (in the bills table as per schema)
+        // 5. Create Invoice in the invoices table
         const [invoiceResult] = await connection.query(
-            `INSERT INTO bills (patient_id, bill_date, total_amount, payment_status, notes) VALUES (?, NOW(), ?, 'pending', 'Pharmacy Bill')`,
-            [prescription.patient_id, totalAmount]
+            `INSERT INTO invoices (patient_id, visit_id, total_amount, status) VALUES (?, ?, ?, 'UNPAID')`,
+            [prescription.patient_id, prescription.visit_id || null, totalAmount]
         );
         const invoiceId = invoiceResult.insertId;
 
-        // 6. Insert Invoice Items (into bill_items table)
+        // 6. Insert Invoice Items into invoice_items table
         for (const item of invoiceItems) {
             await connection.query(
-                `INSERT INTO bill_items (bill_id, item_type, item_id, description, quantity, unit_price, total_price)
-                 VALUES (?, 'PHARMACY', ?, ?, ?, ?, ?)`,
-                [invoiceId, item.batch_id, item.medicine_name, item.qty, item.unit_price, item.line_total]
+                `INSERT INTO invoice_items (invoice_id, batch_id, qty, unit_price, line_total)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [invoiceId, item.batch_id, item.qty, item.unit_price, item.line_total]
             );
         }
 

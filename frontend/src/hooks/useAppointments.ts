@@ -82,11 +82,7 @@ export const useUpdateAppointment = () => {
       api.appointments.update(id, updates),
     onSuccess: (data) => {
       // Invalidate and refetch related queries
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byDate(data.data.appointment_date) });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byPatient(data.data.patient_id) });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byDoctor(data.data.doctor_id) });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.detail(data.data.id) });
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
     },
     onError: (error) => {
       console.error('Update appointment failed:', error);
@@ -103,10 +99,7 @@ export const useCancelAppointment = () => {
       api.appointments.update(id, { status: 'cancelled' }),
     onSuccess: (data) => {
       // Invalidate and refetch related queries
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byDate(data.data.appointment_date) });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byPatient(data.data.patient_id) });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byDoctor(data.data.doctor_id) });
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
     },
     onError: (error) => {
       console.error('Cancel appointment failed:', error);
@@ -123,10 +116,7 @@ export const useCompleteAppointment = () => {
       api.appointments.update(id, { status: 'completed' }),
     onSuccess: (data) => {
       // Invalidate and refetch related queries
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byDate(data.data.appointment_date) });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byPatient(data.data.patient_id) });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byDoctor(data.data.doctor_id) });
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
     },
     onError: (error) => {
       console.error('Complete appointment failed:', error);
@@ -143,10 +133,7 @@ export const useCheckInAppointment = () => {
       api.appointments.update(id, { status: 'checked_in' }),
     onSuccess: (data) => {
       // Invalidate and refetch related queries
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byDate(data.data.appointment_date) });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byPatient(data.data.patient_id) });
-      queryClient.invalidateQueries({ queryKey: appointmentKeys.byDoctor(data.data.doctor_id) });
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
     },
     onError: (error) => {
       console.error('Check-in appointment failed:', error);

@@ -30,92 +30,188 @@ import {
   Edit as EditIcon,
   Cancel as CancelIcon,
   Visibility as ViewIcon,
+  EventAvailable as SlotIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
-import { useAppointmentsByPatient } from '../../hooks/useAppointments';
 import CircularProgress from '@mui/material/CircularProgress';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useAuth } from '../../contexts/AuthContext';
+import { useAppointmentsByPatient, useCancelAppointment, useUpdateAppointment } from '../../hooks/useAppointments';
+import { axiosInstance } from '../../services/api';
+import { useToast } from '../../components/common/Toast';
+
+interface AvailableSlot {
+  id: number;
+  doctor_name: string;
+  start_time: string;
+  end_time: string;
+  available_slots: number;
+}
 
 const AppointmentList: React.FC = () => {
+  // Dialog state
   const [openDialog, setOpenDialog] = useState(false);
+  const [viewOnly, setViewOnly] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    date: '',
-    time: '',
-    reason: '',
-    status: 'scheduled',
-  });
+
+  // Form state
+  const [reason, setReason] = useState('');
+
+  // Reschedule state
+  const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState('');
 
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const { data: appointmentsData, isLoading, isError } = useAppointmentsByPatient(user?.id || '');
+  const updateAppointment = useUpdateAppointment();
+  const cancelAppointment = useCancelAppointment();
 
   const rawAppointments = appointmentsData?.data || [];
 
   const appointments = rawAppointments.map((app: any) => ({
     id: app.id,
-    date: format(new Date(app.appointment_date || app.slot_date), 'dd/MM/yyyy'),
-    time: app.start_time || 'TBD',
+    slot_id: app.slot_id,
+    date: app.slot_date ? format(new Date(app.slot_date), 'dd/MM/yyyy') : 'N/A',
+    time: app.start_time ? app.start_time.substring(0, 5) : 'TBD',
     reason: app.reason || 'N/A',
-    status: app.status || 'Scheduled',
+    status: app.status || 'scheduled',
     doctor: app.doctor_name || 'Assigned Doctor',
     notes: app.notes || '',
   }));
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'CONFIRMED': return 'primary';
-      case 'COMPLETED': return 'success';
-      case 'CANCELLED': return 'error';
+    switch (status.toLowerCase()) {
+      case 'confirmed': return 'primary';
+      case 'completed': return 'success';
+      case 'cancelled': return 'error';
       case 'no_show': return 'warning';
       default: return 'default';
     }
   };
 
-  const handleBookAppointment = () => {
+  const fetchSlotsForDate = async (date: Date) => {
+    setLoadingSlots(true);
+    setAvailableSlots([]);
+    setSlotsError('');
+    setSelectedSlotId(null);
+    try {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const res = await axiosInstance.get(`/appointments/slots/available?date=${dateStr}`);
+      const slots: AvailableSlot[] = res.data;
+      setAvailableSlots(slots);
+      if (slots.length === 0) {
+        setSlotsError('No available slots for this date. Please choose another date.');
+      }
+    } catch {
+      setSlotsError('Failed to load available slots. Please try again.');
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  const handleOpenEdit = (appointment: any) => {
+    setSelectedAppointment(appointment);
+    setReason(appointment.reason === 'N/A' ? '' : appointment.reason);
+    setRescheduleDate(null);
+    setAvailableSlots([]);
+    setSelectedSlotId(null);
+    setSlotsError('');
+    setViewOnly(false);
+    setOpenDialog(true);
+  };
+
+  const handleOpenView = (appointment: any) => {
+    setSelectedAppointment(appointment);
+    setReason(appointment.reason === 'N/A' ? '' : appointment.reason);
+    setRescheduleDate(null);
+    setAvailableSlots([]);
+    setSelectedSlotId(null);
+    setSlotsError('');
+    setViewOnly(true);
+    setOpenDialog(true);
+  };
+
+  const handleOpenBook = () => {
     setSelectedAppointment(null);
-    setFormData({
-      date: '',
-      time: '',
-      reason: '',
-      status: 'scheduled',
-    });
+    setReason('');
+    setRescheduleDate(null);
+    setAvailableSlots([]);
+    setSelectedSlotId(null);
+    setSlotsError('');
+    setViewOnly(false);
     setOpenDialog(true);
   };
 
-  const handleEditAppointment = (appointment: any) => {
-    setSelectedAppointment(appointment);
-    setFormData({
-      date: appointment.date,
-      time: appointment.time,
-      reason: appointment.reason,
-      status: appointment.status,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleCancelAppointment = (appointmentId: string) => {
-    console.log('Cancel appointment:', appointmentId);
-    // In a real app, this would call the API
-  };
-
-  const handleViewAppointment = (appointment: any) => {
-    setSelectedAppointment(appointment);
-    setFormData({
-      date: appointment.date,
-      time: appointment.time,
-      reason: appointment.reason,
-      status: appointment.status,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleSaveAppointment = () => {
-    console.log('Save appointment:', formData);
+  const handleClose = () => {
     setOpenDialog(false);
-    // In a real app, this would call the API
+    setSelectedAppointment(null);
   };
 
-  const upcomingAppointments = appointments.filter((app: any) => app.status.toLowerCase() === 'scheduled' || app.status.toLowerCase() === 'confirmed');
-  const completedAppointments = appointments.filter((app: any) => app.status.toLowerCase() === 'completed');
+  const handleDateChange = (newDate: Date | null) => {
+    setRescheduleDate(newDate);
+    if (newDate) {
+      fetchSlotsForDate(newDate);
+    } else {
+      setAvailableSlots([]);
+      setSelectedSlotId(null);
+      setSlotsError('');
+    }
+  };
+
+  const handleSave = () => {
+    if (!selectedAppointment) return;
+
+    const updates: Record<string, any> = {};
+
+    // Always include reason if changed
+    if (reason.trim()) {
+      updates.reason = reason.trim();
+    }
+
+    // Include slot_id only if a new slot was selected
+    if (selectedSlotId) {
+      updates.slot_id = selectedSlotId;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      showError('No changes made. Please update the reason or select a new time slot.');
+      return;
+    }
+
+    updateAppointment.mutate(
+      { id: selectedAppointment.id, updates },
+      {
+        onSuccess: () => {
+          showSuccess('Appointment updated successfully!');
+          handleClose();
+        },
+        onError: (err: any) => {
+          showError(err?.response?.data?.message || 'Failed to update appointment. Please try again.');
+        },
+      }
+    );
+  };
+
+  const handleCancel = (appointmentId: string) => {
+    if (window.confirm('Are you sure you want to cancel this appointment?')) {
+      cancelAppointment.mutate(appointmentId, {
+        onSuccess: () => showSuccess('Appointment cancelled.'),
+        onError: () => showError('Failed to cancel appointment.'),
+      });
+    }
+  };
+
+  const upcomingCount = appointments.filter((a: any) =>
+    ['scheduled', 'confirmed'].includes(a.status.toLowerCase())
+  ).length;
+  const completedCount = appointments.filter((a: any) =>
+    a.status.toLowerCase() === 'completed'
+  ).length;
 
   if (isLoading) {
     return (
@@ -140,11 +236,7 @@ const AppointmentList: React.FC = () => {
           <Typography variant="h4" fontWeight={700}>
             My Appointments
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleBookAppointment}
-          >
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenBook}>
             Book Appointment
           </Button>
         </Box>
@@ -152,14 +244,10 @@ const AppointmentList: React.FC = () => {
         {/* Summary Cards */}
         <Box display="flex" gap={2} mb={4}>
           <Alert severity="info" sx={{ flex: 1 }}>
-            <Typography variant="body2">
-              Upcoming Appointments: {upcomingAppointments.length}
-            </Typography>
+            <Typography variant="body2">Upcoming Appointments: {upcomingCount}</Typography>
           </Alert>
           <Alert severity="success" sx={{ flex: 1 }}>
-            <Typography variant="body2">
-              Completed Appointments: {completedAppointments.length}
-            </Typography>
+            <Typography variant="body2">Completed Appointments: {completedCount}</Typography>
           </Alert>
         </Box>
 
@@ -167,7 +255,7 @@ const AppointmentList: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Date & Time</TableCell>
+                <TableCell>Date &amp; Time</TableCell>
                 <TableCell>Doctor</TableCell>
                 <TableCell>Reason</TableCell>
                 <TableCell>Status</TableCell>
@@ -176,128 +264,210 @@ const AppointmentList: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {appointments.map((appointment) => (
-                <TableRow key={appointment.id}>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                        {appointment.date}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {appointment.time}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{appointment.doctor}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {appointment.reason}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={appointment.status}
-                      color={getStatusColor(appointment.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {appointment.notes}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={1}>
-                      {appointment.status === 'scheduled' && (
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleCancelAppointment(appointment.id)}
-                        >
-                          <CancelIcon />
-                        </IconButton>
-                      )}
-                      <IconButton
-                        size="small"
-                        color="info"
-                        onClick={() => handleViewAppointment(appointment)}
-                      >
-                        <ViewIcon />
-                      </IconButton>
-                      {appointment.status === 'scheduled' && (
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleEditAppointment(appointment)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      )}
-                    </Box>
+              {appointments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <Typography color="text.secondary">No appointments found.</Typography>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                appointments.map((appointment: any) => (
+                  <TableRow key={appointment.id}>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2" fontWeight={600}>
+                          {appointment.date}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {appointment.time}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>{appointment.doctor}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {appointment.reason}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={appointment.status}
+                        color={getStatusColor(appointment.status)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {appointment.notes}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" gap={1}>
+                        <IconButton
+                          size="small"
+                          color="info"
+                          title="View"
+                          onClick={() => handleOpenView(appointment)}
+                        >
+                          <ViewIcon />
+                        </IconButton>
+                        {appointment.status.toLowerCase() === 'scheduled' && (
+                          <>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              title="Edit / Reschedule"
+                              onClick={() => handleOpenEdit(appointment)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              title="Cancel"
+                              onClick={() => handleCancel(appointment.id)}
+                            >
+                              <CancelIcon />
+                            </IconButton>
+                          </>
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
 
-        {/* Appointment Details Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+        {/* Edit / View / Book Dialog */}
+        <Dialog open={openDialog} onClose={handleClose} maxWidth="sm" fullWidth>
           <DialogTitle>
-            {selectedAppointment ? 'Appointment Details' : 'Book New Appointment'}
+            {!selectedAppointment ? 'Book New Appointment' : viewOnly ? 'Appointment Details' : 'Modify Appointment'}
           </DialogTitle>
+
           <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <TextField
-                fullWidth
-                label="Date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                fullWidth
-                label="Time"
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
+            <Box sx={{ pt: 1 }}>
+              {/* Current appointment info */}
+              {selectedAppointment && (
+                <Box mb={2} p={2} bgcolor="action.hover" borderRadius={2}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Current Appointment
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Date:</strong> {selectedAppointment.date} &nbsp;|&nbsp;
+                    <strong>Time:</strong> {selectedAppointment.time}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Doctor:</strong> {selectedAppointment.doctor}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Reschedule section (edit mode only) */}
+              {selectedAppointment && !viewOnly && (
+                <Box mb={2}>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <SlotIcon color="primary" fontSize="small" />
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      Reschedule (Optional)
+                    </Typography>
+                  </Box>
+                  <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <DatePicker
+                      label="Select New Date"
+                      value={rescheduleDate}
+                      onChange={handleDateChange}
+                      minDate={new Date()}
+                      slotProps={{
+                        textField: { fullWidth: true, size: 'small' },
+                      }}
+                    />
+                  </LocalizationProvider>
+
+                  {loadingSlots && (
+                    <Box display="flex" alignItems="center" gap={1} mt={2}>
+                      <CircularProgress size={18} />
+                      <Typography variant="body2" color="text.secondary">Loading available slots…</Typography>
+                    </Box>
+                  )}
+
+                  {!loadingSlots && slotsError && (
+                    <Alert severity="warning" sx={{ mt: 1 }}>{slotsError}</Alert>
+                  )}
+
+                  {!loadingSlots && availableSlots.length > 0 && (
+                    <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                      <InputLabel>Select New Time Slot</InputLabel>
+                      <Select
+                        value={selectedSlotId ?? ''}
+                        label="Select New Time Slot"
+                        onChange={(e) => setSelectedSlotId(Number(e.target.value))}
+                      >
+                        {availableSlots.map((slot) => (
+                          <MenuItem key={slot.id} value={slot.id}>
+                            Dr. {slot.doctor_name} &nbsp;|&nbsp;
+                            {slot.start_time.substring(0, 5)} – {slot.end_time.substring(0, 5)}
+                            &nbsp;
+                            <Chip
+                              label={`${slot.available_slots} left`}
+                              size="small"
+                              color={slot.available_slots > 3 ? 'success' : 'warning'}
+                              sx={{ ml: 1 }}
+                            />
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                </Box>
+              )}
+
+              {/* Reason field */}
               <TextField
                 fullWidth
                 label="Reason for Visit"
                 multiline
-                rows={2}
-                value={formData.reason}
-                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                rows={3}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
                 margin="normal"
+                disabled={viewOnly}
+                placeholder="Describe your symptoms or reason for the visit…"
               />
+
+              {/* Status badge (view only) */}
               {selectedAppointment && (
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    value={formData.status}
-                    label="Status"
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    disabled
-                  >
-                    <MenuItem value="scheduled">Scheduled</MenuItem>
-                    <MenuItem value="completed">Completed</MenuItem>
-                    <MenuItem value="cancelled">Cancelled</MenuItem>
-                    <MenuItem value="no_show">No Show</MenuItem>
-                  </Select>
-                </FormControl>
+                <Box mt={1}>
+                  <Chip
+                    label={selectedAppointment.status}
+                    color={getStatusColor(selectedAppointment.status)}
+                    size="small"
+                  />
+                </Box>
               )}
             </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSaveAppointment} variant="contained">
-              {selectedAppointment ? 'Close' : 'Book Appointment'}
+
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={handleClose} color="inherit">
+              {viewOnly ? 'Close' : 'Cancel'}
             </Button>
+            {!viewOnly && selectedAppointment && (
+              <Button
+                onClick={handleSave}
+                variant="contained"
+                disabled={updateAppointment.isPending}
+                startIcon={updateAppointment.isPending ? <CircularProgress size={18} color="inherit" /> : undefined}
+              >
+                {updateAppointment.isPending ? 'Saving…' : 'Update Appointment'}
+              </Button>
+            )}
+            {!selectedAppointment && (
+              <Button variant="contained" onClick={handleClose}>
+                Go to Booking
+              </Button>
+            )}
           </DialogActions>
         </Dialog>
       </Box>
@@ -306,4 +476,3 @@ const AppointmentList: React.FC = () => {
 };
 
 export default AppointmentList;
-

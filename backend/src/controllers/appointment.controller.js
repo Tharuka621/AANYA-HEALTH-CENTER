@@ -516,6 +516,71 @@ const bookAppointmentWithPayment = async (req, res) => {
   }
 };
 
+// Update appointment reason and optionally time slot (for patients)
+const updatePatientAppointment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { appointmentId } = req.params;
+    const { reason, slot_id } = req.body;
+
+    if (slot_id) {
+      // Check if the new slot is available
+      const [slot] = await pool.query(
+        `SELECT ds.*, COUNT(a.id) as booked_count
+         FROM doctor_slots ds
+         LEFT JOIN appointments a ON ds.id = a.slot_id AND a.status != 'cancelled' AND a.id != ?
+         WHERE ds.id = ? AND ds.is_active = 1
+         GROUP BY ds.id`,
+        [appointmentId, slot_id]
+      );
+
+      if (slot.length === 0) {
+        return res.status(404).json({ message: 'Slot not found or inactive' });
+      }
+
+      if (slot[0].booked_count >= slot[0].max_appointments) {
+        return res.status(400).json({ message: 'Slot is fully booked' });
+      }
+
+      // ds.doctor_id references users.id, but appointments.doctor_id references doctors.id
+      const [doctorRows] = await pool.query('SELECT id FROM doctors WHERE user_id = ? LIMIT 1', [slot[0].doctor_id]);
+      if (doctorRows.length === 0) {
+        return res.status(400).json({ message: 'Doctor profile not found for this slot' });
+      }
+      const actualDoctorId = doctorRows[0].id;
+
+      const query = `
+        UPDATE appointments 
+        SET reason = COALESCE(?, reason), slot_id = ?, doctor_id = ?
+        WHERE id = ? AND patient_id = (SELECT id FROM patients WHERE user_id = ?)
+      `;
+
+      const [result] = await pool.query(query, [reason, slot_id, actualDoctorId, appointmentId, userId]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Appointment not found or unauthorized' });
+      }
+    } else {
+      const query = `
+        UPDATE appointments 
+        SET reason = COALESCE(?, reason)
+        WHERE id = ? AND patient_id = (SELECT id FROM patients WHERE user_id = ?)
+      `;
+
+      const [result] = await pool.query(query, [reason, appointmentId, userId]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Appointment not found or unauthorized' });
+      }
+    }
+
+    res.json({ message: 'Appointment updated successfully' });
+  } catch (error) {
+    console.error('Error updating appointment:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // Cancel appointment
 const cancelAppointment = async (req, res) => {
   try {
@@ -780,6 +845,7 @@ module.exports = {
   bookAppointment,
   getPatientAppointments,
   getDoctorAppointments,
+  updatePatientAppointment,
   cancelAppointment,
   getAppointmentFee,
   bookAppointmentWithPayment,

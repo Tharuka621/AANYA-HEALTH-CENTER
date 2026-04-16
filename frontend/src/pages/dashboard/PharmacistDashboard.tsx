@@ -354,8 +354,8 @@ const PharmacistDashboard: React.FC = () => {
             <span style="font-family: monospace; font-size: 0.85em; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">${item.batch_no || 'N/A'}</span>
           </td>
           <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.qty}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">Rs. ${item.unit_price.toFixed(2)}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">Rs. ${item.line_total.toFixed(2)}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">Rs. ${Number(item.unit_price).toFixed(2)}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">Rs. ${Number(item.line_total).toFixed(2)}</td>
         </tr>
       `).join('');
 
@@ -457,8 +457,8 @@ const PharmacistDashboard: React.FC = () => {
         <body>
           <div class="header">
             <h1>AANYA HEALTH CENTER</h1>
-            <p>123 Medical Drive, Health City</p>
-            <p>Tel: +94 11 234 5678 | Email: info@aanyahealth.com</p>
+            <p>Uhumiya, Kurunegala</p>
+            <p>Tel: 0372265941 | Email: info@aanyahealth.com</p>
             <div class="receipt-title">PHARMACY RECEIPT</div>
           </div>
           
@@ -491,11 +491,11 @@ const PharmacistDashboard: React.FC = () => {
           <table class="totals" style="width: 50%; float: right;">
             <tr>
               <td style="text-align: right; padding-right: 20px; color: #666;">Subtotal:</td>
-              <td style="text-align: right;">Rs. ${currentInvoice.total_amount.toFixed(2)}</td>
+              <td style="text-align: right;">Rs. ${Number(currentInvoice.total_amount).toFixed(2)}</td>
             </tr>
             <tr>
               <td class="grand-total" style="text-align: right; padding-right: 20px;">TOTAL (LKR):</td>
-              <td class="grand-total" style="text-align: right;">Rs. ${currentInvoice.total_amount.toFixed(2)}</td>
+              <td class="grand-total" style="text-align: right;">Rs. ${Number(currentInvoice.total_amount).toFixed(2)}</td>
             </tr>
           </table>
           <div style="clear: both;"></div>

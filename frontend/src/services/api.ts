@@ -413,13 +413,29 @@ export const appointmentsApi = {
   },
 
   update: async (id: string, updates: Partial<Appointment>): Promise<ApiResponse<Appointment>> => {
-    await delay();
-    const index = mockAppointments.findIndex(a => a.id === id);
-    if (index === -1) {
-      throw new Error('Appointment not found');
+    try {
+      if (updates.status === 'cancelled') {
+        const response = await axiosInstance.put(`/appointments/cancel/${id}`);
+        return {
+          success: true,
+          data: response.data,
+          message: 'Appointment cancelled successfully'
+        };
+      }
+      
+      const response = await axiosInstance.put(`/appointments/patient/appointments/${id}`, updates);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Appointment updated successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: null as any,
+        message: error.response?.data?.message || 'Failed to update appointment'
+      };
     }
-    mockAppointments[index] = { ...mockAppointments[index], ...updates };
-    return createResponse(mockAppointments[index]);
   },
 
   // Receptionist methods

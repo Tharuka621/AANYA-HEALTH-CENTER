@@ -54,11 +54,16 @@ export const labService = {
         }
     },
 
-    addLabResult: async (itemId: string, resultText: string | null, fileUrl: string | null): Promise<ApiResponse<any>> => {
+    addLabResult: async (itemId: string, resultText: string | null, file: File | null): Promise<ApiResponse<any>> => {
         try {
-            const response = await axiosInstance.post(`/lab/orders/item/${itemId}/result`, {
-                resultText,
-                fileUrl,
+            const formData = new FormData();
+            if (resultText) formData.append('resultText', resultText);
+            if (file) formData.append('file', file);
+
+            const response = await axiosInstance.post(`/lab/orders/item/${itemId}/result`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
             return {
                 success: true,

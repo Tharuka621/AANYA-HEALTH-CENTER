@@ -40,6 +40,7 @@ interface GenerateReportDialogProps {
 
 const steps = ['Select Report Type', 'Set Filters', 'Review & Generate'];
 
+// Static report catalog displayed in Step 1 of the wizard.
 const reportTypes: Array<{
   type: ReportType;
   title: string;
@@ -87,6 +88,7 @@ const GenerateReportDialog: React.FC<GenerateReportDialogProps> = ({
   const [outputFormat, setOutputFormat] = useState<'table' | 'summary'>('table');
   const [generating, setGenerating] = useState(false);
 
+  // If the dialog is opened from a specific report card, skip type selection.
   React.useEffect(() => {
     if (initialReportType) {
       setSelectedType(initialReportType);
@@ -116,6 +118,7 @@ const GenerateReportDialog: React.FC<GenerateReportDialogProps> = ({
     onClose();
   };
 
+  // Builds a minimal payload; detailed filters are applied in the main page filter panel.
   const handleGenerate = async () => {
     if (!selectedType) return;
 
@@ -143,6 +146,7 @@ const GenerateReportDialog: React.FC<GenerateReportDialogProps> = ({
     }
   };
 
+  // Guards Next/Generate actions per wizard step requirements.
   const isStepValid = (): boolean => {
     switch (activeStep) {
       case 0:
@@ -156,6 +160,7 @@ const GenerateReportDialog: React.FC<GenerateReportDialogProps> = ({
     }
   };
 
+  // Renders the form fragment for the current wizard step.
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:

@@ -42,7 +42,7 @@ const Signup: React.FC = () => {
   const signup = useSignup();
   const { showError, showSuccess } = useToast();
   const { user, loading } = useAuth();
-  
+
   const [currentStep, setCurrentStep] = useState<Step>('signup');
   const [formData, setFormData] = useState({
     full_name: '',
@@ -95,12 +95,7 @@ const Signup: React.FC = () => {
   const passwordStrength = getPasswordStrength(formData.password);
   const passwordCriteria = getPasswordCriteria(formData.password);
 
-  // Redirect if already logged in - TEMPORARILY DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   if (!loading && user) {
-  //     navigate(`/dashboard/${user.role}`);
-  //   }
-  // }, [user, loading, navigate]);
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -135,7 +130,7 @@ const Signup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
@@ -144,7 +139,7 @@ const Signup: React.FC = () => {
         email: formData.email,
         password: formData.password,
       });
-      
+
       // Check if email verification is required
       if (response.requiresVerification) {
         showSuccess('Account created! Please check your email for verification code.');
@@ -162,12 +157,12 @@ const Signup: React.FC = () => {
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!otp) {
       setErrors({ otp: 'OTP is required' });
       return;
     }
-    
+
     if (otp.length !== 6) {
       setErrors({ otp: 'OTP must be 6 digits' });
       return;
@@ -181,14 +176,14 @@ const Signup: React.FC = () => {
         email: formData.email,
         otp,
       });
-      
+
       if (response.data.ok) {
         showSuccess('Email verified successfully!');
-        
+
         // Store token and user data
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        
+
         // Navigate to appropriate dashboard
         setTimeout(() => {
           const role = response.data.user.role?.toLowerCase();
@@ -216,7 +211,7 @@ const Signup: React.FC = () => {
       const response = await axios.post(`${API_URL}/auth/resend-verification`, {
         email: formData.email,
       });
-      
+
       if (response.data.ok) {
         showSuccess('Verification code sent! Please check your email.');
         setOtp('');
@@ -286,7 +281,7 @@ const Signup: React.FC = () => {
               {currentStep === 'signup' ? 'Create Account' : 'Verify Your Email'}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              {currentStep === 'signup' 
+              {currentStep === 'signup'
                 ? 'Create an account and take the first step toward smarter healthcare.'
                 : `We've sent a 6-digit code to ${formData.email}`
               }
@@ -303,192 +298,192 @@ const Signup: React.FC = () => {
           {/* Signup Form */}
           {currentStep === 'signup' && (
             <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Full Name"
-                  value={formData.full_name}
-                  onChange={handleInputChange('full_name')}
-                  error={!!errors.full_name}
-                  helperText={errors.full_name}
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonIcon color="action" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  autoComplete="name"
-                  autoFocus
-                />
-              </Grid>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Full Name"
+                    value={formData.full_name}
+                    onChange={handleInputChange('full_name')}
+                    error={!!errors.full_name}
+                    helperText={errors.full_name}
+                    required
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonIcon color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                    autoComplete="name"
+                    autoFocus
+                  />
+                </Grid>
 
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Email Address"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange('email')}
-                  error={!!errors.email}
-                  helperText={errors.email}
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <EmailIcon color="action" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  autoComplete="email"
-                />
-              </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Email Address"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange('email')}
+                    error={!!errors.email}
+                    helperText={errors.email}
+                    required
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <EmailIcon color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                    autoComplete="email"
+                  />
+                </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={handleInputChange('password')}
-                  error={!!errors.password}
-                  helperText={errors.password}
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon color="action" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={togglePasswordVisibility}
-                          edge="end"
-                          size="small"
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                  autoComplete="new-password"
-                />
-                {formData.password && (
-                  <Box mt={1}>
-                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-                      <Typography variant="caption" color="text.secondary">
-                        Password Strength:
-                      </Typography>
-                      <Typography variant="caption" fontWeight={600} color={`${passwordStrength.color}.main`}>
-                        {passwordStrength.label}
-                      </Typography>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={handleInputChange('password')}
+                    error={!!errors.password}
+                    helperText={errors.password}
+                    required
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon color="action" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={togglePasswordVisibility}
+                            edge="end"
+                            size="small"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    autoComplete="new-password"
+                  />
+                  {formData.password && (
+                    <Box mt={1}>
+                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
+                        <Typography variant="caption" color="text.secondary">
+                          Password Strength:
+                        </Typography>
+                        <Typography variant="caption" fontWeight={600} color={`${passwordStrength.color}.main`}>
+                          {passwordStrength.label}
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={passwordStrength.score}
+                        color={passwordStrength.color as any}
+                        sx={{ height: 6, borderRadius: 3 }}
+                      />
+                      <List dense sx={{ mt: 1, p: 0 }}>
+                        {passwordCriteria.map((criterion, index) => (
+                          <ListItem key={index} sx={{ py: 0, px: 0 }}>
+                            <ListItemIcon sx={{ minWidth: 28 }}>
+                              {criterion.met ? (
+                                <CheckCircle fontSize="small" color="success" />
+                              ) : (
+                                <Cancel fontSize="small" color="disabled" />
+                              )}
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={criterion.label}
+                              primaryTypographyProps={{
+                                variant: 'caption',
+                                color: criterion.met ? 'success.main' : 'text.secondary',
+                              }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
                     </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={passwordStrength.score}
-                      color={passwordStrength.color as any}
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                    <List dense sx={{ mt: 1, p: 0 }}>
-                      {passwordCriteria.map((criterion, index) => (
-                        <ListItem key={index} sx={{ py: 0, px: 0 }}>
-                          <ListItemIcon sx={{ minWidth: 28 }}>
-                            {criterion.met ? (
-                              <CheckCircle fontSize="small" color="success" />
-                            ) : (
-                              <Cancel fontSize="small" color="disabled" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={criterion.label}
-                            primaryTypographyProps={{
-                              variant: 'caption',
-                              color: criterion.met ? 'success.main' : 'text.secondary',
-                            }}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
+                  )}
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Confirm Password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange('confirmPassword')}
+                    error={!!errors.confirmPassword}
+                    helperText={errors.confirmPassword}
+                    required
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon color="action" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={toggleConfirmPasswordVisibility}
+                            edge="end"
+                            size="small"
+                          >
+                            {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    autoComplete="new-password"
+                  />
+                </Grid>
+              </Grid>
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={signup.isPending}
+                sx={{ mt: 3, mb: 2, py: 1.5 }}
+              >
+                {signup.isPending ? (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CircularProgress size={20} color="inherit" />
+                    Creating Account...
                   </Box>
+                ) : (
+                  'Create Account'
                 )}
-              </Grid>
+              </Button>
 
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Confirm Password"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange('confirmPassword')}
-                  error={!!errors.confirmPassword}
-                  helperText={errors.confirmPassword}
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon color="action" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={toggleConfirmPasswordVisibility}
-                          edge="end"
-                          size="small"
-                        >
-                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                  autoComplete="new-password"
-                />
-              </Grid>
-            </Grid>
+              <Divider sx={{ my: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  OR
+                </Typography>
+              </Divider>
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={signup.isPending}
-              sx={{ mt: 3, mb: 2, py: 1.5 }}
-            >
-              {signup.isPending ? (
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CircularProgress size={20} color="inherit" />
-                  Creating Account...
-                </Box>
-              ) : (
-                'Create Account'
-              )}
-            </Button>
-
-            <Divider sx={{ my: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                OR
-              </Typography>
-            </Divider>
-
-            <Box textAlign="center">
-              <Typography variant="body2" color="text.secondary">
-                Already have an account?{' '}
-                <Link
-                  component={RouterLink}
-                  to="/login"
-                  variant="body2"
-                  color="primary"
-                  fontWeight={600}
-                  underline="hover"
-                >
-                  Sign in here
-                </Link>
-              </Typography>
+              <Box textAlign="center">
+                <Typography variant="body2" color="text.secondary">
+                  Already have an account?{' '}
+                  <Link
+                    component={RouterLink}
+                    to="/login"
+                    variant="body2"
+                    color="primary"
+                    fontWeight={600}
+                    underline="hover"
+                  >
+                    Sign in here
+                  </Link>
+                </Typography>
+              </Box>
             </Box>
-          </Box>
           )}
 
           {/* OTP Verification Step */}

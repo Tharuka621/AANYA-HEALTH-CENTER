@@ -76,6 +76,8 @@ const PharmacistDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const { showSuccess, showError } = useToast();
 
+  // Core page state is organized around three domains: inventory, prescriptions, and invoices.
+
   // Medicine thresholds for low stock calculation
   const medicineThresholds = useMemo(() => {
     const map = new Map<string, number>();
@@ -97,7 +99,7 @@ const PharmacistDashboard: React.FC = () => {
   // Loading state
   const [loading, setLoading] = useState(true);
 
-  // Data Fetching
+  // Fetches all pharmacist datasets in parallel to keep dashboard counts consistent.
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -171,7 +173,7 @@ const PharmacistDashboard: React.FC = () => {
     return uniqueMedicines.size;
   }, [inventoryBatches]);
 
-  // Aggregate medicines with total quantities from all batches
+  // Aggregates multiple batches per medicine for a cleaner inventory summary view.
   const aggregatedMedicines = useMemo(() => {
     const medicineMap = new Map<string, {
       medicine_id: string;

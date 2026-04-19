@@ -73,6 +73,7 @@ const PharmacyManagement: React.FC = () => {
     sell_price: '',
   });
 
+  // Loads inventory rows that drive both the stock table and summary alerts.
   const fetchInventory = async () => {
     try {
       setLoading(true);
@@ -108,6 +109,7 @@ const PharmacyManagement: React.FC = () => {
   };
 
   const todayKey = new Date().toISOString().split('T')[0];
+  // Client-side validation keeps invalid medicine entries from being submitted.
   const validationErrors = useMemo(() => {
     const errors: Record<string, string> = {};
 
@@ -142,6 +144,7 @@ const PharmacyManagement: React.FC = () => {
 
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
+  // Creates medicine + opening batch data through admin pharmacy endpoint.
   const handleCreateMedicine = async () => {
     if (hasValidationErrors) {
       setShowValidation(true);

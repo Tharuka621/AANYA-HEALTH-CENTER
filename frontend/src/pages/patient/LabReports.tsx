@@ -63,12 +63,44 @@ const LabReports: React.FC = () => {
     setOpenDialog(true);
   };
 
-  const handleDownloadReport = (resultUrl: string) => {
+  const handleDownloadReport = async (resultUrl: string) => {
     if (!resultUrl) return;
-    // Construct the full URL — result_url is relative like /uploads/lab-reports/filename.pdf
-    const baseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
-    const fullUrl = resultUrl.startsWith('http') ? resultUrl : `${baseUrl}${resultUrl}`;
-    window.open(fullUrl, '_blank', 'noopener,noreferrer');
+
+    // Construct the full URL once
+    const host = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000";
+    const baseUrl = host.replace(/\/api$/, "");
+    const fullUrl = (resultUrl.startsWith("http") || resultUrl.startsWith("blob:")) 
+      ? resultUrl 
+      : `${baseUrl}${resultUrl}`;
+
+    try {
+      // If it's a blob URL from a previous session, it's already invalid.
+      if (fullUrl.startsWith("blob:")) {
+        window.open(fullUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      // Fetch the file to force download
+      const response = await fetch(fullUrl);
+      if (!response.ok) throw new Error("Network response was not ok");
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      const fileName = resultUrl.split("/").pop() || "lab-report.pdf";
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed, falling back to window.open", error);
+      window.open(fullUrl, "_blank", "noopener,noreferrer");
+    }
   };
 
   const completedReports = labReports.filter(

@@ -43,6 +43,7 @@ import { labService } from '../../services/lab.service';
 import { LabOrderItemWithDetails } from '../../types/lab';
 
 const LabDashboard: React.FC = () => {
+  // Upload dialog state for completing a selected lab order item.
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<LabOrderItemWithDetails | null>(null);
   const [resultText, setResultText] = useState('');
@@ -50,9 +51,11 @@ const LabDashboard: React.FC = () => {
 
   const [currentTab, setCurrentTab] = useState(0);
 
+  // Orders are split into pending/completed lists to back the two dashboard tabs.
   const [pendingItems, setPendingItems] = useState<LabOrderItemWithDetails[]>([]);
   const [completedItems, setCompletedItems] = useState<LabOrderItemWithDetails[]>([]);
 
+  // Loads both lists together so counters and tables stay in sync.
   const fetchOrders = async () => {
     const pendingRes = await labService.getPendingOrders();
     const completedRes = await labService.getCompletedOrders();
@@ -93,14 +96,12 @@ const LabDashboard: React.FC = () => {
     }
   };
 
+  // Persists textual result + optional file reference, then refreshes list views.
   const handleSubmitResults = async () => {
     if (!selectedItem) return;
 
-    // Create file URL if file exists
-    const fileUrl = reportFile ? URL.createObjectURL(reportFile) : null;
-
-    // Add lab result to database
-    const res = await labService.addLabResult(selectedItem.id, resultText || null, fileUrl);
+    // Add lab result to database (service now handles FormData)
+    const res = await labService.addLabResult(selectedItem.id, resultText || null, reportFile);
 
     if (res.success) {
       // Close dialog and reset

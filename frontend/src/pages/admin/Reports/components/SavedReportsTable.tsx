@@ -11,7 +11,6 @@ import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import {
   Visibility as ViewIcon,
   GetApp as DownloadIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { SavedReport, ReportType, ReportStatus } from '../../../../types/reports';
@@ -21,10 +20,10 @@ interface SavedReportsTableProps {
   loading?: boolean;
   onView?: (report: SavedReport) => void;
   onDownload?: (report: SavedReport) => void;
-  onEdit?: (report: SavedReport) => void;
   onDelete?: (report: SavedReport) => void;
 }
 
+// Shared status badge coloring for saved report lifecycle states.
 const getStatusColor = (
   status: ReportStatus
 ): 'success' | 'warning' | 'info' | 'default' => {
@@ -40,6 +39,7 @@ const getStatusColor = (
   }
 };
 
+// Adds a consistent visual accent per report category.
 const getTypeColor = (type: ReportType): string => {
   switch (type) {
     case 'PATIENT_VISIT':
@@ -57,6 +57,7 @@ const getTypeColor = (type: ReportType): string => {
   }
 };
 
+// Converts enum-like values (e.g. LAB_TEST) to user-friendly labels.
 const formatReportType = (type: ReportType): string => {
   return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
 };
@@ -66,7 +67,6 @@ const SavedReportsTable: React.FC<SavedReportsTableProps> = ({
   loading = false,
   onView,
   onDownload,
-  onEdit,
   onDelete,
 }) => {
   const columns: GridColDef[] = [
@@ -130,7 +130,7 @@ const SavedReportsTable: React.FC<SavedReportsTableProps> = ({
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 180,
+      width: 140,
       sortable: false,
       renderCell: (params: GridRenderCellParams) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -145,13 +145,6 @@ const SavedReportsTable: React.FC<SavedReportsTableProps> = ({
             <Tooltip title="Download">
               <IconButton size="small" onClick={() => onDownload(params.row)}>
                 <DownloadIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          {onEdit && (
-            <Tooltip title="Edit Metadata">
-              <IconButton size="small" onClick={() => onEdit(params.row)}>
-                <EditIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           )}

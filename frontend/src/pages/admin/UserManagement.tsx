@@ -64,10 +64,12 @@ const UserManagement: React.FC = () => {
     { value: 'ADMIN', label: 'Admin' },
   ];
 
+  // Initial load of user directory used by filters and role/action controls.
   useEffect(() => {
     fetchUsers();
   }, []);
 
+  // Fetches all users with role/status metadata for admin operations.
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -85,6 +87,7 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  // Persists role changes and updates the local row immediately for responsive UI.
   const handleRoleChange = async (userId: number, newRole: string) => {
     try {
       setUpdatingUserId(userId);
@@ -113,6 +116,7 @@ const UserManagement: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
+  // Executes a soft-destructive flow: confirm dialog -> API delete -> local state sync.
   const handleDeleteConfirm = async () => {
     if (!userToDelete) return;
 

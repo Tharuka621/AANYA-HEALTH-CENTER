@@ -67,12 +67,28 @@ export interface Prescription {
   id: string;
   patient_id: string;
   doctor_id: string;
-  medicines: PrescribedMedicine[];
-  status: 'active' | 'dispensed' | 'expired';
+  doctor_name?: string;
+  prescription_date: string;
+  diagnosis?: string;
+  medicines?: PrescriptionItem[];
+  status: 'active' | 'dispensed' | 'expired' | 'completed';
   issued_date: string;
   notes?: string;
   patient?: Patient;
   doctor?: User;
+  created_at: string;
+}
+
+export interface PrescriptionItem {
+  id: string;
+  prescription_id: string;
+  medicine_id: string;
+  medicine_name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  quantity: number;
+  instructions?: string;
 }
 
 export interface PrescribedMedicine {

@@ -41,6 +41,7 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
   onApply,
   onReset,
 }) => {
+  // Common filters applied to every report type.
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [groupBy, setGroupBy] = useState<GroupBy>('daily');
@@ -77,6 +78,7 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
   // Peak Clinic Hours specific
   const [peakDoctorId, setPeakDoctorId] = useState<string>('');
 
+  // Backend expects DD/MM/YYYY date strings for report filters.
   const formatDate = (date: Date | null): string | null => {
     if (!date) return null;
     const day = String(date.getDate()).padStart(2, '0');
@@ -85,6 +87,7 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
     return `${day}/${month}/${year}`;
   };
 
+  // Merges common filters with report-type-specific fields.
   const handleApply = () => {
     const baseFilters = {
       dateFrom: formatDate(dateFrom),
@@ -162,6 +165,7 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
     onApply(filters);
   };
 
+  // Resets all local filter state so switching report types starts cleanly.
   const handleReset = () => {
     setDateFrom(null);
     setDateTo(null);

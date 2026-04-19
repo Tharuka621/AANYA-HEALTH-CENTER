@@ -232,6 +232,7 @@ const AppointmentBooking: React.FC = () => {
               label="Select Date"
               value={selectedDate}
               onChange={(newValue) => setSelectedDate(newValue)}
+              //validation for past dates
               minDate={today}
               format="dd/MM/yyyy"
               slotProps={{

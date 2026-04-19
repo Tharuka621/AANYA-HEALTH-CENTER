@@ -49,6 +49,7 @@ interface TabPanelProps {
   value: number;
 }
 
+// Small wrapper used by MUI Tabs to conditionally render panel content.
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
   return (
     <Box hidden={value !== index} sx={{ pt: 3 }}>
@@ -58,7 +59,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 };
 
 const ReportsPage: React.FC = () => {
-  // State management
+  // Core page state: selected report, generated data, and current UI view.
   const [selectedReportType, setSelectedReportType] = useState<ReportType | null>(null);
   const [reportPreview, setReportPreview] = useState<ReportPreview | null>(null);
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
@@ -80,11 +81,12 @@ const ReportsPage: React.FC = () => {
     severity: 'success',
   });
 
-  // Load saved reports on mount
+  // Preload previously generated reports for the Saved Reports section.
   useEffect(() => {
     loadSavedReports();
   }, []);
 
+  // Fetches saved report metadata used by the lower grid.
   const loadSavedReports = async () => {
     setSavedReportsLoading(true);
     try {
@@ -180,6 +182,7 @@ const ReportsPage: React.FC = () => {
     }
   };
 
+  // Captures visible insights charts so they can be embedded into exported PDFs.
   const captureCharts = async () => {
     const chartIds = [
       'chart-visits-doctor', 'chart-visit-status',
@@ -280,10 +283,6 @@ const ReportsPage: React.FC = () => {
     }
   };
 
-  const handleEditReport = (_report: SavedReport) => {
-    showSnackbar('Edit functionality will be implemented', 'info');
-  };
-
   const handleDeleteReport = async (report: SavedReport) => {
     try {
       await deleteReport(report.id);
@@ -294,6 +293,7 @@ const ReportsPage: React.FC = () => {
     }
   };
 
+  // Header cards that define available report templates and quick filter hints.
   const reportTypeData = [
     {
       type: 'PATIENT_VISIT' as ReportType,
@@ -512,7 +512,6 @@ const ReportsPage: React.FC = () => {
               loading={savedReportsLoading}
               onView={handleViewSavedReport}
               onDownload={handleDownloadSavedReport}
-              onEdit={handleEditReport}
               onDelete={handleDeleteReport}
             />
           )}

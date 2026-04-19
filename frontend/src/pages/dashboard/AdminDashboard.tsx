@@ -39,6 +39,7 @@ interface DashboardStats {
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  // Aggregated numbers displayed in summary/stat cards.
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalPatients: 0,
@@ -55,6 +56,7 @@ const AdminDashboard: React.FC = () => {
     fetchDashboardStats();
   }, []);
 
+  // Pulls the latest admin KPI snapshot from the backend.
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
@@ -76,6 +78,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Primary KPI cards shown at the top of the dashboard.
   const statCards = [
     {
       title: 'Total Users',
@@ -150,6 +153,7 @@ const AdminDashboard: React.FC = () => {
     },
   ];
 
+  // Navigation shortcuts into each admin management module.
   const quickActionCards = [
     {
       title: 'Appointment Management',

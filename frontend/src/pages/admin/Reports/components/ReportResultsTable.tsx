@@ -27,6 +27,7 @@ interface ReportResultsTableProps {
   onDownloadCSV?: (row: ReportRow) => void;
 }
 
+// Keeps chip colors consistent across report-specific status values.
 const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'info' | 'default' => {
   switch (status) {
     case 'completed':
@@ -54,6 +55,7 @@ const ReportResultsTable: React.FC<ReportResultsTableProps> = ({
   onDownloadPDF,
   onDownloadCSV,
 }) => {
+  // Shared action-cell renderer reused by all report table schemas.
   const renderActions = (params: GridRenderCellParams) => (
     <Box sx={{ display: 'flex', gap: 0.5 }}>
       {onView && (
@@ -260,6 +262,7 @@ const ReportResultsTable: React.FC<ReportResultsTableProps> = ({
     },
   ];
 
+  // Selects the correct DataGrid column schema for the active report type.
   const getColumns = (): GridColDef[] => {
     switch (reportType) {
       case 'PATIENT_VISIT':
@@ -281,6 +284,7 @@ const ReportResultsTable: React.FC<ReportResultsTableProps> = ({
     }
   };
 
+  // Builds stable row IDs across different report DTO shapes.
   const getRowId = (row: ReportRow): string => {
     if ('visitId' in row) return row.visitId;
     if ('labOrderId' in row) return row.labOrderId;

@@ -50,13 +50,14 @@ interface Appointment {
   systolic_bp?: number;
   diastolic_bp?: number;
   weight?: number;
-  sugar_level?: number;
   vital_notes?: string;
 }
 
 const ReceptionistDashboard: React.FC = () => {
   useAuth();
   const { showSuccess, showError } = useToast();
+
+  // Workflow is slot-driven: select date -> select slot -> load appointments.
 
   // Filter states
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -68,7 +69,7 @@ const ReceptionistDashboard: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch slots for selected date
+  // Loads receptionist-visible slots for the selected clinic date.
   const fetchSlots = async () => {
     setLoading(true);
     try {
@@ -92,7 +93,7 @@ const ReceptionistDashboard: React.FC = () => {
     }
   };
 
-  // Fetch appointments for selected slot
+  // Loads appointments for the currently selected slot.
   const fetchAppointments = async (slotId: string) => {
     try {
       const res = await api.appointments.getSlotAppointments(slotId);
@@ -156,7 +157,6 @@ const ReceptionistDashboard: React.FC = () => {
     diastolic_bp: '',
     pulse: '',
     weight: '',
-    sugar_level: '',
     notes: '',
   });
 
@@ -186,6 +186,7 @@ const ReceptionistDashboard: React.FC = () => {
     }
   };
 
+  // Opens the vitals dialog prefilled with any existing values for quick updates.
   const handleCheckIn = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setVitalsForm({
@@ -194,7 +195,6 @@ const ReceptionistDashboard: React.FC = () => {
       diastolic_bp: appointment.diastolic_bp?.toString() || '',
       pulse: appointment.pulse?.toString() || '',
       weight: appointment.weight?.toString() || '',
-      sugar_level: appointment.sugar_level?.toString() || '',
       notes: appointment.vital_notes || '',
     });
     setVitalsDialogOpen(true);
@@ -589,15 +589,7 @@ const ReceptionistDashboard: React.FC = () => {
                   onChange={(e) => setVitalsForm({ ...vitalsForm, diastolic_bp: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Sugar Level (mg/dL)"
-                  type="number"
-                  value={vitalsForm.sugar_level}
-                  onChange={(e) => setVitalsForm({ ...vitalsForm, sugar_level: e.target.value })}
-                />
-              </Grid>
+
               <Grid item xs={12}>
                 <TextField
                   fullWidth

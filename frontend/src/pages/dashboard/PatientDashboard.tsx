@@ -43,6 +43,7 @@ import { axiosInstance } from '../../services/api';
 const PatientDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  // Dialog and payment state for appointment booking flow.
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<User | null>(null);
@@ -61,7 +62,7 @@ const PatientDashboard: React.FC = () => {
   const [labReports, setLabReports] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Fetch real appointments from the backend
+  // Appointments are sourced via React Query hook; prescriptions/labs are loaded separately below.
   const { data: appointmentsData, isLoading: loadingAppointments, refetch: refetchAppointments } = useAppointmentsByPatient(user?.id || '');
   const appointments = appointmentsData?.data || [];
 
@@ -73,6 +74,7 @@ const PatientDashboard: React.FC = () => {
     return apt.status === 'scheduled' && aptDate >= today;
   });
 
+  // Loads additional dashboard sections (prescriptions + lab reports).
   const fetchPatientData = async () => {
     setLoadingData(true);
     try {
@@ -119,6 +121,7 @@ const PatientDashboard: React.FC = () => {
     return Math.random() > 0.3;
   };
 
+  // Converts a confirmed booking into a pending payment flow.
   const handleAppointmentConfirm = (appointmentData: any) => {
     console.log('Checking availability for:', appointmentData);
 
@@ -167,6 +170,45 @@ const PatientDashboard: React.FC = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleDownloadReport = async (resultUrl: string) => {
+    if (!resultUrl) return;
+    
+    // Construct the full URL once
+    const host = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000";
+    const baseUrl = host.replace(/\/api$/, "");
+    const fullUrl = (resultUrl.startsWith("http") || resultUrl.startsWith("blob:")) 
+      ? resultUrl 
+      : `${baseUrl}${resultUrl}`;
+
+    try {
+      // If it's a blob URL from a previous session, it's already invalid.
+      // But we'll try to handle it gracefully.
+      if (fullUrl.startsWith("blob:")) {
+        window.open(fullUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const response = await fetch(fullUrl);
+      if (!response.ok) throw new Error("Network response was not ok");
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      const fileName = resultUrl.split("/").pop() || "lab-report.pdf";
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed, falling back to window.open", error);
+      window.open(fullUrl, "_blank", "noopener,noreferrer");
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -325,7 +367,7 @@ const PatientDashboard: React.FC = () => {
                   </Box>
                 ) : prescriptions.length > 0 ? (
                   <List>
-                    {prescriptions.map((prescription, index) => (
+                    {prescriptions.slice(0, 4).map((prescription, index) => (
                       <React.Fragment key={prescription.id}>
                         <ListItem>
                           <ListItemIcon>
@@ -338,7 +380,7 @@ const PatientDashboard: React.FC = () => {
                                   {prescription.doctor_name}
                                 </Typography>
                                 <Chip
-                                  label={`APT-${String(prescription.visit_id || 0).padStart(4, '0')}`}
+                                  label={`APT-${String(prescription.visit_id || 0).padStart(4, "0")}`}
                                   size="small"
                                   color="primary"
                                   variant="outlined"
@@ -351,23 +393,37 @@ const PatientDashboard: React.FC = () => {
                                   Issued: {formatDate(prescription.created_at)}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" component="span" display="block">
-                                  {prescription.instructions?.substring(0, 30)}{prescription.instructions?.length > 30 ? '...' : ''}
+                                  {prescription.instructions?.substring(0, 30)}
+                                  {prescription.instructions?.length > 30 ? "..." : ""}
                                 </Typography>
                               </>
                             }
                           />
-                          <IconButton size="small" color="primary" onClick={() => navigate('/dashboard/patient/prescriptions')}>
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => navigate("/dashboard/patient/prescriptions")}
+                          >
                             <ViewIcon />
                           </IconButton>
                         </ListItem>
-                        {index < prescriptions.length - 1 && <Divider />}
+                        {index < Math.min(prescriptions.length, 4) - 1 && <Divider />}
                       </React.Fragment>
                     ))}
                   </List>
                 ) : (
-                  <Alert severity="info">
-                    No recent prescriptions found.
-                  </Alert>
+                  <Alert severity="info">No recent prescriptions found.</Alert>
+                )}
+                {prescriptions.length > 4 && (
+                  <Box mt={2} display="flex" justifyContent="center">
+                    <Button
+                      variant="text"
+                      color="primary"
+                      onClick={() => navigate("/dashboard/patient/prescriptions")}
+                    >
+                      View All Prescriptions
+                    </Button>
+                  </Box>
                 )}
               </CardContent>
             </Card>
@@ -391,7 +447,7 @@ const PatientDashboard: React.FC = () => {
                   </Box>
                 ) : labReports.length > 0 ? (
                   <List>
-                    {labReports.map((report, index) => (
+                    {labReports.slice(0, 4).map((report, index) => (
                       <React.Fragment key={report.id}>
                         <ListItem>
                           <ListItemIcon>
@@ -401,7 +457,7 @@ const PatientDashboard: React.FC = () => {
                             primary={
                               <Box display="flex" alignItems="center" gap={1}>
                                 <Typography variant="subtitle1" fontWeight={600}>
-                                  {report.test_names || 'General Lab Test'}
+                                  {report.test_names || report.test_name || "General Lab Test"}
                                 </Typography>
                                 <Chip
                                   label={report.status}
@@ -417,24 +473,41 @@ const PatientDashboard: React.FC = () => {
                             }
                           />
                           <Box display="flex" gap={1}>
-                            <IconButton size="small" color="primary" onClick={() => navigate('/dashboard/patient/lab-reports')}>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => navigate("/dashboard/patient/lab-reports")}
+                            >
                               <ViewIcon />
                             </IconButton>
                             {report.result_url && (
-                              <IconButton size="small" color="primary" onClick={() => window.open(report.result_url, '_blank')}>
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => handleDownloadReport(report.result_url)}
+                              >
                                 <DownloadIcon />
                               </IconButton>
                             )}
                           </Box>
                         </ListItem>
-                        {index < labReports.length - 1 && <Divider />}
+                        {index < Math.min(labReports.length, 4) - 1 && <Divider />}
                       </React.Fragment>
                     ))}
                   </List>
                 ) : (
-                  <Alert severity="info">
-                    No lab reports available.
-                  </Alert>
+                  <Alert severity="info">No lab reports available.</Alert>
+                )}
+                {labReports.length > 4 && (
+                  <Box mt={2} display="flex" justifyContent="center">
+                    <Button
+                      variant="text"
+                      color="primary"
+                      onClick={() => navigate("/dashboard/patient/lab-reports")}
+                    >
+                      View All Lab Reports
+                    </Button>
+                  </Box>
                 )}
               </CardContent>
             </Card>

@@ -6,8 +6,6 @@ import {
   Prescription,
   LabTest,
   Medicine,
-  VitalSigns,
-  Bill,
   ApiResponse,
   PaginatedResponse,
   Notification
@@ -180,8 +178,12 @@ let mockPrescriptions: Prescription[] = [
     id: '1',
     patient_id: '1',
     doctor_id: '2',
+    prescription_date: '2024-12-15',
     medicines: [
       {
+        id: '1',
+        prescription_id: '1',
+        medicine_id: '1',
         medicine_name: 'Metformin',
         dosage: '500mg',
         frequency: 'Twice daily',
@@ -194,7 +196,8 @@ let mockPrescriptions: Prescription[] = [
     issued_date: '2024-12-15T00:00:00Z',
     notes: 'Monitor blood sugar levels',
     patient: mockPatients[0],
-    doctor: mockUsers[1]
+    doctor: mockUsers[1],
+    created_at: '2024-12-15T00:00:00Z'
   }
 ];
 
@@ -266,12 +269,6 @@ const createResponse = <T>(data: T, message: string = 'Success'): ApiResponse<T>
   data,
   message,
   success: true
-});
-
-const createErrorResponse = (message: string): ApiResponse<null> => ({
-  data: null,
-  message,
-  success: false
 });
 
 // Users API
@@ -377,7 +374,7 @@ export const appointmentsApi = {
     return createResponse(appointments);
   },
 
-  getByPatient: async (patientId: string): Promise<ApiResponse<Appointment[]>> => {
+  getByPatient: async (_patientId: string): Promise<ApiResponse<Appointment[]>> => {
     try {
       const response = await axiosInstance.get('/appointments/patient/appointments');
       return {

@@ -39,7 +39,7 @@ const PatientManagement: React.FC = () => {
     allergies: '',
   });
 
-  // Mock patients data
+  // Temporary mock dataset until this page is connected to backend APIs.
   const patients = [
     {
       id: '1',
@@ -99,6 +99,7 @@ const PatientManagement: React.FC = () => {
     return gender === 'Male' ? 'primary' : 'secondary';
   };
 
+  // Initializes dialog for patient creation.
   const handleAddPatient = () => {
     setEditingPatient(null);
     setFormData({
@@ -111,6 +112,7 @@ const PatientManagement: React.FC = () => {
     setOpenDialog(true);
   };
 
+  // Initializes dialog for editing an existing patient row.
   const handleEditPatient = (patient: any) => {
     setEditingPatient(patient);
     setFormData({

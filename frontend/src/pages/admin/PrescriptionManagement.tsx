@@ -56,6 +56,7 @@ const PrescriptionManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Retrieves prescription rows for the admin review table.
   const fetchPrescriptions = async () => {
     try {
       setLoading(true);

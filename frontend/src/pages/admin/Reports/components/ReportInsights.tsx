@@ -39,6 +39,7 @@ import {
 const STAT_COLORS = ['#1976d2', '#2e7d32', '#ed6c02'];
 const PIE_COLORS = ['#1976d2', '#2e7d32', '#ed6c02'];
 
+// Type guards convert union rows into strongly typed arrays for each report mode.
 const toPatientRows = (data: ReportPreview['data']): PatientVisitRow[] =>
   data.filter((row): row is PatientVisitRow => 'visitId' in row);
 
@@ -107,9 +108,10 @@ const ReportInsights: React.FC<ReportInsightsProps> = ({ reportType, reportPrevi
     );
   }
 
+  // Use backend-provided summary when available, otherwise derive a fallback locally.
   const summary = reportPreview.summary || { totalRecords: reportPreview.data.length };
 
-  // Render logic for each report type...
+  // Each branch renders charts and metrics tailored to one report type.
   if (reportType === 'PATIENT_VISIT') {
     const rows = toPatientRows(reportPreview.data);
     const byDoctor = Array.from(
@@ -403,7 +405,7 @@ const ReportInsights: React.FC<ReportInsightsProps> = ({ reportType, reportPrevi
     );
   }
 
-  // INVENTORY REPORT
+  // Default branch handles INVENTORY insights.
   const invRows = toInventoryRows(reportPreview.data);
   const byStatus = Array.from(
     invRows.reduce((map, row) => map.set(row.status, (map.get(row.status) || 0) + 1), new Map<string, number>())

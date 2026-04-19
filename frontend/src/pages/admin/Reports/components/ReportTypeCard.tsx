@@ -28,6 +28,7 @@ interface ReportTypeCardProps {
   onGenerate: (type: ReportType) => void;
 }
 
+// Centralized icon mapping keeps card rendering declarative.
 const iconMap: Record<ReportType, typeof SvgIcon> = {
   PATIENT_VISIT: VisitIcon,
   LAB_TEST: LabIcon,
@@ -38,6 +39,7 @@ const iconMap: Record<ReportType, typeof SvgIcon> = {
   PEAK_CLINIC_HOURS: TimeIcon,
 };
 
+// Per-report accent colors are reused for icon tint, chips, and button background.
 const colorMap: Record<ReportType, string> = {
   PATIENT_VISIT: '#1976d2',
   LAB_TEST: '#9c27b0',

@@ -70,6 +70,7 @@ const AppointmentManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Retrieves all appointments used by both the summary cards and the data table.
   const fetchAppointments = async () => {
     try {
       setLoading(true);
@@ -87,6 +88,7 @@ const AppointmentManagement: React.FC = () => {
     fetchAppointments();
   }, []);
 
+  // Lightweight derived counters rendered in the top KPI cards.
   const stats = useMemo(() => ({
     total: appointments.length,
     scheduled: appointments.filter((item) => item.status === 'scheduled').length,

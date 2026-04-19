@@ -152,6 +152,8 @@ export default function DoctorDashboard() {
   const { showSuccess, showError } = useToast();
   const { user } = useAuth();
 
+  // Main dashboard state combines queue operations, consultation workflow, and lookups.
+
   // Date & slot selection
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [slots, setSlots] = useState<DoctorSlot[]>([]);
@@ -1137,3 +1139,5 @@ export default function DoctorDashboard() {
 
   );
 }
+
+

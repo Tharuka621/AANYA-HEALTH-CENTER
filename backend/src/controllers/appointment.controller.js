@@ -686,11 +686,11 @@ const getSlotAppointments = async (req, res) => {
         u.full_name as patient_name,
         u.phone,
         p.nic,
-        v.temperature, v.systolic_bp, v.diastolic_bp, v.pulse, v.weight, v.sugar_level, v.notes as vital_notes
+        pv.temperature, pv.systolic_bp, pv.diastolic_bp, pv.pulse, pv.weight, pv.sugar_level, pv.notes as vital_notes
       FROM appointments a
       INNER JOIN patients p ON a.patient_id = p.id
       INNER JOIN users u ON p.user_id = u.id
-      LEFT JOIN patient_vitals v ON a.id = v.appointment_id
+      LEFT JOIN patient_vitals pv ON a.id = pv.appointment_id
       WHERE a.slot_id = ? AND a.status != 'cancelled'
     `;
     const [appointments] = await pool.query(query, [slotId]);
@@ -793,42 +793,70 @@ const registerWalkIn = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const { patientInfo, slotId, doctorId, reason, vitals } = req.body;
+    const { patientInfo, slotId, doctorId: doctorUserId, reason, vitals } = req.body;
 
     console.log('Registering walk-in patient:', patientInfo.full_name);
 
-    // 1. Create User
-    const email = patientInfo.email || `walkin_${Date.now()}@aanya.com`;
-    const password_hash = await bcrypt.hash('Patient@123', 10);
-
-    const [userResult] = await connection.query(
-      "INSERT INTO users (full_name, email, phone, password_hash, role_id) VALUES (?, ?, ?, ?, (SELECT id FROM roles WHERE name = 'PATIENT'))",
-      [patientInfo.full_name, email, patientInfo.phone, password_hash]
+    // 0. IMPORTANT: Map Doctor User ID to Doctors Profile ID
+    const [doctorRows] = await connection.query(
+      'SELECT id FROM doctors WHERE user_id = ? LIMIT 1',
+      [doctorUserId]
     );
-    const userId = userResult.insertId;
+    if (doctorRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: 'Doctor profile not found for this user.' });
+    }
+    const doctorId = doctorRows[0].id;
 
-    // 2. Create Patient (use correct column name: dob not date_of_birth)
-    const [patientResult] = await connection.query(
-      "INSERT INTO patients (user_id, nic, gender, dob, address) VALUES (?, ?, ?, ?, ?)",
-      [userId, patientInfo.nic, patientInfo.gender, patientInfo.date_of_birth || null, patientInfo.address]
+    let patientId;
+    let userId;
+
+    // 1. Check if patient already exists by NIC
+    const [existingPatient] = await connection.query(
+      'SELECT id, user_id FROM patients WHERE nic = ? LIMIT 1',
+      [patientInfo.nic]
     );
-    const patientId = patientResult.insertId;
 
-    // 3. Create Appointment (checked_in immediately)
+    if (existingPatient.length > 0) {
+      patientId = existingPatient[0].id;
+      userId = existingPatient[0].user_id;
+      console.log('Using existing patient profile:', patientId);
+    } else {
+      // 2. Create User if not exists (checked by phone/email)
+      const email = patientInfo.email || `walkin_${Date.now()}@aanya.com`;
+      const password_hash = await bcrypt.hash('Patient@123', 10);
+
+      const [userResult] = await connection.query(
+        "INSERT INTO users (full_name, email, phone, password_hash, role_id) VALUES (?, ?, ?, ?, (SELECT id FROM roles WHERE name = 'PATIENT'))",
+        [patientInfo.full_name, email, patientInfo.phone, password_hash]
+      );
+      userId = userResult.insertId;
+
+      // 3. Create Patient
+      const [patientResult] = await connection.query(
+        "INSERT INTO patients (user_id, nic, gender, dob, address) VALUES (?, ?, ?, ?, ?)",
+        [userId, patientInfo.nic, patientInfo.gender, patientInfo.date_of_birth || null, patientInfo.address]
+      );
+      patientId = patientResult.insertId;
+    }
+
+    // 4. Create Appointment (checked_in immediately)
+    const appointmentNo = `WALK-${Date.now()}`;
     const [appointmentResult] = await connection.query(
-      "INSERT INTO appointments (patient_id, doctor_id, slot_id, reason, status, booked_by) VALUES (?, ?, ?, ?, 'checked_in', ?)",
-      [patientId, doctorId, slotId, reason || 'Walk-in', req.user.id]
+      "INSERT INTO appointments (appointment_no, patient_id, doctor_id, slot_id, reason, status, booked_by) VALUES (?, ?, ?, ?, ?, 'checked_in', 'RECEPTIONIST')",
+      [appointmentNo, patientId, doctorId, slotId, reason || 'Walk-in']
     );
     const appointmentId = appointmentResult.insertId;
 
-    // 4. Create Visit row so patient appears in doctor's queue
+    // 5. Create Visit row so patient appears in doctor's queue
     const [visitResult] = await connection.query(
       `INSERT INTO visits (appointment_id, patient_id, doctor_id, check_in_time, status, checked_in_by)
        VALUES (?, ?, ?, NOW(), 'WAITING', ?)`,
       [appointmentId, patientId, doctorId, req.user.id]
     );
+    const visitId = visitResult.insertId;
 
-    // 5. Save Vitals to both tables
+    // 6. Save Vitals to both tables
     if (vitals) {
       await connection.query(
         `INSERT INTO patient_vitals
@@ -838,12 +866,13 @@ const registerWalkIn = async (req, res) => {
           vitals.temperature || null, vitals.systolic_bp || null, vitals.diastolic_bp || null,
           vitals.pulse || null, vitals.weight || null, vitals.sugar_level || null, vitals.notes || '']
       );
-      // Also to vitals table (doctor reads this)
-      if (visitResult.insertId) {
+      
+      // Also to vitals table (doctor reads this via visits table)
+      if (visitId) {
         await connection.query(
           `INSERT INTO vitals (visit_id, temperature, systolic_bp, diastolic_bp, pulse, weight, sugar_level, notes)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [visitResult.insertId,
+          [visitId,
           vitals.temperature || null, vitals.systolic_bp || null, vitals.diastolic_bp || null,
           vitals.pulse || null, vitals.weight || null, vitals.sugar_level || null, vitals.notes || '']
         );
@@ -852,16 +881,68 @@ const registerWalkIn = async (req, res) => {
 
     await connection.commit();
     res.status(201).json({
+      success: true,
       message: 'Walk-in patient registered and checked in successfully',
       appointmentId,
-      visitId: visitResult.insertId
+      visitId
     });
   } catch (error) {
     if (connection) await connection.rollback();
     console.error('Error registering walk-in:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   } finally {
     if (connection) connection.release();
+  }
+};
+
+const getWaitingList = async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) return res.status(400).json({ message: 'Date is required' });
+
+    const query = `
+      SELECT 
+        a.id,
+        a.appointment_no,
+        a.status,
+        u.full_name as patient_name,
+        du.full_name as doctor_name,
+        TIME_FORMAT(ds.start_time, '%H:%i') as start_time,
+        TIME_FORMAT(ds.end_time, '%H:%i') as end_time,
+        v.id as visit_id,
+        (
+          SELECT COUNT(*) FROM appointments a2
+          WHERE a2.slot_id = a.slot_id
+            AND a2.status != 'cancelled'
+            AND a2.id <= a.id
+        ) as queue_no
+      FROM appointments a
+      INNER JOIN doctor_slots ds ON a.slot_id = ds.id
+      INNER JOIN patients p ON a.patient_id = p.id
+      INNER JOIN users u ON p.user_id = u.id
+      INNER JOIN doctors d ON a.doctor_id = d.id
+      INNER JOIN users du ON d.user_id = du.id
+      INNER JOIN visits v ON a.id = v.appointment_id
+      WHERE ds.slot_date = ? AND a.status = 'checked_in' AND v.is_called = 0
+      ORDER BY ds.start_time ASC, a.id ASC
+    `;
+    const [waitingList] = await pool.query(query, [date]);
+    
+    res.json(waitingList);
+  } catch (error) {
+    console.error('Error getting waiting list:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+const markVisitAsCalled = async (req, res) => {
+  try {
+    const { visitId } = req.params;
+    await pool.query("UPDATE visits SET is_called = 1 WHERE id = ?", [visitId]);
+    res.json({ message: 'Patient marked as called' });
+  } catch (error) {
+    console.error('Error marking visit as called:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -881,5 +962,7 @@ module.exports = {
   getReceptionistSlots,
   getSlotAppointments,
   checkInPatient,
-  registerWalkIn
+  registerWalkIn,
+  getWaitingList,
+  markVisitAsCalled
 };

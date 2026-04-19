@@ -23,6 +23,8 @@ import {
   Grid,
   Card,
   CardContent,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   Download as DownloadIcon,
@@ -34,6 +36,7 @@ import {
   CalendarToday as CalendarIcon,
   Medication as MedicineIcon,
   Cancel as CancelIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { axiosInstance } from '../../services/api';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -45,6 +48,7 @@ const PrescriptionList: React.FC = () => {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   React.useEffect(() => {
     const fetchPrescriptions = async () => {
@@ -187,6 +191,32 @@ const PrescriptionList: React.FC = () => {
           </Grid>
         </Grid>
 
+        <Box mb={4}>
+          <TextField
+            fullWidth
+            placeholder="Search prescriptions by doctor, medicine, or instructions..."
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: 2,
+                backgroundColor: 'background.paper',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }
+            }}
+          />
+        </Box>
+
         {prescriptions.length === 0 ? (
           <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4, border: '1px dashed #e0e0e0' }}>
             <EmptyIcon sx={{ fontSize: 80, color: '#e0e0e0', mb: 2 }} />
@@ -211,8 +241,28 @@ const PrescriptionList: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {prescriptions.map((prescription) => {
-                  const statusStyle = getStatusColor(prescription.status);
+                {prescriptions
+                  .filter((prescription) => {
+                    const searchLower = searchTerm.toLowerCase();
+                    const medicines = parseItems(prescription.items);
+                    const hasMedicine = medicines.some((m: any) => 
+                      m.medicine_name?.toLowerCase().includes(searchLower)
+                    );
+                    const doctorName = (prescription.doctor_name || prescription.doctor || '').toLowerCase();
+                    const notes = (prescription.notes || '').toLowerCase();
+                    const id = (prescription.id || '').toString();
+                    const date = format(new Date(prescription.created_at || prescription.issued_date || new Date()), 'dd/MM/yyyy');
+
+                    return (
+                      doctorName.includes(searchLower) ||
+                      notes.includes(searchLower) ||
+                      id.includes(searchLower) ||
+                      date.includes(searchLower) ||
+                      hasMedicine
+                    );
+                  })
+                  .map((prescription) => {
+                    const statusStyle = getStatusColor(prescription.status);
                   return (
                     <TableRow
                       key={prescription.id}

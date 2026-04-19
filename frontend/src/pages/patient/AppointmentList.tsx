@@ -24,6 +24,7 @@ import {
   Select,
   MenuItem,
   Alert,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -31,6 +32,7 @@ import {
   Cancel as CancelIcon,
   Visibility as ViewIcon,
   EventAvailable as SlotIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -64,6 +66,7 @@ const AppointmentList: React.FC = () => {
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
@@ -217,6 +220,16 @@ const AppointmentList: React.FC = () => {
     a.status.toLowerCase() === 'completed'
   ).length;
 
+  const filteredAppointments = appointments.filter((app: any) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      app.appointmentNumber.toLowerCase().includes(searchLower) ||
+      app.doctor.toLowerCase().includes(searchLower) ||
+      app.reason.toLowerCase().includes(searchLower) ||
+      app.date.toLowerCase().includes(searchLower)
+    );
+  });
+
   if (isLoading) {
     return (
       <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
@@ -255,6 +268,31 @@ const AppointmentList: React.FC = () => {
           </Alert>
         </Box>
 
+        <Box mb={3}>
+          <TextField
+            fullWidth
+            placeholder="Search appointments by doctor, reason, or number..."
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: 2,
+                backgroundColor: 'background.paper',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }
+            }}
+          />
+        </Box>
+
         <TableContainer component={Paper} elevation={0}>
           <Table>
             <TableHead>
@@ -269,14 +307,16 @@ const AppointmentList: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {appointments.length === 0 ? (
+              {filteredAppointments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">No appointments found.</Typography>
+                    <Typography color="text.secondary">
+                      {searchTerm ? `No appointments matching "${searchTerm}"` : 'No appointments found.'}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                appointments.map((appointment: any) => (
+                filteredAppointments.map((appointment: any) => (
                   <TableRow key={appointment.id}>
                     {/* Appointment Number + Queue */}
                     <TableCell>

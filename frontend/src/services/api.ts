@@ -39,12 +39,12 @@ axiosInstance.interceptors.response.use(
   (error) => {
     // Only redirect on 401 if it's NOT a login or signup request
     if (error.response?.status === 401) {
-      const isAuthRequest = 
-        error.config?.url?.includes('/auth/login') || 
+      const isAuthRequest =
+        error.config?.url?.includes('/auth/login') ||
         error.config?.url?.includes('/auth/signup') ||
         error.config?.url?.includes('/auth/forgot-password') ||
         error.config?.url?.includes('/auth/reset-password');
-      
+
       if (!isAuthRequest) {
         // Clear auth data on unauthorized (for other endpoints)
         localStorage.removeItem('token');
@@ -419,7 +419,7 @@ export const appointmentsApi = {
           message: 'Appointment cancelled successfully'
         };
       }
-      
+
       const response = await axiosInstance.put(`/appointments/patient/appointments/${id}`, updates);
       return {
         success: true,
@@ -502,6 +502,40 @@ export const appointmentsApi = {
         success: false,
         data: null,
         message: error.response?.data?.message || 'Failed to register walk-in'
+      };
+    }
+  },
+
+  getWaitingList: async (date: string): Promise<ApiResponse<any[]>> => {
+    try {
+      const response = await axiosInstance.get(`/appointments/receptionist/waiting-list?date=${date}`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Waiting list fetched successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: [],
+        message: error.response?.data?.message || 'Failed to fetch waiting list'
+      };
+    }
+  },
+
+  markAsCalled: async (visitId: string): Promise<ApiResponse<any>> => {
+    try {
+      const response = await axiosInstance.put(`/appointments/receptionist/visits/${visitId}/call`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Patient marked as called'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: null,
+        message: error.response?.data?.message || 'Failed to mark as called'
       };
     }
   }

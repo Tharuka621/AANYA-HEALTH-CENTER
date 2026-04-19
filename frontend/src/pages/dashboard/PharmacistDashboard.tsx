@@ -747,7 +747,7 @@ const PharmacistDashboard: React.FC = () => {
                                     Doctor: {prescription.doctor}
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary" component="span" display="block">
-                                    Medicines: {prescription.medicines.length} item(s) — {prescription.medicines.map(m => m.name).join(', ')}
+                                    Medicines: {prescription.medicines.length} item(s) — {prescription.medicines.map(m => `${m.name}${m.dosage ? ` (${m.dosage})` : ''}`).join(', ')}
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary" component="span" display="block">
                                     Issued: {new Date(prescription.issued_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}

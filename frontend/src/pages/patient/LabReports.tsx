@@ -19,11 +19,14 @@ import {
   DialogContent,
   DialogActions,
   Alert,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import {
   Download as DownloadIcon,
   Visibility as ViewIcon,
   Science as ScienceIcon,
+  Search as SearchIcon,
 } from "@mui/icons-material";
 import { axiosInstance } from "../../services/api";
 
@@ -32,6 +35,7 @@ const LabReports: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<any>(null);
 
   const [labReports, setLabReports] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   React.useEffect(() => {
     const fetchLabReports = async () => {
@@ -138,6 +142,31 @@ const LabReports: React.FC = () => {
           </Alert>
         </Box>
 
+        <Box mb={3}>
+          <TextField
+            fullWidth
+            placeholder="Search reports by test name, type, or doctor..."
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: 2,
+                backgroundColor: 'background.paper',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }
+            }}
+          />
+        </Box>
+
         <TableContainer component={Paper} elevation={0}>
           <Table>
             <TableHead>
@@ -152,7 +181,20 @@ const LabReports: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {labReports.map((report) => (
+              {labReports
+                .filter((report) => {
+                  const searchLower = searchTerm.toLowerCase();
+                  const reqDate = report.requested_date ? format(new Date(report.requested_date), 'dd/MM/yyyy') : '';
+                  const compDate = report.completed_date ? format(new Date(report.completed_date), 'dd/MM/yyyy') : '';
+                  return (
+                    report.test_name.toLowerCase().includes(searchLower) ||
+                    report.test_type.toLowerCase().includes(searchLower) ||
+                    report.doctor.toLowerCase().includes(searchLower) ||
+                    reqDate.includes(searchLower) ||
+                    compDate.includes(searchLower)
+                  );
+                })
+                .map((report) => (
                 <TableRow key={report.id}>
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={2}>

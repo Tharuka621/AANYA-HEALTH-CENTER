@@ -16,7 +16,9 @@ const {
   getReceptionistSlots,
   getSlotAppointments,
   checkInPatient,
-  registerWalkIn
+  registerWalkIn,
+  getWaitingList,
+  markVisitAsCalled
 } = require('../controllers/appointment.controller');
 const { authenticate, hasRole } = require('../middlewares/auth.middleware');
 
@@ -44,6 +46,8 @@ router.get('/receptionist/slots', authenticate, hasRole('RECEPTIONIST'), getRece
 router.get('/receptionist/slots/:slotId/appointments', authenticate, hasRole('RECEPTIONIST'), getSlotAppointments);
 router.post('/receptionist/appointments/:appointmentId/check-in', authenticate, hasRole('RECEPTIONIST'), checkInPatient);
 router.post('/receptionist/register-walk-in', authenticate, hasRole('RECEPTIONIST'), registerWalkIn);
+router.get('/receptionist/waiting-list', authenticate, hasRole('RECEPTIONIST'), getWaitingList);
+router.put('/receptionist/visits/:visitId/call', authenticate, hasRole('RECEPTIONIST'), markVisitAsCalled);
 
 // Common routes - cancel appointment
 router.put('/cancel/:appointmentId', authenticate, cancelAppointment);

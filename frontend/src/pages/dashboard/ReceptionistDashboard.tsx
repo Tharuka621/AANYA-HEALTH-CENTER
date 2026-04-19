@@ -20,6 +20,7 @@ import {
   TextField,
   Grid,
   LinearProgress,
+  Divider,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, parseISO } from 'date-fns';
@@ -50,6 +51,7 @@ interface Appointment {
   systolic_bp?: number;
   diastolic_bp?: number;
   weight?: number;
+  sugar_level?: number;
   vital_notes?: string;
 }
 
@@ -157,6 +159,7 @@ const ReceptionistDashboard: React.FC = () => {
     diastolic_bp: '',
     pulse: '',
     weight: '',
+    sugar_level: '',
     notes: '',
   });
 
@@ -195,6 +198,7 @@ const ReceptionistDashboard: React.FC = () => {
       diastolic_bp: appointment.diastolic_bp?.toString() || '',
       pulse: appointment.pulse?.toString() || '',
       weight: appointment.weight?.toString() || '',
+      sugar_level: appointment.sugar_level?.toString() || '',
       notes: appointment.vital_notes || '',
     });
     setVitalsDialogOpen(true);
@@ -253,6 +257,15 @@ const ReceptionistDashboard: React.FC = () => {
       date_of_birth: '',
       address: '',
       email: '',
+    });
+    setVitalsForm({
+      temperature: '',
+      systolic_bp: '',
+      diastolic_bp: '',
+      pulse: '',
+      weight: '',
+      sugar_level: '',
+      notes: '',
     });
     setRegisterDialogOpen(true);
   };
@@ -471,10 +484,13 @@ const ReceptionistDashboard: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {filteredAppointments.map((apt) => (
+                        {filteredAppointments.map((apt, index) => (
                           <TableRow key={apt.id} hover>
                             <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                              {apt.appointment_no}
+                              {index + 1}
+                              <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', display: 'block' }}>
+                                {apt.appointment_no}
+                              </Typography>
                             </TableCell>
                             <TableCell>
                               <Typography fontWeight={600}>{apt.patient_name}</Typography>
@@ -580,13 +596,22 @@ const ReceptionistDashboard: React.FC = () => {
                   onChange={(e) => setVitalsForm({ ...vitalsForm, systolic_bp: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   label="Diastolic BP (mmHg)"
                   type="number"
                   value={vitalsForm.diastolic_bp}
                   onChange={(e) => setVitalsForm({ ...vitalsForm, diastolic_bp: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  label="Sugar Level (mg/dL)"
+                  type="number"
+                  value={vitalsForm.sugar_level}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, sugar_level: e.target.value })}
                 />
               </Grid>
 
@@ -704,6 +729,80 @@ const ReceptionistDashboard: React.FC = () => {
                   rows={2}
                   value={patientForm.address}
                   onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })}
+                />
+              </Grid>
+            </Grid>
+
+            <Box sx={{ mt: 4, mb: 2 }}>
+              <Divider>
+                <Chip label="Patient Vitals" size="small" color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
+              </Divider>
+            </Box>
+
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Temperature (°C)"
+                  type="number"
+                  value={vitalsForm.temperature}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, temperature: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Pulse (bpm)"
+                  type="number"
+                  value={vitalsForm.pulse}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, pulse: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Weight (kg)"
+                  type="number"
+                  value={vitalsForm.weight}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, weight: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Systolic BP (mmHg)"
+                  type="number"
+                  value={vitalsForm.systolic_bp}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, systolic_bp: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Diastolic BP (mmHg)"
+                  type="number"
+                  value={vitalsForm.diastolic_bp}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, diastolic_bp: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Sugar Level (mg/dL)"
+                  type="number"
+                  value={vitalsForm.sugar_level}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, sugar_level: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Vital Notes"
+                  multiline
+                  rows={2}
+                  value={vitalsForm.notes}
+                  onChange={(e) => setVitalsForm({ ...vitalsForm, notes: e.target.value })}
+                  placeholder="Additional health observations..."
                 />
               </Grid>
             </Grid>

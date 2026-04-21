@@ -19,6 +19,13 @@ const downloadBlob = (content: string, fileName: string, type: string) => {
   window.URL.revokeObjectURL(url);
 };
 
+const toPdfCellValue = (value: unknown): string => {
+  const raw = String(value ?? '');
+  const singleLine = raw.replace(/\s+/g, ' ').trim();
+  if (singleLine.length <= 40) return singleLine;
+  return `${singleLine.slice(0, 37)}...`;
+};
+
 export const getSavedReports = async (): Promise<SavedReport[]> => {
   const response = await axiosInstance.get('/admin/reports/saved');
   return response.data.reports || [];
@@ -116,17 +123,20 @@ export const downloadReportPDF = async (reportId: string, chartImages: string[] 
   const headers = Object.keys(preview.data[0] || {}).map(h => 
     h.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
   );
-  const rows = preview.data.map(row => Object.values(row));
+  const rows = preview.data.map((row) => Object.values(row).map((value) => toPdfCellValue(value)));
 
   autoTable(doc, {
     startY: currentY + 10,
     head: [headers],
     body: rows,
     theme: 'striped',
-    headStyles: { fillColor: [25, 118, 210], fontSize: 9 },
-    bodyStyles: { fontSize: 8 },
+    tableWidth: 'auto',
+    headStyles: { fillColor: [25, 118, 210], fontSize: 8 },
+    bodyStyles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
     alternateRowStyles: { fillColor: [245, 247, 250] },
     margin: { top: 30 },
+    horizontalPageBreak: true,
+    horizontalPageBreakRepeat: [0],
   });
 
   doc.save(`${preview.type.toLowerCase()}_report_${Date.now()}.pdf`);

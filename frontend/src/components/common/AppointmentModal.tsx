@@ -29,6 +29,7 @@ interface AppointmentModalProps {
 }
 
 const timeSlots = [
+  // Fixed slot options shown in the time selector.
   '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
   '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
 ];
@@ -45,6 +46,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateForm = () => {
+    // Collect all validation errors first so users see everything at once.
     const newErrors: Record<string, string> = {};
 
     if (!selectedDate) {
@@ -63,11 +65,13 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
       newErrors.reason = 'Reason must be at least 10 characters';
     }
 
+    // Keep field-level errors in state for inline helper text rendering.
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleConfirm = () => {
+    // Submit only when the form is valid, then normalize payload for API usage.
     if (validateForm() && selectedDate) {
       onConfirm({
         doctor_id: doctor.id,
@@ -98,6 +102,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
               value={selectedDate}
               onChange={(newValue) => {
                 setSelectedDate(newValue);
+                // Remove date error immediately after user picks a valid value.
                 if (errors.date) {
                   setErrors(prev => ({ ...prev, date: '' }));
                 }
@@ -120,6 +125,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 value={selectedTime}
                 onChange={(e) => {
                   setSelectedTime(e.target.value);
+                  // Clear only this field error to avoid hiding unrelated errors.
                   if (errors.time) {
                     setErrors(prev => ({ ...prev, time: '' }));
                   }
@@ -149,6 +155,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
               value={reason}
               onChange={(e) => {
                 setReason(e.target.value);
+                // Real-time feedback: clear reason error once user edits the field.
                 if (errors.reason) {
                   setErrors(prev => ({ ...prev, reason: '' }));
                 }

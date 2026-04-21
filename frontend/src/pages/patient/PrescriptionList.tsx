@@ -91,9 +91,6 @@ const PrescriptionList: React.FC = () => {
     // In a real app, this would download the prescription
   };
 
-  const activePrescriptions = prescriptions.filter(p => p.status?.toLowerCase().trim() === 'active' || p.status?.toLowerCase().trim() === 'pending').length;
-  const expiredPrescriptions = prescriptions.filter(p => p.status?.toLowerCase().trim() === 'expired').length;
-
   // Helper function to safely parse the items array if it's a string
   const parseItems = (items: any) => {
     if (typeof items === 'string') {
@@ -147,50 +144,6 @@ const PrescriptionList: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Summary Cards */}
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: 'white',
-              borderRadius: 3,
-              boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.3)'
-            }}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <ActiveIcon sx={{ fontSize: 48, opacity: 0.8 }} />
-                <Box>
-                  <Typography variant="h3" fontWeight={700}>
-                    {activePrescriptions}
-                  </Typography>
-                  <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-                    Active Prescriptions
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card sx={{
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              color: 'white',
-              borderRadius: 3,
-              boxShadow: '0 10px 15px -3px rgba(245, 158, 11, 0.3)'
-            }}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <ExpiredIcon sx={{ fontSize: 48, opacity: 0.8 }} />
-                <Box>
-                  <Typography variant="h3" fontWeight={700}>
-                    {expiredPrescriptions}
-                  </Typography>
-                  <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-                    Expired Prescriptions
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
         <Box mb={4}>
           <TextField
             fullWidth
@@ -235,7 +188,6 @@ const PrescriptionList: React.FC = () => {
                   <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Medicines View</TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Doctor</TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Issued Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Status</TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Notes</TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Actions</TableCell>
                 </TableRow>
@@ -298,17 +250,16 @@ const PrescriptionList: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          icon={statusStyle.icon}
-                          label={(prescription.status || 'Unknown').toUpperCase()}
-                          size="small"
-                          sx={{
-                            bgcolor: statusStyle.bg,
-                            color: statusStyle.color,
-                            fontWeight: 600,
-                            borderRadius: '6px',
-                            '& .MuiChip-icon': { color: statusStyle.color }
-                          }}
-                        />
+                            label={(prescription.status || 'Unknown').toUpperCase()}
+                            size="small"
+                            sx={{
+                              bgcolor: statusStyle.bg,
+                              color: statusStyle.color,
+                              fontWeight: 600,
+                              borderRadius: '6px',
+                              '& .MuiChip-icon': { color: statusStyle.color }
+                            }}
+                          />
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

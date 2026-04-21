@@ -100,6 +100,7 @@ export interface LabTestRow {
   patientName: string;
   patientId: string;
   testName: string;
+  testType?: string;
   orderedDate: string; // DD/MM/YYYY
   resultValue: string;
   resultStatus: LabResultStatus;
@@ -181,6 +182,7 @@ export interface ReportPreview {
   type: ReportType;
   data: ReportRow[];
   summary?: ReportSummary;
+  outputFormat?: OutputFormat;
   generatedAt: string;
 }
 

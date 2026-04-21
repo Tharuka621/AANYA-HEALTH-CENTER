@@ -608,3 +608,70 @@ exports.recordInvoicePayment = async (req, res) => {
     connection.release();
   }
 };
+
+exports.getLabTestCatalog = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, name, price, description, type FROM lab_tests ORDER BY type, name`
+    );
+    return res.json({ ok: true, catalog: rows });
+  } catch (err) {
+    console.error('GET LAB TEST CATALOG ERROR:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.updateLabTestCatalog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, description, type } = req.body;
+
+    if (price === undefined || isNaN(price)) {
+      return res.status(400).json({ message: 'Valid price is required' });
+    }
+
+    const [result] = await pool.query(
+      `UPDATE lab_tests SET name = ?, price = ?, description = ?, type = ? WHERE id = ?`,
+      [name, price, description, type, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Lab test not found' });
+    }
+
+    return res.json({ ok: true, message: 'Lab test updated successfully' });
+  } catch (err) {
+    console.error('UPDATE LAB TEST CATALOG ERROR:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.createLabTest = async (req, res) => {
+  try {
+    const { name, price, description, type } = req.body;
+    if (!name || price === undefined) {
+      return res.status(400).json({ message: 'Name and price are required' });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO lab_tests (name, price, description, type) VALUES (?, ?, ?, ?)`,
+      [name, price, description, type]
+    );
+
+    return res.status(201).json({ ok: true, message: 'Lab test created successfully', id: result.insertId });
+  } catch (err) {
+    console.error('CREATE LAB TEST ERROR:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.deleteLabTest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query(`DELETE FROM lab_tests WHERE id = ?`, [id]);
+    return res.json({ ok: true, message: 'Lab test deleted successfully' });
+  } catch (err) {
+    console.error('DELETE LAB TEST ERROR:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};

@@ -15,9 +15,6 @@ interface BillingSummaryCardsProps {
 const BillingSummaryCards: React.FC<BillingSummaryCardsProps> = ({ invoices, payments }) => {
   const totalBills = invoices.length;
   const totalRevenue = payments.reduce((sum, payment) => sum + payment.amount, 0);
-  const pendingAmount = invoices
-    .filter(inv => inv.status === 'UNPAID')
-    .reduce((sum, inv) => sum + inv.totalAmount, 0);
 
   const cards = [
     {
@@ -34,19 +31,12 @@ const BillingSummaryCards: React.FC<BillingSummaryCardsProps> = ({ invoices, pay
       color: '#2e7d32',
       bgColor: '#e8f5e9',
     },
-    {
-      title: 'Pending Amount',
-      value: `Rs. ${pendingAmount.toFixed(2)}`,
-      icon: <PendingIcon sx={{ fontSize: 40 }} />,
-      color: '#ed6c02',
-      bgColor: '#fff3e0',
-    },
   ];
 
   return (
     <Grid container spacing={3} mb={4}>
       {cards.map((card, index) => (
-        <Grid item xs={12} sm={6} md={4} key={index}>
+        <Grid item xs={12} sm={6} md={6} key={index}>
           <Card
             sx={{
               height: '100%',

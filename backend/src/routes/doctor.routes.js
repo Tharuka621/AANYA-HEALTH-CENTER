@@ -7,6 +7,7 @@ const {
     getDoctorStats,
     getMedicines,
     getLabTests,
+    getDoctorPatients,
     saveConsultation,
     startConsultation,
     createPrescription,
@@ -25,6 +26,7 @@ router.get('/today-slots', getDoctorTodaySlots);
 router.get('/stats', getDoctorStats);
 router.get('/medicines', getMedicines);
 router.get('/lab-tests', getLabTests);
+router.get('/patients', getDoctorPatients);
 router.get('/patients/:patientId/history', getPatientHistory);
 
 router.post('/visits/:visitId/start', startConsultation);

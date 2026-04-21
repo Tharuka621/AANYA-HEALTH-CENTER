@@ -76,18 +76,56 @@ const StatCard: React.FC<{ title: string; value: string | number; index: number 
   </Grid>
 );
 
-const ChartWrapper: React.FC<{ title: string; id: string; height?: number; children: React.ReactNode }> = ({ title, id, height = 300, children }) => (
-  <Paper id={id} variant="outlined" sx={{ borderRadius: 3, p: 2.5, height: '100%', bgcolor: 'white' }}>
-    <Typography variant="subtitle1" fontWeight={700} mb={3}>
-      {title}
-    </Typography>
-    <Box sx={{ width: '100%', height }}>
-      <ResponsiveContainer width="100%" height="100%">
-        {children as React.ReactElement}
-      </ResponsiveContainer>
-    </Box>
-  </Paper>
-);
+const ChartWrapper: React.FC<{ title: string; id: string; height?: number; children: React.ReactNode }> = ({ title, id, height = 300, children }) => {
+  const chartHostRef = React.useRef<HTMLDivElement | null>(null);
+  const [canRenderChart, setCanRenderChart] = React.useState(false);
+
+  React.useEffect(() => {
+    const host = chartHostRef.current;
+    if (!host) return;
+
+    const checkSize = () => {
+      const width = host.clientWidth;
+      const hostHeight = host.clientHeight;
+      setCanRenderChart(width > 0 && hostHeight > 0);
+    };
+
+    checkSize();
+
+    const observer = new ResizeObserver(() => checkSize());
+    observer.observe(host);
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <Paper
+      id={id}
+      variant="outlined"
+      sx={{
+        borderRadius: 3,
+        p: 2.5,
+        height: '100%',
+        bgcolor: 'white',
+        minWidth: 0,
+        minHeight: 0,
+      }}
+    >
+      <Typography variant="subtitle1" fontWeight={700} mb={3}>
+        {title}
+      </Typography>
+      <Box ref={chartHostRef} sx={{ width: '100%', height, minWidth: 0, minHeight: 240 }}>
+        {canRenderChart ? (
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
+            {children as React.ReactElement}
+          </ResponsiveContainer>
+        ) : (
+          <Box sx={{ width: '100%', height: '100%' }} />
+        )}
+      </Box>
+    </Paper>
+  );
+};
 
 interface ReportInsightsProps {
   reportType: ReportType;
@@ -187,7 +225,8 @@ const ReportInsights: React.FC<ReportInsightsProps> = ({ reportType, reportPrevi
           <StatCard title="Total Tests" value={summary.totalRecords || rows.length} index={0} />
           <StatCard title="Completed" value={summary.completed || 0} index={1} />
           <StatCard title="Pending" value={summary.pending || 0} index={2} />
-          <StatCard title="Unique Test Types" value={new Set(rows.map((r) => r.testName)).size} index={3} />
+          <StatCard title="Cancelled" value={summary.cancelled || 0} index={3} />
+          <StatCard title="Unique Test Types" value={new Set(rows.map((r) => (r.testType || r.testName))).size} index={4} />
         </Grid>
         <Grid container spacing={3}>
           <Grid item xs={12} md={7}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Paper,
@@ -29,6 +29,7 @@ import {
   VisitStatus,
   LabResultStatus,
 } from '../../../../types/reports';
+import { axiosInstance } from '../../../../services/api';
 
 interface ReportFiltersProps {
   reportType: ReportType | null;
@@ -36,11 +37,33 @@ interface ReportFiltersProps {
   onReset: () => void;
 }
 
+interface UserLookupRow {
+  full_name?: string;
+  role?: string;
+}
+
+interface InventoryLookupRow {
+  name?: string;
+}
+
+interface LabCatalogLookupRow {
+  name?: string;
+}
+
 const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
   reportType,
   onApply,
   onReset,
 }) => {
+  const uniqueSorted = (values: string[]): string[] =>
+    Array.from(new Set<string>(values)).sort((a, b) => a.localeCompare(b));
+
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [doctorNames, setDoctorNames] = useState<string[]>([]);
+  const [labTechnicianNames, setLabTechnicianNames] = useState<string[]>([]);
+  const [medicineNames, setMedicineNames] = useState<string[]>([]);
+  const [labTestNames, setLabTestNames] = useState<string[]>([]);
+
   // Common filters applied to every report type.
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
@@ -77,6 +100,68 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
 
   // Peak Clinic Hours specific
   const [peakDoctorId, setPeakDoctorId] = useState<string>('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFilterLookups = async () => {
+      setLookupLoading(true);
+      try {
+        const [usersResponse, inventoryResponse, labCatalogResponse] = await Promise.all([
+          axiosInstance.get('/admin/users'),
+          axiosInstance.get('/admin/pharmacy/inventory'),
+          axiosInstance.get('/admin/lab-tests/catalog'),
+        ]);
+
+        if (!isMounted) return;
+
+        const users: UserLookupRow[] = Array.isArray(usersResponse?.data?.users)
+          ? (usersResponse.data.users as UserLookupRow[])
+          : [];
+        const inventory: InventoryLookupRow[] = Array.isArray(inventoryResponse?.data?.inventory)
+          ? (inventoryResponse.data.inventory as InventoryLookupRow[])
+          : [];
+        const catalog: LabCatalogLookupRow[] = Array.isArray(labCatalogResponse?.data?.catalog)
+          ? (labCatalogResponse.data.catalog as LabCatalogLookupRow[])
+          : [];
+
+        const doctors: string[] = users
+          .filter((user) => String(user.role || '').toUpperCase() === 'DOCTOR')
+          .map((user) => String(user.full_name || '').trim())
+          .filter(Boolean);
+
+        const technicians: string[] = users
+          .filter((user) => String(user.role || '').toUpperCase().includes('LAB'))
+          .map((user) => String(user.full_name || '').trim())
+          .filter(Boolean);
+
+        const medicines: string[] = inventory
+          .map((item) => String(item.name || '').trim())
+          .filter(Boolean);
+
+        const tests: string[] = catalog
+          .map((test) => String(test.name || '').trim())
+          .filter(Boolean);
+
+        setDoctorNames(uniqueSorted(doctors));
+        setLabTechnicianNames(uniqueSorted(technicians));
+        setMedicineNames(uniqueSorted(medicines));
+        setLabTestNames(uniqueSorted(tests));
+      } catch (error) {
+        console.error('Failed to load report filter options:', error);
+      } finally {
+        if (isMounted) {
+          setLookupLoading(false);
+        }
+      }
+    };
+
+    loadFilterLookups();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Backend expects DD/MM/YYYY date strings for report filters.
   const formatDate = (date: Date | null): string | null => {
@@ -287,8 +372,16 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     onChange={(e) => setDoctorId(e.target.value)}
                   >
                     <MenuItem value="">All Doctors</MenuItem>
-                    <MenuItem value="DOC001">Dr. Nimal Fernando</MenuItem>
-                    <MenuItem value="DOC002">Dr. Sunil Jayawardena</MenuItem>
+                    {doctorNames.map((name) => (
+                      <MenuItem key={`visit-doctor-${name}`} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                    {!doctorNames.length && !lookupLoading && (
+                      <MenuItem value="" disabled>
+                        No doctors found
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -327,17 +420,23 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
             <>
               <Grid item xs={12} sm={6} md={4}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Test Type</InputLabel>
+                  <InputLabel>Test Name</InputLabel>
                   <Select
                     value={testType}
-                    label="Test Type"
+                    label="Test Name"
                     onChange={(e) => setTestType(e.target.value)}
                   >
                     <MenuItem value="">All Tests</MenuItem>
-                    <MenuItem value="CBC">Complete Blood Count</MenuItem>
-                    <MenuItem value="Lipid">Lipid Profile</MenuItem>
-                    <MenuItem value="FBS">Fasting Blood Sugar</MenuItem>
-                    <MenuItem value="LFT">Liver Function Test</MenuItem>
+                    {labTestNames.map((name) => (
+                      <MenuItem key={`lab-test-${name}`} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                    {!labTestNames.length && !lookupLoading && (
+                      <MenuItem value="" disabled>
+                        No tests found
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -367,8 +466,16 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     onChange={(e) => setLabTechId(e.target.value)}
                   >
                     <MenuItem value="">All Technicians</MenuItem>
-                    <MenuItem value="LT001">Saman Kumara</MenuItem>
-                    <MenuItem value="LT002">Nisha Dias</MenuItem>
+                    {labTechnicianNames.map((name) => (
+                      <MenuItem key={`lab-tech-${name}`} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                    {!labTechnicianNames.length && !lookupLoading && (
+                      <MenuItem value="" disabled>
+                        No technicians found
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -387,8 +494,16 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     onChange={(e) => setPrescDoctorId(e.target.value)}
                   >
                     <MenuItem value="">All Doctors</MenuItem>
-                    <MenuItem value="DOC001">Dr. Nimal Fernando</MenuItem>
-                    <MenuItem value="DOC002">Dr. Sunil Jayawardena</MenuItem>
+                    {doctorNames.map((name) => (
+                      <MenuItem key={`presc-doctor-${name}`} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                    {!doctorNames.length && !lookupLoading && (
+                      <MenuItem value="" disabled>
+                        No doctors found
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -402,9 +517,16 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     onChange={(e) => setMedicineId(e.target.value)}
                   >
                     <MenuItem value="">All Medicines</MenuItem>
-                    <MenuItem value="M001">Paracetamol 500mg</MenuItem>
-                    <MenuItem value="M002">Amlodipine 5mg</MenuItem>
-                    <MenuItem value="M003">Metformin 500mg</MenuItem>
+                    {medicineNames.map((name) => (
+                      <MenuItem key={`presc-med-${name}`} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                    {!medicineNames.length && !lookupLoading && (
+                      <MenuItem value="" disabled>
+                        No medicines found
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -436,9 +558,16 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     onChange={(e) => setInvMedicineId(e.target.value)}
                   >
                     <MenuItem value="">All Medicines</MenuItem>
-                    <MenuItem value="M001">Paracetamol 500mg</MenuItem>
-                    <MenuItem value="M002">Amlodipine 5mg</MenuItem>
-                    <MenuItem value="M003">Metformin 500mg</MenuItem>
+                    {medicineNames.map((name) => (
+                      <MenuItem key={`inv-med-${name}`} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                    {!medicineNames.length && !lookupLoading && (
+                      <MenuItem value="" disabled>
+                        No medicines found
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -486,9 +615,16 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     onChange={(e) => setPredMedicineId(e.target.value)}
                   >
                     <MenuItem value="">All Medicines</MenuItem>
-                    <MenuItem value="Paracetamol">Paracetamol</MenuItem>
-                    <MenuItem value="Amlodipine">Amlodipine</MenuItem>
-                    <MenuItem value="Metformin">Metformin</MenuItem>
+                    {medicineNames.map((name) => (
+                      <MenuItem key={`pred-med-${name}`} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                    {!medicineNames.length && !lookupLoading && (
+                      <MenuItem value="" disabled>
+                        No medicines found
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -499,7 +635,11 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                   <Select
                     value={predStatus}
                     label="Prediction Status"
-                    onChange={(e) => setPredStatus(e.target.value as any)}
+                    onChange={(e) =>
+                      setPredStatus(
+                        e.target.value as 'critical' | 'low' | 'adequate' | ''
+                      )
+                    }
                   >
                     <MenuItem value="">All</MenuItem>
                     <MenuItem value="critical">Critical</MenuItem>
@@ -536,9 +676,16 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     onChange={(e) => setProfMedicineId(e.target.value)}
                   >
                     <MenuItem value="">All Medicines</MenuItem>
-                    <MenuItem value="Paracetamol">Paracetamol</MenuItem>
-                    <MenuItem value="Amlodipine">Amlodipine</MenuItem>
-                    <MenuItem value="Metformin">Metformin</MenuItem>
+                    {medicineNames.map((name) => (
+                      <MenuItem key={`prof-med-${name}`} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                    {!medicineNames.length && !lookupLoading && (
+                      <MenuItem value="" disabled>
+                        No medicines found
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -557,8 +704,16 @@ const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     onChange={(e) => setPeakDoctorId(e.target.value)}
                   >
                     <MenuItem value="">All Doctors</MenuItem>
-                    <MenuItem value="DOC001">Dr. Nimal Fernando</MenuItem>
-                    <MenuItem value="DOC002">Dr. Sunil Jayawardena</MenuItem>
+                    {doctorNames.map((name) => (
+                      <MenuItem key={`peak-doctor-${name}`} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                    {!doctorNames.length && !lookupLoading && (
+                      <MenuItem value="" disabled>
+                        No doctors found
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>

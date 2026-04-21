@@ -122,7 +122,7 @@ const ReportsPage: React.FC = () => {
       setReportPreview(preview);
       setSelectedReportType(payload.type);
       setLastPayload(payload);
-      setActiveTab(0); // Switch to Preview tab
+      setActiveTab(preview.outputFormat === 'summary' ? 1 : 0);
       showSnackbar('Report generated successfully', 'success');
       loadSavedReports(); // Refresh saved reports
     } catch (error) {
@@ -148,7 +148,7 @@ const ReportsPage: React.FC = () => {
         title: `${selectedReportType} Report`,
         filters,
       });
-      setActiveTab(0);
+      setActiveTab(preview.outputFormat === 'summary' ? 1 : 0);
       showSnackbar('Filters applied successfully', 'success');
     } catch (error) {
       showSnackbar('Failed to apply filters', 'error');
@@ -265,7 +265,7 @@ const ReportsPage: React.FC = () => {
       setReportPreview(preview);
       setSelectedReportType(report.type);
       setLastPayload(null);
-      setActiveTab(0);
+      setActiveTab(preview.outputFormat === 'summary' ? 1 : 0);
       showSnackbar('Report loaded successfully', 'success');
     } catch (error) {
       showSnackbar('Failed to load report', 'error');
@@ -472,14 +472,34 @@ const ReportsPage: React.FC = () => {
                 </Box>
               ) : (
                 <Box sx={{ p: 3 }}>
-                  <ReportResultsTable
-                    reportType={selectedReportType}
-                    data={reportPreview?.data || []}
-                    loading={loading}
-                    onView={(row) => console.log('View:', row)}
-                    onDownloadPDF={() => handleDownloadPDF(reportPreview!.reportId)}
-                    onDownloadCSV={() => handleDownloadCSV(reportPreview!.reportId)}
-                  />
+                  {reportPreview?.outputFormat === 'summary' ? (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 6,
+                        borderRadius: '16px',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <Typography variant="h6" color="text.secondary" gutterBottom>
+                        Summary Output Selected
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Row-level table preview is hidden for summary mode. Open the Insights tab to view aggregated metrics.
+                      </Typography>
+                    </Paper>
+                  ) : (
+                    <ReportResultsTable
+                      reportType={selectedReportType}
+                      data={reportPreview?.data || []}
+                      loading={loading}
+                      onView={(row) => console.log('View:', row)}
+                      onDownloadPDF={() => handleDownloadPDF(reportPreview!.reportId)}
+                      onDownloadCSV={() => handleDownloadCSV(reportPreview!.reportId)}
+                    />
+                  )}
                 </Box>
               )}
             </TabPanel>

@@ -39,6 +39,28 @@ const isWithinDateRange = (value, filters) => {
 
 const normalizeReportType = (value) => String(value || '').toUpperCase();
 
+const resolveOutputFormat = (filters) => {
+  const outputFormat = String(filters?.outputFormat || 'table').toLowerCase();
+  return outputFormat === 'summary' ? 'summary' : 'table';
+};
+
+const normalizeVisitStatus = (visitStatus, appointmentStatus) => {
+  const raw = String(visitStatus || appointmentStatus || 'checked_in').toUpperCase();
+
+  if (raw === 'DONE' || raw === 'COMPLETED') return 'completed';
+  if (raw === 'CANCELLED' || raw === 'CANCELED') return 'cancelled';
+  if (
+    raw === 'WAITING' ||
+    raw === 'IN_CONSULTATION' ||
+    raw === 'CHECKED_IN' ||
+    raw === 'SCHEDULED'
+  ) {
+    return 'checked_in';
+  }
+
+  return 'checked_in';
+};
+
 const buildVitalsSummary = (row) => {
   const parts = [];
   if (row.systolic_bp || row.diastolic_bp) {
@@ -103,7 +125,7 @@ const buildPatientVisitReport = async (filters) => {
       checkInTime: formatTime(row.check_in_time || row.start_time),
       diagnosis: row.diagnosis || row.reason || 'Not recorded',
       vitalsSummary: buildVitalsSummary(row),
-      status: String(row.visit_status || row.status || 'checked_in').toLowerCase(),
+      status: normalizeVisitStatus(row.visit_status, row.status),
       date: formatDate(row.slot_date || row.created_at),
     }))
     .filter((row) => {
@@ -156,6 +178,7 @@ const buildLabTestReport = async (filters) => {
       patientName: row.patient_name || 'Unknown Patient',
       patientId: String(row.patient_id || ''),
       testName: row.test_name || 'Unknown Test',
+      testType: row.test_type || 'Unknown Type',
       orderedDate: formatDate(row.requested_date),
       resultValue: row.result_text || 'Pending',
       resultStatus: String(row.item_status || 'pending').toLowerCase(),
@@ -174,6 +197,7 @@ const buildLabTestReport = async (filters) => {
       totalRecords: mapped.length,
       completed: mapped.filter((row) => row.resultStatus === 'completed').length,
       pending: mapped.filter((row) => row.resultStatus === 'pending').length,
+      cancelled: mapped.filter((row) => row.resultStatus === 'cancelled').length,
     },
   };
 };
@@ -598,6 +622,8 @@ exports.generateReport = async (req, res) => {
   try {
     const { type, title, filters } = req.body;
     const normalizedType = normalizeReportType(type);
+    const normalizedFilters = filters || {};
+    const outputFormat = resolveOutputFormat(normalizedFilters);
 
     const allowedTypes = ['PATIENT_VISIT', 'LAB_TEST', 'PRESCRIPTION', 'INVENTORY', 'PHARMACY_PREDICTION', 'PHARMACY_PROFITABILITY', 'PEAK_CLINIC_HOURS'];
     if (!allowedTypes.includes(normalizedType)) {
@@ -608,12 +634,14 @@ exports.generateReport = async (req, res) => {
     const generatedAt = new Date().toLocaleString('en-GB');
     const reportId = `RPT-${Date.now()}`;
 
-    const reportResult = await buildReportData(normalizedType, filters || {});
+    const reportResult = await buildReportData(normalizedType, normalizedFilters);
+    const previewData = outputFormat === 'summary' ? [] : reportResult.data;
     const preview = {
       reportId,
       type: normalizedType,
-      data: reportResult.data,
+      data: previewData,
       summary: reportResult.summary,
+      outputFormat,
       generatedAt,
     };
 
@@ -638,7 +666,7 @@ exports.generateReport = async (req, res) => {
         createdDate,
         createdDate,
         generatedAt,
-        JSON.stringify(filters || {}),
+        JSON.stringify(normalizedFilters),
         JSON.stringify(preview),
       ]
     );

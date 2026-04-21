@@ -10,6 +10,10 @@ const {
   getDashboardStats,
   getAllAppointments,
   getAllLabTests,
+  getLabTestCatalog,
+  updateLabTestCatalog,
+  createLabTest,
+  deleteLabTest,
   getAllPrescriptions,
   getInventory,
   createMedicine,
@@ -35,6 +39,10 @@ router.delete("/users/:userId", deleteUser);
 // Admin data routes
 router.get('/appointments', getAllAppointments);
 router.get('/lab-tests', getAllLabTests);
+router.get('/lab-tests/catalog', getLabTestCatalog);
+router.post('/lab-tests/catalog', createLabTest);
+router.put('/lab-tests/catalog/:id', updateLabTestCatalog);
+router.delete('/lab-tests/catalog/:id', deleteLabTest);
 router.get('/prescriptions', getAllPrescriptions);
 router.get('/pharmacy/inventory', getInventory);
 router.post('/pharmacy/medicines', createMedicine);

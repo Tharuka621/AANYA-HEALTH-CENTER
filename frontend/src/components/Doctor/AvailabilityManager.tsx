@@ -43,6 +43,7 @@ interface TimeSlot {
 }
 
 const AvailabilityManager: React.FC = () => {
+  // Slot list and dialog state used by the availability table and form.
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
@@ -58,10 +59,12 @@ const AvailabilityManager: React.FC = () => {
   });
 
   useEffect(() => {
+    // Load existing slots once when the page opens.
     fetchSlots();
   }, []);
 
   const fetchSlots = async () => {
+    // Read all availability slots for the logged-in doctor.
     try {
       setLoading(true);
       const response = await axiosInstance.get('/appointments/doctor/slots');
@@ -75,6 +78,7 @@ const AvailabilityManager: React.FC = () => {
   };
 
   const handleOpenDialog = (slot?: TimeSlot) => {
+    // If a slot is provided, open dialog in edit mode. Otherwise, create mode.
     if (slot) {
       setEditingSlot(slot);
       setFormData({
@@ -98,16 +102,19 @@ const AvailabilityManager: React.FC = () => {
   };
 
   const handleCloseDialog = () => {
+    // Close the form dialog and clear editing context.
     setOpenDialog(false);
     setEditingSlot(null);
   };
 
   const handleSave = async () => {
+    // Basic required-field validation before any API call.
     if (!formData.slot_date || !formData.start_time || !formData.end_time) {
       showError('Please fill in all required fields');
       return;
     }
 
+    //  a slot must end after it starts.
     if (formData.start_time >= formData.end_time) {
       showError('End time must be after start time');
       return;
@@ -117,11 +124,11 @@ const AvailabilityManager: React.FC = () => {
       setLoading(true);
 
       if (editingSlot) {
-        // Update existing slot
+        // Update an existing slot.
         await axiosInstance.put(`/appointments/doctor/slots/${editingSlot.id}`, formData);
         showSuccess('Availability slot updated successfully');
       } else {
-        // Add new slot
+        // Create a new slot.
         await axiosInstance.post('/appointments/doctor/slots', formData);
         showSuccess('Availability slot created successfully');
       }
@@ -138,6 +145,7 @@ const AvailabilityManager: React.FC = () => {
   };
 
   const handleDelete = async (slotId: number) => {
+    // Ask for confirmation before permanent deletion.
     if (!window.confirm('Are you sure you want to delete this slot? This action cannot be undone.')) {
       return;
     }
@@ -158,6 +166,7 @@ const AvailabilityManager: React.FC = () => {
   };
 
   const handleToggleActive = async (slot: TimeSlot) => {
+    // Quickly enable/disable a slot from the table.
     try {
       setLoading(true);
       await axiosInstance.put(`/appointments/doctor/slots/${slot.id}`, {
@@ -177,6 +186,7 @@ const AvailabilityManager: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
+    // Display dates in day/month/year format for Sri Lanka style UX.
     return new Date(dateString).toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
@@ -185,6 +195,7 @@ const AvailabilityManager: React.FC = () => {
   };
 
   const formatTime = (timeString: string) => {
+    // Convert 24h time from API to a readable 12h label.
     return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
@@ -357,6 +368,7 @@ const AvailabilityManager: React.FC = () => {
               format="dd/MM/yyyy"
               value={formData.slot_date ? parseISO(formData.slot_date) : null}
               onChange={(newDate: any) => {
+                // Store date in backend-friendly yyyy-MM-dd format.
                 if (newDate) {
                   setFormData({ ...formData, slot_date: format(newDate, 'yyyy-MM-dd') });
                 }
@@ -396,6 +408,7 @@ const AvailabilityManager: React.FC = () => {
               label="Maximum Appointments"
               type="number"
               value={formData.max_appointments}
+              // Keep capacity as number for backend validation and inserts.
               onChange={(e) => setFormData({ ...formData, max_appointments: parseInt(e.target.value) })}
               margin="normal"
               inputProps={{ min: 1 }}

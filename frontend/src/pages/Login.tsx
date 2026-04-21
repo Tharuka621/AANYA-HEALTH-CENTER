@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -28,7 +28,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const login = useLogin();
   const { showError, showSuccess } = useToast();
-  const { user, loading, setUser } = useAuth();
+  const { loading, setUser } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -37,26 +37,7 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Redirect if already logged in - TEMPORARILY DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   if (!loading && user && user.role) {
-  //     const normalizedRole = user.role.toLowerCase();
-  //     const roleRouteMap: Record<string, string> = {
-  //       'patient': 'patient',
-  //       'doctor': 'doctor',
-  //       'nurse': 'nurse',
-  //       'receptionist': 'receptionist',
-  //       'pharmacist': 'pharmacist',
-  //       'lab': 'lab',
-  //       'lab technician': 'lab',
-  //       'admin': 'admin',
-  //       'administrator': 'admin'
-  //     };
-  //     const dashboardRoute = roleRouteMap[normalizedRole] || normalizedRole;
-  //     navigate(`/dashboard/${dashboardRoute}`, { replace: true });
-  //   }
-  // }, [user, loading, navigate]);
-
+  // Check all login fields before trying to sign in.
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -76,9 +57,10 @@ const Login: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Submit login details and redirect to the correct dashboard.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
@@ -86,21 +68,21 @@ const Login: React.FC = () => {
       console.log('Login result:', result);
       console.log('User:', result.user);
       console.log('User role:', result.user?.role);
-      
+
       // Update the AuthContext with the logged-in user
       if (result.user) {
         setUser(result.user);
       }
-      
+
       showSuccess('Login successful! Redirecting...');
-      
-      // Redirect based on user role (normalized to lowercase)
+
+      // Convert role text and map it to dashboard route names.
       setTimeout(() => {
         const user = result.user;
         if (user && user.role) {
           const normalizedRole = user.role.toLowerCase();
           console.log('Normalized role:', normalizedRole);
-          
+
           // Map role names to dashboard routes
           const roleRouteMap: Record<string, string> = {
             'patient': 'patient',
@@ -113,11 +95,11 @@ const Login: React.FC = () => {
             'admin': 'admin',
             'administrator': 'admin'
           };
-          
+
           const dashboardRoute = roleRouteMap[normalizedRole] || normalizedRole;
           console.log('Dashboard route:', dashboardRoute);
           console.log('Navigating to:', `/dashboard/${dashboardRoute}`);
-          
+
           navigate(`/dashboard/${dashboardRoute}`, { replace: true });
         } else {
           console.error('No user or role in result');
@@ -130,6 +112,7 @@ const Login: React.FC = () => {
     }
   };
 
+  // Update one field and clear that field's error while typing.
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
     if (errors[field]) {

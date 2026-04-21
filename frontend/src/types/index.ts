@@ -62,6 +62,14 @@ export interface LabTest {
   lab_tech?: User;
 }
 
+export interface LabTestCatalogItem {
+  id: number;
+  name: string;
+  price: number;
+  description: string;
+  type: string;
+}
+
 // Prescription types
 export interface Prescription {
   id: string;

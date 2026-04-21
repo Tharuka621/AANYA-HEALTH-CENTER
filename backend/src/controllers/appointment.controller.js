@@ -1,11 +1,26 @@
 const { pool } = require('../config/db');
 const bcrypt = require('bcrypt');
 
+// ============================================
+// APPOINTMENT CONTROLLER
+// ============================================
+// Handles all appointment operations:
+// - Patient booking and slot selection
+// - Doctor slot management
+// - Receptionist check-in and vitals
+// - Walk-in patient registration
+// - Appointment cancellation and updates
+
+// ============================================
+// PATIENT-FACING ENDPOINTS
+// ============================================
+
 // Get available slots for a specific date
 const getAvailableSlots = async (req, res) => {
   try {
     const { date } = req.query;
 
+    // Fail fast on invalid client input instead of running DB queries.
     if (!date) {
       return res.status(400).json({ message: 'Date is required' });
     }
@@ -44,6 +59,7 @@ const getAvailableSlots = async (req, res) => {
 };
 
 // Get doctor's available slots
+// Shows doctor all their time slots for management
 const getDoctorSlots = async (req, res) => {
   try {
     const doctorId = req.user.id;
@@ -74,14 +90,16 @@ const getDoctorSlots = async (req, res) => {
 };
 
 // Create a new doctor slot
+// Allows doctors to add appointment slots to their schedule
 const createDoctorSlot = async (req, res) => {
   try {
     const doctorId = req.user.id;
     const { slot_date, start_time, end_time, max_appointments, is_active } = req.body;
+    // max_appointments controls how many patients can book this slot
 
     console.log('Creating slot for doctor:', doctorId);
     console.log('Slot data:', { slot_date, start_time, end_time, max_appointments, is_active });
-
+//Doctor slot create requires all fields
     if (!slot_date || !start_time || !end_time || !max_appointments) {
       return res.status(400).json({ message: 'All fields are required' });
     }
@@ -113,6 +131,7 @@ const createDoctorSlot = async (req, res) => {
 };
 
 // Update a doctor slot
+// Allows doctors to modify their existing slot details
 const updateDoctorSlot = async (req, res) => {
   try {
     const doctorId = req.user.id;
@@ -135,6 +154,7 @@ const updateDoctorSlot = async (req, res) => {
       doctorId
     ]);
 
+    // If no row was updated, the slot either does not exist or is not owned by this doctor.
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Slot not found or unauthorized' });
     }
@@ -147,12 +167,13 @@ const updateDoctorSlot = async (req, res) => {
 };
 
 // Delete a doctor slot
+// Prevents deletion if active appointments exist
 const deleteDoctorSlot = async (req, res) => {
   try {
     const doctorId = req.user.id;
     const { slotId } = req.params;
 
-    // Check if there are any appointments for this slot
+    // Validate no active appointments exist before allowing delete
     const [appointments] = await pool.query(
       'SELECT COUNT(*) as count FROM appointments WHERE slot_id = ? AND status != "cancelled"',
       [slotId]
@@ -178,7 +199,12 @@ const deleteDoctorSlot = async (req, res) => {
   }
 };
 
+// ============================================
+// APPOINTMENT BOOKING
+// ============================================
+
 // Book an appointment (for patients)
+// Patients select a doctor slot and create an appointment
 const bookAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -188,7 +214,7 @@ const bookAppointment = async (req, res) => {
       return res.status(400).json({ message: 'Slot ID and Doctor ID are required' });
     }
 
-    // Look up patients.id from users.id (FK requires patients.id not users.id)
+    // Step 1: Resolve patient ID from user ID
     const [patientRows] = await pool.query(
       'SELECT id FROM patients WHERE user_id = ? LIMIT 1',
       [userId]
@@ -198,7 +224,7 @@ const bookAppointment = async (req, res) => {
     }
     const patientId = patientRows[0].id;
 
-    // Look up doctors.id from users.id (appointments.doctor_id FK references doctors.id)
+    // Step 2: Resolve doctor ID from user ID
     const [doctorRows] = await pool.query(
       'SELECT id FROM doctors WHERE user_id = ? LIMIT 1',
       [doctor_id]
@@ -208,7 +234,7 @@ const bookAppointment = async (req, res) => {
     }
     const doctorId = doctorRows[0].id;
 
-    // Check if slot is available
+    // Step 3: Verify slot exists and has capacity
     const [slot] = await pool.query(
       `SELECT 
         ds.*,
@@ -228,7 +254,7 @@ const bookAppointment = async (req, res) => {
       return res.status(400).json({ message: 'Slot is fully booked' });
     }
 
-    // Check if patient already has an appointment for this slot
+    // Step 4: Prevent double-booking - check for existing appointment
     const [existingAppointment] = await pool.query(
       'SELECT id FROM appointments WHERE patient_id = ? AND slot_id = ? AND status != "cancelled"',
       [patientId, slot_id]
@@ -238,7 +264,7 @@ const bookAppointment = async (req, res) => {
       return res.status(400).json({ message: 'You already have an appointment for this slot' });
     }
 
-    // Book the appointment
+    // Step 5: Create the appointment record
     const query = `
       INSERT INTO appointments (patient_id, doctor_id, slot_id, reason, status, booked_by)
       VALUES (?, ?, ?, ?, 'scheduled', 'PATIENT')
@@ -263,6 +289,7 @@ const bookAppointment = async (req, res) => {
 };
 
 // Get patient's appointments
+// Retrieves all patient appointments with queue position and timing info
 const getPatientAppointments = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -301,7 +328,7 @@ const getPatientAppointments = async (req, res) => {
 
     const [appointments] = await pool.query(query, [userId]);
 
-    // Add appointment number and estimated arrival time to each appointment
+    // Calculate queue position and estimated arrival time
     const appointmentsWithNumber = appointments.map(apt => {
       const queuePos = apt.queue_position || 1;
       const maxApts = apt.max_appointments || 10;
@@ -336,11 +363,12 @@ const getPatientAppointments = async (req, res) => {
 };
 
 // Get doctor's appointments
+// Retrieves all scheduled appointments for doctor
 const getDoctorAppointments = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Look up doctors.id from users.id
+    // Resolve doctor ID from user ID
     const [doctorRows] = await pool.query(
       'SELECT id FROM doctors WHERE user_id = ? LIMIT 1', [userId]
     );
@@ -388,6 +416,7 @@ const getDoctorAppointments = async (req, res) => {
 };
 
 // Get appointment fee
+// Fetches current consultation fee from database
 const getAppointmentFee = async (req, res) => {
   try {
     const query = `
@@ -401,7 +430,7 @@ const getAppointmentFee = async (req, res) => {
     const [fees] = await pool.query(query);
 
     if (fees.length === 0) {
-      // Default fee if not set in database
+      // Use default fee (LKR 2500) if not configured
       return res.json({ amount: 2500 });
     }
 
@@ -413,10 +442,13 @@ const getAppointmentFee = async (req, res) => {
 };
 
 // Book an appointment with payment (for patients)
+// Creates appointment AND payment in single transaction
+// Ensures both succeed or both fail
 const bookAppointmentWithPayment = async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
+    // Transaction ensures appointment + payment are saved together (all-or-nothing).
     await connection.beginTransaction();
 
     const userId = req.user.id;
@@ -425,13 +457,14 @@ const bookAppointmentWithPayment = async (req, res) => {
     console.log('Booking appointment for user:', userId);
     console.log('Booking data:', { slot_id, doctor_id, reason, payment_method, amount });
 
+    // Business-rule failures should abort the transaction and return a clear 4xx error.
     if (!slot_id || !doctor_id || !payment_method || !amount) {
       await connection.rollback();
       connection.release();
       return res.status(400).json({ message: 'Slot ID, Doctor ID, Payment Method, and Amount are required' });
     }
 
-    // 1. Look up patients.id from users.id (FK requires patients.id not users.id)
+    // Step 1: Resolve patient ID
     const [patientRows] = await connection.query(
       'SELECT id FROM patients WHERE user_id = ? LIMIT 1',
       [userId]
@@ -443,7 +476,7 @@ const bookAppointmentWithPayment = async (req, res) => {
     }
     const patientId = patientRows[0].id;
 
-    // 2. Look up doctors.id from users.id (appointments.doctor_id FK references doctors.id)
+    // Step 2: Resolve doctor ID
     const [doctorRows] = await connection.query(
       'SELECT id FROM doctors WHERE user_id = ? LIMIT 1',
       [doctor_id]
@@ -455,7 +488,7 @@ const bookAppointmentWithPayment = async (req, res) => {
     }
     const doctorId = doctorRows[0].id;
 
-    // 3. Check if slot is available
+    // Step 3: Verify slot availability
     const [slot] = await connection.query(
       `SELECT 
         ds.*,
@@ -479,7 +512,7 @@ const bookAppointmentWithPayment = async (req, res) => {
       return res.status(400).json({ message: 'Slot is fully booked' });
     }
 
-    // 4. Check if patient already has an appointment for this slot
+    // Step 4: Prevent double-booking
     const [existingAppointment] = await connection.query(
       'SELECT id FROM appointments WHERE patient_id = ? AND slot_id = ? AND status != "cancelled"',
       [patientId, slot_id]
@@ -491,13 +524,13 @@ const bookAppointmentWithPayment = async (req, res) => {
       return res.status(400).json({ message: 'You already have an appointment for this slot' });
     }
 
-    // 5. Create appointment record
+    // Step 5: Create appointment record
     const appointmentQuery = `
       INSERT INTO appointments (appointment_no, patient_id, doctor_id, slot_id, reason, status, booked_by)
       VALUES (?, ?, ?, ?, ?, 'scheduled', 'PATIENT')
     `;
 
-    // Generate unique appointment number
+    // Generate unique appointment number using timestamp + random component
     const appointmentNo = `APT${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
     const [appointmentResult] = await connection.query(appointmentQuery, [
@@ -511,7 +544,7 @@ const bookAppointmentWithPayment = async (req, res) => {
     const appointmentId = appointmentResult.insertId;
     console.log('Appointment created with ID:', appointmentId);
 
-    // 5. Create payment record
+    // Step 6: Create payment record
     const paymentQuery = `
       INSERT INTO appointments_payments (appointment_id, amount, method, status, payment_ref, paid_at)
       VALUES (?, ?, ?, 'completed', ?, NOW())
@@ -526,7 +559,7 @@ const bookAppointmentWithPayment = async (req, res) => {
 
     console.log('Payment record created for appointment:', appointmentId);
 
-    // 6. Commit transaction
+    // Step 7: Commit transaction (confirms both records)
     await connection.commit();
     connection.release();
 
@@ -537,8 +570,9 @@ const bookAppointmentWithPayment = async (req, res) => {
       paymentStatus: 'completed'
     });
   } catch (error) {
-    await connection.rollback();
-    connection.release();
+    // Roll back only if we successfully obtained a DB connection.
+    if (connection) await connection.rollback();
+    if (connection) connection.release();
     console.error('Error booking appointment:', error);
     console.error('Error details:', error.stack);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -546,6 +580,7 @@ const bookAppointmentWithPayment = async (req, res) => {
 };
 
 // Update appointment reason and optionally time slot (for patients)
+// Allows patients to change appointment details or reschedule
 const updatePatientAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -553,7 +588,7 @@ const updatePatientAppointment = async (req, res) => {
     const { reason, slot_id } = req.body;
 
     if (slot_id) {
-      // Check if the new slot is available
+      // If rescheduling, validate new slot has availability
       const [slot] = await pool.query(
         `SELECT ds.*, COUNT(a.id) as booked_count
          FROM doctor_slots ds
@@ -611,12 +646,14 @@ const updatePatientAppointment = async (req, res) => {
 };
 
 // Cancel appointment
+// Allows patients or doctors to cancel their appointments
 const cancelAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
     const role = req.user.role;
     const { appointmentId } = req.params;
 
+    // Build query based on user role for access control
     let query = 'UPDATE appointments SET status = \'cancelled\' WHERE id = ?';
     let params = [appointmentId];
 
@@ -641,9 +678,13 @@ const cancelAppointment = async (req, res) => {
   }
 };
 
-// --- RECEPTIONIST METHODS ---
+// ============================================
+// RECEPTIONIST ENDPOINTS
+// ============================================
+// Reception staff functions for managing check-ins and waiting list
 
 // Get all slots for receptionist (with date filter)
+// Shows all available slots for check-in purposes
 const getReceptionistSlots = async (req, res) => {
   try {
     const { date } = req.query;
@@ -675,6 +716,7 @@ const getReceptionistSlots = async (req, res) => {
 };
 
 // Get appointments for a specific slot
+// Shows all appointments scheduled for a given slot
 const getSlotAppointments = async (req, res) => {
   try {
     const { slotId } = req.params;
@@ -709,6 +751,8 @@ const getSlotAppointments = async (req, res) => {
 };
 
 // Check in patient and save vitals
+// Receptionist confirms arrival, records vital signs, updates doctor queue
+// Uses transaction for consistency
 const checkInPatient = async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -718,7 +762,7 @@ const checkInPatient = async (req, res) => {
 
     console.log('Checking in appointment:', appointmentId, 'Vitals:', vitals);
 
-    // 1. Get appointment details (patient_id, doctor_id, slot_id)
+    // Step 1: Get appointment details
     const [apts] = await connection.query(
       'SELECT patient_id, doctor_id, slot_id FROM appointments WHERE id = ?',
       [appointmentId]
@@ -729,13 +773,13 @@ const checkInPatient = async (req, res) => {
     }
     const { patient_id, doctor_id } = apts[0];
 
-    // 2. Update appointment status
+    // Step 2: Update appointment status to checked_in
     await connection.query(
       "UPDATE appointments SET status = 'checked_in' WHERE id = ?",
       [appointmentId]
     );
 
-    // 3. Create visit row (this is what the doctor's queue reads)
+    // Step 3: Create visit record (doctor's queue reads from visits)
     const [visitResult] = await connection.query(
       `INSERT INTO visits (appointment_id, patient_id, doctor_id, check_in_time, status, checked_in_by)
        VALUES (?, ?, ?, NOW(), 'WAITING', ?)
@@ -744,7 +788,7 @@ const checkInPatient = async (req, res) => {
     );
     const visitId = visitResult.insertId || visitResult.insertId;
 
-    // 4. Save vitals to patient_vitals (receptionist table)
+    // Step 4: Save vitals to patient_vitals
     await connection.query(
       `INSERT INTO patient_vitals
         (appointment_id, patient_id, temperature, systolic_bp, diastolic_bp, pulse, weight, sugar_level, notes)
@@ -760,7 +804,7 @@ const checkInPatient = async (req, res) => {
       ]
     );
 
-    // 5. Also save vitals to the vitals table (linked by visit_id — what the doctor reads)
+    // Step 5: Also save vitals to vitals table (doctor reads via visits)
     if (vitals && visitResult.insertId) {
       await connection.query(
         `INSERT INTO vitals (visit_id, temperature, systolic_bp, diastolic_bp, pulse, weight, sugar_level, notes)
@@ -780,15 +824,19 @@ const checkInPatient = async (req, res) => {
     await connection.commit();
     res.json({ message: 'Patient checked in successfully', visitId: visitResult.insertId });
   } catch (error) {
+    // Revert partial writes if any step fails during check-in.
     if (connection) await connection.rollback();
     console.error('Error checking in patient:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   } finally {
+    // Always release pooled connection to avoid connection leaks.
     if (connection) connection.release();
   }
 };
 
 
+// Register walk-in patient
+// Creates new patient if needed, books appointment, checks in immediately
 const registerWalkIn = async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -797,7 +845,7 @@ const registerWalkIn = async (req, res) => {
 
     console.log('Registering walk-in patient:', patientInfo.full_name);
 
-    // 0. IMPORTANT: Map Doctor User ID to Doctors Profile ID
+    // Step 0: Resolve doctor ID from user ID
     const [doctorRows] = await connection.query(
       'SELECT id FROM doctors WHERE user_id = ? LIMIT 1',
       [doctorUserId]
@@ -811,7 +859,7 @@ const registerWalkIn = async (req, res) => {
     let patientId;
     let userId;
 
-    // 1. Check if patient already exists by NIC
+    // Step 1: Check if patient already exists by NIC
     const [existingPatient] = await connection.query(
       'SELECT id, user_id FROM patients WHERE nic = ? LIMIT 1',
       [patientInfo.nic]
@@ -822,7 +870,7 @@ const registerWalkIn = async (req, res) => {
       userId = existingPatient[0].user_id;
       console.log('Using existing patient profile:', patientId);
     } else {
-      // 2. Create User if not exists (checked by phone/email)
+      // Step 2: Create new user for walk-in
       const email = patientInfo.email || `walkin_${Date.now()}@aanya.com`;
       const password_hash = await bcrypt.hash('Patient@123', 10);
 
@@ -832,7 +880,7 @@ const registerWalkIn = async (req, res) => {
       );
       userId = userResult.insertId;
 
-      // 3. Create Patient
+      // Step 3: Create patient profile
       const [patientResult] = await connection.query(
         "INSERT INTO patients (user_id, nic, gender, dob, address) VALUES (?, ?, ?, ?, ?)",
         [userId, patientInfo.nic, patientInfo.gender, patientInfo.date_of_birth || null, patientInfo.address]
@@ -840,7 +888,7 @@ const registerWalkIn = async (req, res) => {
       patientId = patientResult.insertId;
     }
 
-    // 4. Create Appointment (checked_in immediately)
+    // Step 4: Create appointment (immediately checked in)
     const appointmentNo = `WALK-${Date.now()}`;
     const [appointmentResult] = await connection.query(
       "INSERT INTO appointments (appointment_no, patient_id, doctor_id, slot_id, reason, status, booked_by) VALUES (?, ?, ?, ?, ?, 'checked_in', 'RECEPTIONIST')",
@@ -848,7 +896,7 @@ const registerWalkIn = async (req, res) => {
     );
     const appointmentId = appointmentResult.insertId;
 
-    // 5. Create Visit row so patient appears in doctor's queue
+    // Step 5: Create visit record for doctor's queue
     const [visitResult] = await connection.query(
       `INSERT INTO visits (appointment_id, patient_id, doctor_id, check_in_time, status, checked_in_by)
        VALUES (?, ?, ?, NOW(), 'WAITING', ?)`,
@@ -856,7 +904,7 @@ const registerWalkIn = async (req, res) => {
     );
     const visitId = visitResult.insertId;
 
-    // 6. Save Vitals to both tables
+    // Step 6: Save vital signs to both tables
     if (vitals) {
       await connection.query(
         `INSERT INTO patient_vitals
@@ -895,6 +943,8 @@ const registerWalkIn = async (req, res) => {
   }
 };
 
+// Get waiting list for a specific date
+// Shows all checked-in patients awaiting doctor consultation
 const getWaitingList = async (req, res) => {
   try {
     const { date } = req.query;
@@ -935,9 +985,12 @@ const getWaitingList = async (req, res) => {
   }
 };
 
+// Mark visit as called
+// When patient is called by doctor, receptionist marks this to prevent duplicate calling
 const markVisitAsCalled = async (req, res) => {
   try {
     const { visitId } = req.params;
+    // Mark as called (prevents showing in waiting list again)
     await pool.query("UPDATE visits SET is_called = 1 WHERE id = ?", [visitId]);
     res.json({ message: 'Patient marked as called' });
   } catch (error) {

@@ -507,3 +507,44 @@ exports.getPatientHistory = async (req, res) => {
         res.status(500).json({ message: err.message || 'Server error' });
     }
 };
+
+// GET /api/doctor/patients — all patients who have appointments with this doctor
+exports.getDoctorPatients = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const doctorId = await getDoctorId(userId);
+
+        const [patients] = await pool.query(
+            `SELECT
+        p.id AS patient_id,
+        u.full_name,
+        u.email,
+        u.phone,
+        p.nic,
+        p.date_of_birth,
+        p.gender,
+        p.address,
+        p.emergency_contact,
+        p.blood_group,
+        p.created_at,
+        p.updated_at,
+        MAX(ds.slot_date) AS last_visit,
+        COUNT(DISTINCT a.id) AS appointment_count,
+        GROUP_CONCAT(DISTINCT pa.allergy_name ORDER BY pa.allergy_name SEPARATOR ', ') AS allergies
+      FROM appointments a
+      INNER JOIN doctor_slots ds ON a.slot_id = ds.id
+      INNER JOIN patients p ON a.patient_id = p.id
+      INNER JOIN users u ON p.user_id = u.id
+      LEFT JOIN patient_allergies pa ON pa.patient_id = p.id
+      WHERE ds.doctor_id = ? AND a.status != 'cancelled'
+      GROUP BY p.id, u.id, p.nic, p.date_of_birth, p.gender, p.address, p.emergency_contact, p.blood_group, p.created_at, p.updated_at
+      ORDER BY MAX(ds.slot_date) DESC, u.full_name ASC`,
+            [doctorId]
+        );
+
+        res.json(patients);
+    } catch (err) {
+        console.error('getDoctorPatients error:', err);
+        res.status(500).json({ message: err.message || 'Server error' });
+    }
+};

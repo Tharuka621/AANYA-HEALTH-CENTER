@@ -16,7 +16,6 @@ import {
   Fab,
   Divider,
   Alert,
-  Snackbar,
   CircularProgress,
 } from '@mui/material';
 import {
@@ -34,29 +33,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AppointmentBooking from '../../components/Patient/AppointmentBooking';
 import { useAppointmentsByPatient } from '../../hooks/useAppointments';
-import Modal from '../../components/common/Modal';
-import AppointmentModal from '../../components/common/AppointmentModal';
-import PaymentModal from '../../components/common/PaymentModal';
-import { User } from '../../types';
 import { axiosInstance } from '../../services/api';
 
 const PatientDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  // Dialog and payment state for appointment booking flow.
-  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedDoctor, setSelectedDoctor] = useState<User | null>(null);
-  const [pendingAppointment, setPendingAppointment] = useState<any>(null);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error' | 'info' | 'warning';
-  }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const bookingSectionId = 'patient-appointment-booking';
 
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [labReports, setLabReports] = useState<any[]>([]);
@@ -99,77 +81,9 @@ const PatientDashboard: React.FC = () => {
     }
   }, [user?.id, refetchAppointments]);
 
-
   const handleBookAppointment = () => {
-    // Mock doctor for booking
-    const mockDoctor: User = {
-      id: '1',
-      email: 'dr.milinda@aanya.com',
-      full_name: 'Dr. Milinda Abeykoon',
-      role: 'doctor',
-      phone: '+94771234567',
-      created_at: '2024-01-01T00:00:00Z'
-    };
-    setSelectedDoctor(mockDoctor);
-    setAppointmentModalOpen(true);
-  };
-
-  // Mock doctor availability check (simulates checking against existing appointments)
-  const checkDoctorAvailability = (_appointmentData: any): boolean => {
-    // Simulate random availability (70% chance available)
-    // In a real app, this would check the database for existing appointments
-    return Math.random() > 0.3;
-  };
-
-  // Converts a confirmed booking into a pending payment flow.
-  const handleAppointmentConfirm = (appointmentData: any) => {
-    console.log('Checking availability for:', appointmentData);
-
-    // Check if doctor is available
-    const isAvailable = checkDoctorAvailability(appointmentData);
-
-    if (isAvailable) {
-      // Doctor is available, proceed to payment
-      setPendingAppointment(appointmentData);
-      setAppointmentModalOpen(false);
-      setPaymentModalOpen(true);
-    } else {
-      // Doctor is not available
-      setSnackbar({
-        open: true,
-        message: 'Sorry! Dr. Milinda Abeykoon is not available at the selected time. Please choose a different time slot.',
-        severity: 'error',
-      });
-    }
-  };
-
-  const handlePaymentSuccess = () => {
-    // In a real app, this would call the API to create the appointment
-    console.log('Appointment booked and paid:', pendingAppointment);
-
-    setSnackbar({
-      open: true,
-      message: 'Appointment booked successfully! Payment confirmed.',
-      severity: 'success',
-    });
-
-    setPendingAppointment(null);
-    setSelectedDoctor(null);
-  };
-
-  const handlePaymentCancel = () => {
-    setPaymentModalOpen(false);
-    setPendingAppointment(null);
-    setSelectedDoctor(null);
-  };
-
-  const handleAppointmentCancel = () => {
-    setAppointmentModalOpen(false);
-    setSelectedDoctor(null);
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
+    const bookingSection = document.getElementById(bookingSectionId);
+    bookingSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleDownloadReport = async (resultUrl: string) => {
@@ -183,8 +97,7 @@ const PatientDashboard: React.FC = () => {
       : `${baseUrl}${resultUrl}`;
 
     try {
-      // If it's a blob URL from a previous session, it's already invalid.
-      // But we'll try to handle it gracefully.
+      
       if (fullUrl.startsWith("blob:")) {
         window.open(fullUrl, "_blank", "noopener,noreferrer");
         return;
@@ -265,7 +178,7 @@ const PatientDashboard: React.FC = () => {
         </Box>
 
         {/* Book Appointment Section */}
-        <Box mb={3}>
+        <Box mb={3} id={bookingSectionId}>
           <AppointmentBooking />
         </Box>
 
@@ -553,53 +466,6 @@ const PatientDashboard: React.FC = () => {
           <AddIcon />
         </Fab>
 
-        {/* Appointment Modal */}
-        <Modal
-          open={appointmentModalOpen}
-          onClose={handleAppointmentCancel}
-          maxWidth="md"
-          title="Book Appointment"
-        >
-          {selectedDoctor && (
-            <AppointmentModal
-              doctor={selectedDoctor}
-              onConfirm={handleAppointmentConfirm}
-              onCancel={handleAppointmentCancel}
-            />
-          )}
-        </Modal>
-
-        {/* Payment Modal */}
-        {pendingAppointment && (
-          <PaymentModal
-            open={paymentModalOpen}
-            onClose={handlePaymentCancel}
-            onPaymentSuccess={handlePaymentSuccess}
-            appointmentDetails={{
-              doctorName: selectedDoctor?.full_name || 'Dr. Milinda Abeykoon',
-              date: new Date(pendingAppointment.appointment_date).toLocaleDateString('en-GB'),
-              time: pendingAppointment.appointment_time,
-              reason: pendingAppointment.reason,
-            }}
-            amount={2500.00}
-          />
-        )}
-
-        {/* Snackbar for notifications */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={handleCloseSnackbar}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-          <Alert
-            onClose={handleCloseSnackbar}
-            severity={snackbar.severity}
-            sx={{ width: '100%' }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
       </Box>
     </Container>
   );

@@ -47,12 +47,14 @@ interface InventoryItem {
 }
 
 const getStockStatus = (quantity: number, reorderLevel: number): { status: string; color: 'error' | 'warning' | 'success' } => {
+  // Simple stock health label used in the table chips.
   if (quantity <= reorderLevel) return { status: 'low', color: 'error' };
   if (quantity <= reorderLevel * 2) return { status: 'medium', color: 'warning' };
   return { status: 'good', color: 'success' };
 };
 
 const PharmacyManagement: React.FC = () => {
+  // Main page state: inventory data, dialog visibility, and form status flags.
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,10 +90,12 @@ const PharmacyManagement: React.FC = () => {
   };
 
   useEffect(() => {
+    // Load inventory once when the page is opened.
     fetchInventory();
   }, []);
 
   const resetForm = () => {
+    // Reset all add-medicine inputs to defaults.
     setForm({
       name: '',
       unit: 'tab',
@@ -142,10 +146,12 @@ const PharmacyManagement: React.FC = () => {
     return errors;
   }, [form, todayKey]);
 
+  // Used to block submit and show helper text when form has validation issues.
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
   // Creates medicine + opening batch data through admin pharmacy endpoint.
   const handleCreateMedicine = async () => {
+    // Stop submit and show field errors first.
     if (hasValidationErrors) {
       setShowValidation(true);
       return;
@@ -155,6 +161,7 @@ const PharmacyManagement: React.FC = () => {
       setSaving(true);
       setError(null);
 
+      // Convert optional empty strings to null and numeric fields to numbers.
       await axiosInstance.post('/admin/pharmacy/medicines', {
         name: form.name,
         unit: form.unit,
@@ -171,6 +178,7 @@ const PharmacyManagement: React.FC = () => {
 
       setAddDialogOpen(false);
       resetForm();
+      // Reload table after successful insert.
       fetchInventory();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to add medicine');
@@ -179,6 +187,7 @@ const PharmacyManagement: React.FC = () => {
     }
   };
 
+  // Derived list for warnings and dashboard summary cards.
   const lowStockItems = useMemo(
     () => inventory.filter((item) => Number(item.stock_quantity || 0) <= Number(item.reorder_level || 0)),
     [inventory]
@@ -197,6 +206,7 @@ const PharmacyManagement: React.FC = () => {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => {
+                // Open add dialog and clear previous validation view.
                 setAddDialogOpen(true);
                 setShowValidation(false);
               }}
@@ -285,6 +295,7 @@ const PharmacyManagement: React.FC = () => {
           {loading ? (
             <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
           ) : (
+            // Inventory table shows live stock status and pricing details.
             <TableContainer component={Paper} elevation={0}>
               <Table>
                 <TableHead>
@@ -332,6 +343,7 @@ const PharmacyManagement: React.FC = () => {
         <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Add New Medicine</DialogTitle>
           <DialogContent>
+            {/* Input form for creating a medicine and optional opening batch details. */}
             <Box display="grid" gap={2} sx={{ mt: 1 }}>
               <TextField
                 label="Medicine Name"
@@ -431,6 +443,7 @@ const PharmacyManagement: React.FC = () => {
           <DialogActions>
             <Button
               onClick={() => {
+                // Close form and hide validation helpers.
                 setAddDialogOpen(false);
                 setShowValidation(false);
               }}
@@ -441,6 +454,7 @@ const PharmacyManagement: React.FC = () => {
             <Button
               variant="contained"
               onClick={() => {
+                // Force validation visibility, then attempt save.
                 setShowValidation(true);
                 handleCreateMedicine();
               }}

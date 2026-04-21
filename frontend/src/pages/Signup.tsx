@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -41,7 +41,7 @@ const Signup: React.FC = () => {
   const navigate = useNavigate();
   const signup = useSignup();
   const { showError, showSuccess } = useToast();
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
 
   const [currentStep, setCurrentStep] = useState<Step>('signup');
   const [formData, setFormData] = useState({
@@ -59,7 +59,7 @@ const Signup: React.FC = () => {
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-  // Calculate password strength
+  // Check how strong the password is for the UI helper.
   const getPasswordStrength = (password: string) => {
     if (!password) return { score: 0, label: '', color: '' };
 
@@ -84,6 +84,7 @@ const Signup: React.FC = () => {
     return { score: 100, label: 'Strong', color: 'success' };
   };
 
+  // Show which password rules are met.
   const getPasswordCriteria = (password: string) => [
     { label: 'At least 8 characters', met: password.length >= 8 },
     { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
@@ -94,9 +95,7 @@ const Signup: React.FC = () => {
 
   const passwordStrength = getPasswordStrength(formData.password);
   const passwordCriteria = getPasswordCriteria(formData.password);
-
-
-
+  // Check every signup field before sending data to the server.
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -128,6 +127,7 @@ const Signup: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Create the account and move to email verification if needed.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -140,7 +140,7 @@ const Signup: React.FC = () => {
         password: formData.password,
       });
 
-      // Check if email verification is required
+      // Move to the next step only if verification is required.
       if (response.requiresVerification) {
         showSuccess('Account created! Please check your email for verification code.');
         setCurrentStep('verify');
@@ -155,6 +155,7 @@ const Signup: React.FC = () => {
     }
   };
 
+  // Verify the 6-digit code sent to the user's email.
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -180,11 +181,11 @@ const Signup: React.FC = () => {
       if (response.data.ok) {
         showSuccess('Email verified successfully!');
 
-        // Store token and user data
+        // Save login data after email verification succeeds.
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
 
-        // Navigate to appropriate dashboard
+        // Send the user to the right dashboard.
         setTimeout(() => {
           const role = response.data.user.role?.toLowerCase();
           if (role === 'patient') {
@@ -203,6 +204,7 @@ const Signup: React.FC = () => {
     }
   };
 
+  // Send the verification code again if the user did not receive it.
   const handleResendOTP = async () => {
     setIsResending(true);
     setErrors({});
@@ -224,6 +226,7 @@ const Signup: React.FC = () => {
     }
   };
 
+  // Update one field and clear its error while typing.
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
     if (errors[field]) {
@@ -231,15 +234,17 @@ const Signup: React.FC = () => {
     }
   };
 
+  // Show or hide the password text.
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  // Show or hide the confirm password text.
   const toggleConfirmPasswordVisibility = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  // Show loading while checking authentication
+  // Show a loading screen while auth state is being checked.
   if (loading) {
     return (
       <Box
@@ -275,7 +280,7 @@ const Signup: React.FC = () => {
             borderRadius: 2,
           }}
         >
-          {/* Header */}
+          {/* Page title and short description. */}
           <Box textAlign="center" mb={4}>
             <Typography component="h1" variant="h4" fontWeight={700} color="primary.main" gutterBottom>
               {currentStep === 'signup' ? 'Create Account' : 'Verify Your Email'}
@@ -288,17 +293,18 @@ const Signup: React.FC = () => {
             </Typography>
           </Box>
 
-          {/* Error Alert */}
+          {/* Show signup errors only on the signup step. */}
           {signup.error && currentStep === 'signup' && (
             <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
               {signup.error.message || 'Signup failed. Please try again.'}
             </Alert>
           )}
 
-          {/* Signup Form */}
+          {/* Account creation form. */}
           {currentStep === 'signup' && (
             <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
               <Grid container spacing={2}>
+                {/* Full name field. */}
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
@@ -320,6 +326,7 @@ const Signup: React.FC = () => {
                   />
                 </Grid>
 
+                {/* Email field with basic email validation. */}
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
@@ -341,6 +348,7 @@ const Signup: React.FC = () => {
                   />
                 </Grid>
 
+                {/* Password field and strength helper. */}
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
@@ -372,6 +380,7 @@ const Signup: React.FC = () => {
                     autoComplete="new-password"
                   />
                   {formData.password && (
+                    // Password rules shown while the user types.
                     <Box mt={1}>
                       <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
                         <Typography variant="caption" color="text.secondary">
@@ -411,6 +420,7 @@ const Signup: React.FC = () => {
                   )}
                 </Grid>
 
+                {/* Confirm password field. */}
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
@@ -444,6 +454,7 @@ const Signup: React.FC = () => {
                 </Grid>
               </Grid>
 
+              {/* Submit button for account creation. */}
               <Button
                 type="submit"
                 fullWidth
@@ -462,6 +473,7 @@ const Signup: React.FC = () => {
                 )}
               </Button>
 
+              {/* Link back to login for existing users. */}
               <Divider sx={{ my: 2 }}>
                 <Typography variant="body2" color="text.secondary">
                   OR
@@ -486,7 +498,7 @@ const Signup: React.FC = () => {
             </Box>
           )}
 
-          {/* OTP Verification Step */}
+          {/* Email verification step after signup. */}
           {currentStep === 'verify' && (
             <Box component="form" onSubmit={handleVerifyOTP} sx={{ width: '100%' }}>
               <TextField
@@ -518,6 +530,7 @@ const Signup: React.FC = () => {
                 autoFocus
               />
 
+              {/* Submit button for OTP verification. */}
               <Button
                 type="submit"
                 fullWidth
@@ -536,6 +549,7 @@ const Signup: React.FC = () => {
                 )}
               </Button>
 
+              {/* Go back or resend the verification code. */}
               <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Button
                   onClick={() => {

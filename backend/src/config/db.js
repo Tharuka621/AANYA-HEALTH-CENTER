@@ -15,7 +15,7 @@ async function testDbConnection() {
   const conn = await pool.getConnection();
   await conn.ping();
   conn.release();
-  console.log("✅ Database connected successfully");
+  console.log(" Database connected successfully");
 }
 
 module.exports = {

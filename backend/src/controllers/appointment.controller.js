@@ -199,9 +199,9 @@ const deleteDoctorSlot = async (req, res) => {
   }
 };
 
-// ============================================
+
 // APPOINTMENT BOOKING
-// ============================================
+
 
 // Book an appointment (for patients)
 // Patients select a doctor slot and create an appointment
@@ -335,7 +335,11 @@ const getPatientAppointments = async (req, res) => {
       const slotDuration = apt.slot_duration_minutes || 60;
       // Minutes per patient in this slot
       const minutesPerPatient = Math.floor(slotDuration / maxApts);
-      // Estimated arrival = slot_start + (queue_position - 1) * minutesPerPatient
+      /*
+       * Estimate when the patient should arrive by taking the slot start time,
+       * then adding the waiting time based on their position in the queue.
+       * Each patient is assumed to take an equal share of the slot duration.
+       */
       let estimatedArrival = null;
       if (apt.start_time) {
         const [h, m] = apt.start_time.split(':').map(Number);
@@ -373,7 +377,7 @@ const getDoctorAppointments = async (req, res) => {
       'SELECT id FROM doctors WHERE user_id = ? LIMIT 1', [userId]
     );
     if (doctorRows.length === 0) {
-      return res.status(404).json({ message: 'Doctor profile not found' });
+       return res.status(404).json({ message: 'Doctor profile not found' });
     }
     const doctorId = doctorRows[0].id;
 

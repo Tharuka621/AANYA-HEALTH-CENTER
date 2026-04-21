@@ -1,6 +1,6 @@
 const { pool } = require('../config/db');
 
-/**
+/*
  * GET /api/profile — returns profile data for the current logged-in user,
  * enriched with role-specific tables (doctors, patients, etc.)
  */

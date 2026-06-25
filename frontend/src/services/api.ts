@@ -12,8 +12,11 @@ import {
 } from '../types';
 
 // Axios instance configured for backend API
+// Use VITE_API_URL from env, fallback to relative /api for production with nginx proxy
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 export const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },

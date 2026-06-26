@@ -13,7 +13,6 @@ import {
   Chip,
   Avatar,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   CircularProgress,
@@ -179,10 +178,10 @@ const UserManagement: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ py: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" fontWeight={700}>
+    <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
+      <Box sx={{ py: { xs: 1.5, sm: 3 } }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' } }}>
             User Management
           </Typography>
         </Box>
@@ -203,10 +202,11 @@ const UserManagement: React.FC = () => {
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
+              '& .MuiTab-root': { fontSize: { xs: '0.7rem', sm: '0.8rem' }, minHeight: { xs: 40, sm: 48 } },
             }}
           >
             <Tab 
-              label={`All Users (${getRoleCount('ALL')})`} 
+              label={`All (${getRoleCount('ALL')})`} 
               value="ALL" 
             />
             <Tab 
@@ -226,7 +226,7 @@ const UserManagement: React.FC = () => {
               value="PHARMACIST" 
             />
             <Tab 
-              label={`Lab Technicians (${getRoleCount('LAB_TECH')})`} 
+              label={`Lab Techs (${getRoleCount('LAB_TECH')})`} 
               value="LAB_TECH" 
             />
             <Tab 
@@ -236,20 +236,21 @@ const UserManagement: React.FC = () => {
           </Tabs>
         </Paper>
 
-        <TableContainer component={Paper} elevation={2}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>User</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Email</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Phone</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Role</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Registered</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <Box sx={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <TableContainer component={Paper} elevation={2}>
+            <Table sx={{ minWidth: { xs: 600, sm: 700 } }}>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>User</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Email</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Phone</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Role</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Registered</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
               {filteredUsers.map((user) => (
                 <TableRow key={user.id} hover>
                   <TableCell>
@@ -314,6 +315,7 @@ const UserManagement: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        </Box>
 
         {filteredUsers.length === 0 && !loading && (
           <Box textAlign="center" py={8}>

@@ -21,6 +21,7 @@ import {
   alpha,
 } from '@mui/material';
 import {
+  Menu as MenuIcon,
   Notifications as NotificationsIcon,
   Logout as LogoutIcon,
   Settings as SettingsIcon,
@@ -50,6 +51,10 @@ interface NotificationItem {
   created_at: string;
 }
 
+interface HeaderProps {
+  onMenuToggle?: () => void;
+}
+
 const DISMISSED_KEY = 'aanya_dismissed_notifications';
 
 const getDismissed = (): string[] => {
@@ -62,7 +67,7 @@ const setDismissed = (ids: string[]) => {
   localStorage.setItem(DISMISSED_KEY, JSON.stringify(ids));
 };
 
-const Header: React.FC = () => {
+const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
   const { user } = useAuth();
   const logout = useLogout();
   const navigate = useNavigate();
@@ -161,7 +166,6 @@ const Header: React.FC = () => {
 
   // Notification type config
   const getNotifConfig = (type: string, category: string) => {
-    // Category-based icons
     const categoryIcons: Record<string, React.ReactElement> = {
       waiting: <ScheduleIcon fontSize="small" />,
       appointments: <CalendarIcon fontSize="small" />,
@@ -214,28 +218,62 @@ const Header: React.FC = () => {
         borderColor: 'rgba(255,255,255,0.1)',
       }}
     >
-      <Toolbar sx={{ width: '100%', justifyContent: 'space-between', minHeight: '64px !important' }}>
-        {/* Left side - Welcome Text */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <MedicalIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)' }} />
-          <Box>
-            <Typography variant="body1" fontWeight={700} sx={{ lineHeight: 1.2, letterSpacing: '0.02em' }}>
-              Welcome back, {displayName}
+      <Toolbar sx={{ width: '100%', justifyContent: 'space-between', minHeight: { xs: '56px !important', sm: '64px !important' } }}>
+        {/* Left side - Hamburger + Welcome Text */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1.5 }, minWidth: 0, overflow: 'hidden' }}>
+          {/* Hamburger menu - visible on mobile only */}
+          {onMenuToggle && (
+            <IconButton
+              color="inherit"
+              aria-label="open menu"
+              onClick={onMenuToggle}
+              sx={{
+                display: { xs: 'inline-flex', md: 'none' },
+                mr: 0.5,
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+          <MedicalIcon sx={{ fontSize: { xs: 22, sm: 28 }, color: 'rgba(255,255,255,0.9)', flexShrink: 0 }} />
+          <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+            <Typography 
+              variant="body1" 
+              fontWeight={700} 
+              sx={{ 
+                lineHeight: 1.2, 
+                letterSpacing: '0.02em',
+                fontSize: { xs: '0.8rem', sm: '1rem' },
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Welcome back, </Box>
+              {displayName}
             </Typography>
-            <Typography variant="caption" sx={{ opacity: 0.75, fontSize: '0.7rem' }}>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                opacity: 0.75, 
+                fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
               {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </Typography>
           </Box>
         </Box>
 
         {/* Right side */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, sm: 0.5 }, flexShrink: 0 }}>
           {/* Notification Bell */}
           <Tooltip title="Notifications">
             <IconButton
               color="inherit"
               onClick={handleNotifOpen}
               id="notification-bell"
+              size="small"
               sx={{
                 transition: 'all 0.2s',
                 '&:hover': {
@@ -250,9 +288,9 @@ const Header: React.FC = () => {
                 max={99}
                 sx={{
                   '& .MuiBadge-badge': {
-                    fontSize: '0.65rem',
-                    height: 18,
-                    minWidth: 18,
+                    fontSize: '0.6rem',
+                    height: 16,
+                    minWidth: 16,
                     fontWeight: 700,
                     animation: unreadCount > 0 ? 'pulse 2s infinite' : 'none',
                     '@keyframes pulse': {
@@ -263,18 +301,18 @@ const Header: React.FC = () => {
                   },
                 }}
               >
-                <NotificationsIcon />
+                <NotificationsIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
               </Badge>
             </IconButton>
           </Tooltip>
 
           {/* User Info + Avatar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 }, ml: { xs: 0, sm: 1 } }}>
             <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
-              <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.2 }}>
+              <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.2, fontSize: '0.8rem' }}>
                 {displayName}
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.7, fontSize: '0.65rem' }}>
+              <Typography variant="caption" sx={{ opacity: 0.7, fontSize: '0.6rem' }}>
                 {user?.role ? formatRole(user.role) : ''}
               </Typography>
             </Box>
@@ -291,13 +329,13 @@ const Header: React.FC = () => {
               >
                 <Avatar
                   sx={{
-                    width: 36,
-                    height: 36,
+                    width: { xs: 30, sm: 36 },
+                    height: { xs: 30, sm: 36 },
                     bgcolor: 'rgba(255,255,255,0.2)',
                     border: '2px solid rgba(255,255,255,0.4)',
                     color: '#fff',
                     fontWeight: 700,
-                    fontSize: '0.85rem',
+                    fontSize: { xs: '0.75rem', sm: '0.85rem' },
                   }}
                 >
                   {user?.full_name ? getInitials(user.full_name) : <PersonIcon />}
@@ -317,7 +355,8 @@ const Header: React.FC = () => {
           PaperProps={{
             sx: {
               mt: 1.5,
-              width: 400,
+              width: { xs: '95vw', sm: 400 },
+              maxWidth: 400,
               maxHeight: 520,
               borderRadius: 3,
               boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
@@ -331,7 +370,7 @@ const Header: React.FC = () => {
           {/* Header */}
           <Box
             sx={{
-              px: 2.5,
+              px: { xs: 1.5, sm: 2.5 },
               py: 2,
               display: 'flex',
               justifyContent: 'space-between',
@@ -342,7 +381,7 @@ const Header: React.FC = () => {
             }}
           >
             <Box>
-              <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+              <Typography variant="subtitle1" fontWeight={700} color="text.primary" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                 Notifications
               </Typography>
               {unreadCount > 0 && (
@@ -391,7 +430,7 @@ const Header: React.FC = () => {
                   <React.Fragment key={notif.id}>
                     <ListItem
                       sx={{
-                        px: 2.5,
+                        px: { xs: 1.5, sm: 2.5 },
                         py: 1.5,
                         cursor: 'pointer',
                         bgcolor: isRead ? 'transparent' : alpha(config.color, 0.04),
@@ -427,7 +466,7 @@ const Header: React.FC = () => {
                               fontWeight={isRead ? 500 : 700}
                               color="text.primary"
                               component="div"
-                              sx={{ lineHeight: 1.3 }}
+                              sx={{ lineHeight: 1.3, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                             >
                               {notif.title}
                             </Typography>
@@ -444,6 +483,7 @@ const Header: React.FC = () => {
                                 lineHeight: 1.4,
                                 mt: 0.25,
                                 opacity: isRead ? 0.7 : 1,
+                                fontSize: { xs: '0.7rem', sm: '0.75rem' },
                               }}
                             >
                               {notif.message}

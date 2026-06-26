@@ -216,11 +216,11 @@ const AdminDashboard: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
-      <Box mb={4}>
-        <Typography variant="h4" fontWeight={600} gutterBottom color="text.primary">
+      <Box mb={3}>
+        <Typography variant="h4" fontWeight={600} gutterBottom color="text.primary" sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}>
           Welcome back, {user?.full_name}
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
           Here's what's happening with your health center today.
         </Typography>
       </Box>

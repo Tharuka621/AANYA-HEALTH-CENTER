@@ -142,36 +142,38 @@ const PatientManagement: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ py: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" fontWeight={700}>
+    <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
+      <Box sx={{ py: { xs: 1.5, sm: 3 } }}>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
+          <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' } }}>
             Patient Management
           </Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleAddPatient}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Add Patient
           </Button>
         </Box>
 
-        <TableContainer component={Paper} elevation={0}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Patient</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell>Age/Gender</TableCell>
-                <TableCell>NIC</TableCell>
-                <TableCell>Allergies</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Last Visit</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <Box sx={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <TableContainer component={Paper} elevation={0}>
+            <Table sx={{ minWidth: { xs: 600, sm: 700 } }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Patient</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Contact</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Age/Gender</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>NIC</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Allergies</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Last Visit</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
               {patients.map((patient) => (
                 <TableRow key={patient.id}>
                   <TableCell>
@@ -248,6 +250,7 @@ const PatientManagement: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        </Box>
 
         {/* Add/Edit Patient Dialog */}
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>

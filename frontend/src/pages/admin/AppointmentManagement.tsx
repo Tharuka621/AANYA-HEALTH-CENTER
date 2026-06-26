@@ -97,23 +97,23 @@ const AppointmentManagement: React.FC = () => {
   }), [appointments]);
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ py: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+    <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
+      <Box sx={{ py: { xs: 1.5, sm: 3 } }}>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
           <Box>
-            <Typography variant="h4" fontWeight={700}>
+            <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' } }}>
               Appointment Management
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Live appointment data from the database
             </Typography>
           </Box>
-          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchAppointments} disabled={loading}>
+          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchAppointments} disabled={loading} sx={{ width: { xs: '100%', sm: 'auto' } }}>
             Refresh
           </Button>
         </Box>
 
-        <Grid container spacing={2} mb={3}>
+        <Grid container spacing={1.5} mb={3}>
           {[
             { label: 'Total', value: stats.total },
             { label: 'Scheduled', value: stats.scheduled },
@@ -122,9 +122,9 @@ const AppointmentManagement: React.FC = () => {
           ].map((item) => (
             <Grid item xs={6} md={3} key={item.label}>
               <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">{item.label}</Typography>
-                  <Typography variant="h4" fontWeight={700}>{item.value}</Typography>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{item.label}</Typography>
+                  <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{item.value}</Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -142,19 +142,20 @@ const AppointmentManagement: React.FC = () => {
               <Typography variant="h6" color="text.secondary">No appointments found</Typography>
             </Box>
           ) : (
-            <TableContainer component={Paper} elevation={0}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Patient</TableCell>
-                    <TableCell>Doctor</TableCell>
-                    <TableCell>Date & Time</TableCell>
-                    <TableCell>Reason</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Contact</TableCell>
-                    <TableCell>Appointment No.</TableCell>
-                  </TableRow>
-                </TableHead>
+            <Box sx={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <TableContainer component={Paper} elevation={0}>
+                <Table sx={{ minWidth: { xs: 650, sm: 700 } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Patient</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Doctor</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Date & Time</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Reason</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Contact</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Appointment No.</TableCell>
+                    </TableRow>
+                  </TableHead>
                 <TableBody>
                   {appointments.map((appointment) => (
                     <TableRow key={appointment.id} hover>
@@ -188,6 +189,7 @@ const AppointmentManagement: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            </Box>
           )}
         </Card>
       </Box>

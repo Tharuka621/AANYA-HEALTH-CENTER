@@ -174,19 +174,20 @@ const LabTestManagement: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ py: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+    <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
+      <Box sx={{ py: { xs: 1.5, sm: 3 } }}>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
           <Box>
-            <Typography variant="h4" fontWeight={700}>Lab Management</Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' } }}>Lab Management</Typography>
             <Typography variant="body1" color="text.secondary">Manage lab orders and service catalog</Typography>
           </Box>
-          <Box display="flex" gap={2}>
+          <Box display="flex" gap={1.5} sx={{ width: { xs: '100%', sm: 'auto' }, flexDirection: { xs: 'column', sm: 'row' } }}>
             {tabValue === 1 && (
               <Button 
                 variant="contained" 
                 startIcon={<AddIcon />} 
                 onClick={() => handleOpenFile()}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 Add New Test
               </Button>
@@ -196,6 +197,7 @@ const LabTestManagement: React.FC = () => {
               startIcon={<RefreshIcon />} 
               onClick={tabValue === 0 ? fetchLabOrders : fetchCatalog} 
               disabled={loading}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               Refresh
             </Button>

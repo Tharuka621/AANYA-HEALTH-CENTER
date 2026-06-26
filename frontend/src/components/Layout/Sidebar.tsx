@@ -9,11 +9,9 @@ import {
   ListItemText,
   Typography,
   Box,
-  Divider,
   Avatar,
-  IconButton,
-  Collapse,
-  Tooltip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -26,12 +24,8 @@ import {
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   PersonAdd as PersonAddIcon,
-  MonitorHeart as VitalSignsIcon,
   Assessment as ReportsIcon,
   MedicalServices as MedicalIcon,
-  ExpandLess,
-  ExpandMore,
-  Menu as MenuIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,27 +36,26 @@ interface MenuItem {
   icon: React.ElementType;
   label: string;
   path: string;
-  children?: MenuItem[];
 }
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  mobileOpen: boolean;
+  onMobileToggle: () => void;
+}
+
+const drawerWidth = 280;
+
+const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileToggle }) => {
   const { user } = useAuth();
   const logout = useLogout();
   const navigate = useNavigate();
   const location = useLocation();
-  const [openItems, setOpenItems] = useState<string[]>([]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleLogout = () => {
     logout.mutate();
     navigate('/login');
-  };
-
-  const toggleItem = (path: string) => {
-    setOpenItems(prev =>
-      prev.includes(path)
-        ? prev.filter(item => item !== path)
-        : [...prev, path]
-    );
   };
 
   const getMenuItems = (role: UserRole): MenuItem[] => {
@@ -134,10 +127,8 @@ const Sidebar: React.FC = () => {
     }
   };
 
-  const renderMenuItem = (item: MenuItem, level: number = 0) => {
+  const renderMenuItem = (item: MenuItem) => {
     const isActive = location.pathname === item.path;
-    const hasChildren = item.children && item.children.length > 0;
-    const isOpen = openItems.includes(item.path);
 
     return (
       <ListItem key={item.path} disablePadding>
@@ -145,8 +136,10 @@ const Sidebar: React.FC = () => {
           component={RouterLink}
           to={item.path}
           selected={isActive}
+          onClick={() => { if (isMobile) onMobileToggle(); }}
           sx={{
-            pl: 2 + level * 2,
+            pl: 2,
+            py: 1.2,
             '&.Mui-selected': {
               backgroundColor: 'primary.main',
               color: 'primary.contrastText',
@@ -159,11 +152,10 @@ const Sidebar: React.FC = () => {
             },
           }}
         >
-          <ListItemIcon>
-            <item.icon />
+          <ListItemIcon sx={{ minWidth: 40 }}>
+            <item.icon fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary={item.label} />
-          {hasChildren && (isOpen ? <ExpandLess /> : <ExpandMore />)}
+          <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: '0.9rem' }} />
         </ListItemButton>
       </ListItem>
     );
@@ -172,31 +164,17 @@ const Sidebar: React.FC = () => {
   if (!user) return null;
 
   const menuItems = getMenuItems(user.role);
-  const drawerWidth = 280;
 
-  return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: drawerWidth,
-          boxSizing: 'border-box',
-          backgroundColor: 'background.paper',
-          borderRight: 1,
-          borderColor: 'divider',
-        },
-      }}
-    >
+  const drawerContent = (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Avatar sx={{ bgcolor: 'primary.main' }}>
+      <Box sx={{ p: 2.5, borderBottom: 1, borderColor: 'divider' }}>
+        <Box display="flex" alignItems="center" gap={1.5}>
+          <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
             <MedicalIcon />
           </Avatar>
           <Box>
-            <Typography variant="h6" fontWeight={700} color="primary.main">
+            <Typography variant="h6" fontWeight={700} color="primary.main" sx={{ fontSize: '1rem' }}>
               AANYA
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -207,16 +185,16 @@ const Sidebar: React.FC = () => {
       </Box>
 
       {/* User Info */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Avatar sx={{ bgcolor: 'primary.light', fontWeight: 700 }}>
+      <Box sx={{ p: 1.5, px: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Box display="flex" alignItems="center" gap={1.5}>
+          <Avatar sx={{ bgcolor: 'primary.light', fontWeight: 700, width: 34, height: 34, fontSize: '0.85rem' }}>
             {user.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
           </Avatar>
-          <Box>
-            <Typography variant="body2" fontWeight={600}>
+          <Box sx={{ overflow: 'hidden' }}>
+            <Typography variant="body2" fontWeight={600} noWrap>
               {user.role === 'doctor' ? `Dr. ${user.full_name}` : user.full_name}
             </Typography>
-            <Typography variant="caption" color="text.secondary" textTransform="capitalize">
+            <Typography variant="caption" color="text.secondary" textTransform="capitalize" noWrap>
               {user.role.replace('_', ' ')}
             </Typography>
           </Box>
@@ -225,17 +203,18 @@ const Sidebar: React.FC = () => {
 
       {/* Navigation */}
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-        <List>
+        <List disablePadding>
           {menuItems.map((item) => renderMenuItem(item))}
         </List>
       </Box>
 
       {/* Logout */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+      <Box sx={{ p: 1.5, borderTop: 1, borderColor: 'divider' }}>
         <ListItemButton
           onClick={handleLogout}
           disabled={logout.isPending}
           sx={{
+            borderRadius: 1,
             color: 'error.main',
             '&:hover': {
               backgroundColor: 'error.light',
@@ -243,13 +222,53 @@ const Sidebar: React.FC = () => {
             },
           }}
         >
-          <ListItemIcon>
-            <LogoutIcon color="inherit" />
+          <ListItemIcon sx={{ minWidth: 40 }}>
+            <LogoutIcon fontSize="small" color="inherit" />
           </ListItemIcon>
-          <ListItemText primary={logout.isPending ? 'Logging out...' : 'Logout'} />
+          <ListItemText primary={logout.isPending ? 'Logging out...' : 'Logout'} primaryTypographyProps={{ fontSize: '0.9rem' }} />
         </ListItemButton>
       </Box>
-    </Drawer>
+    </Box>
+  );
+
+  return (
+    <>
+      {/* Mobile: Temporary Drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onMobileToggle}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+
+      {/* Desktop: Permanent Drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          width: drawerWidth,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+            backgroundColor: 'background.paper',
+            borderRight: 1,
+            borderColor: 'divider',
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+    </>
   );
 };
 

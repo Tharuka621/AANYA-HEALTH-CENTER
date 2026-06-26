@@ -194,26 +194,26 @@ const PharmacyManagement: React.FC = () => {
   );
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ py: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+    <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
+      <Box sx={{ py: { xs: 1.5, sm: 3 } }}>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
           <Box>
-            <Typography variant="h4" fontWeight={700}>Pharmacy Management</Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' } }}>Pharmacy Management</Typography>
             <Typography variant="body2" color="text.secondary">Live inventory data from the database</Typography>
           </Box>
-          <Box display="flex" gap={1.5}>
+          <Box display="flex" gap={1.5} sx={{ width: { xs: '100%', sm: 'auto' }, flexDirection: { xs: 'column', sm: 'row' } }}>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => {
-                // Open add dialog and clear previous validation view.
                 setAddDialogOpen(true);
                 setShowValidation(false);
               }}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               Add Medicine
             </Button>
-            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchInventory} disabled={loading}>
+            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchInventory} disabled={loading} sx={{ width: { xs: '100%', sm: 'auto' } }}>
               Refresh
             </Button>
           </Box>
@@ -232,58 +232,58 @@ const PharmacyManagement: React.FC = () => {
           </Alert>
         )}
 
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Grid container spacing={2} sx={{ mb: 4 }}>
+          <Grid item xs={6} sm={6} md={3}>
             <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <InventoryIcon color="primary" />
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <InventoryIcon color="primary" sx={{ fontSize: { xs: 24, sm: 32 } }} />
                   <Box>
-                    <Typography variant="h6" fontWeight={600}>{inventory.length}</Typography>
-                    <Typography variant="body2" color="text.secondary">Inventory Batches</Typography>
+                    <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>{inventory.length}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>Batches</Typography>
                   </Box>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <WarningIcon color="warning" />
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <WarningIcon color="warning" sx={{ fontSize: { xs: 24, sm: 32 } }} />
                   <Box>
-                    <Typography variant="h6" fontWeight={600}>{lowStockItems.length}</Typography>
-                    <Typography variant="body2" color="text.secondary">Low Stock Items</Typography>
+                    <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>{lowStockItems.length}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>Low Stock</Typography>
                   </Box>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <InventoryIcon color="success" />
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <InventoryIcon color="success" sx={{ fontSize: { xs: 24, sm: 32 } }} />
                   <Box>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                       {inventory.reduce((sum, item) => sum + Number(item.stock_quantity || 0), 0)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">Total Stock</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>Total Stock</Typography>
                   </Box>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <InventoryIcon color="info" />
-                  <Box>
-                    <Typography variant="h6" fontWeight={600}>
-                      Rs. {inventory.reduce((sum, item) => sum + Number(item.stock_quantity || 0) * Number(item.unit_price || 0), 0).toFixed(2)}
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <InventoryIcon color="info" sx={{ fontSize: { xs: 24, sm: 32 } }} />
+                  <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+                    <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '0.85rem', sm: '1.25rem' }, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      Rs. {inventory.reduce((sum, item) => sum + Number(item.stock_quantity || 0) * Number(item.unit_price || 0), 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">Total Value</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>Total Value</Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -295,20 +295,20 @@ const PharmacyManagement: React.FC = () => {
           {loading ? (
             <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
           ) : (
-            // Inventory table shows live stock status and pricing details.
-            <TableContainer component={Paper} elevation={0}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Medicine</TableCell>
-                    <TableCell>Manufacturer</TableCell>
-                    <TableCell>Batch Number</TableCell>
-                    <TableCell>Expiry Date</TableCell>
-                    <TableCell>Stock</TableCell>
-                    <TableCell>Unit Price</TableCell>
-                    <TableCell>Category</TableCell>
-                  </TableRow>
-                </TableHead>
+            <Box sx={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <TableContainer component={Paper} elevation={0}>
+                <Table sx={{ minWidth: { xs: 600, sm: 700 } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Medicine</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Manufacturer</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Batch</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Expiry</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Stock</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Unit Price</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Category</TableCell>
+                    </TableRow>
+                  </TableHead>
                 <TableBody>
                   {inventory.map((item) => {
                     const stockStatus = getStockStatus(Number(item.stock_quantity || 0), Number(item.reorder_level || 0));
@@ -337,6 +337,7 @@ const PharmacyManagement: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            </Box>
           )}
         </Card>
 
